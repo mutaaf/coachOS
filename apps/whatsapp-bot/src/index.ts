@@ -5,7 +5,7 @@ import * as http from "http";
 // This MUST run before any other imports that
 // could crash (Puppeteer, Supabase, etc.)
 // ============================================
-const port = parseInt(process.env.PORT || "3001", 10);
+const port = parseInt(process.env.PORT || "8080", 10);
 let whatsappReady = false;
 let botStatus = "starting";
 

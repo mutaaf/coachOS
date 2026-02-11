@@ -19,7 +19,6 @@ COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
 
-# Expose the port Railway will assign
-EXPOSE ${PORT:-3001}
+EXPOSE 8080
 
 CMD ["node", "dist/index.js"]
