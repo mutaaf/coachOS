@@ -1,11 +1,22 @@
 import * as http from "http";
 
 // ============================================
+// CATCH ALL ERRORS — keep health server alive
+// ============================================
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception (health server still running):", err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled rejection (health server still running):", err);
+});
+
+// ============================================
 // START HTTP HEALTH SERVER IMMEDIATELY
 // This MUST run before any other imports that
 // could crash (Puppeteer, Supabase, etc.)
 // ============================================
 console.log("=== Bot process starting ===");
+console.log("Timestamp:", new Date().toISOString());
 console.log("PORT env:", process.env.PORT);
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("SUPABASE_URL set:", !!process.env.SUPABASE_URL);
@@ -45,8 +56,8 @@ server.on("error", (err) => {
   console.error("Health server error:", err);
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`Health server listening on 0.0.0.0:${port}`);
+server.listen(port, "::", () => {
+  console.log(`Health server listening on [::]:${port} (IPv4 + IPv6)`);
 });
 
 // ============================================
