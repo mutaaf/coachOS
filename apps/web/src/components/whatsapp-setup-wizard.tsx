@@ -72,7 +72,7 @@ export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initi
       .from("whatsapp_state")
       .select("*")
       .limit(1)
-      .single();
+      .maybeSingle();
     if (data) {
       setWhatsappState(data);
     }

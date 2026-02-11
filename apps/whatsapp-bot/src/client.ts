@@ -28,6 +28,17 @@ export class WhatsAppClient {
   }
 
   async initialize(): Promise<void> {
+    // Ensure whatsapp_state row exists (seed may not have run)
+    const { data: existing } = await supabase
+      .from("whatsapp_state")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+    if (!existing) {
+      await supabase.from("whatsapp_state").insert({ status: "disconnected" });
+      console.log("Created whatsapp_state row");
+    }
+
     this.client.on("qr", async (qr) => {
       console.log("QR code received");
       try {
