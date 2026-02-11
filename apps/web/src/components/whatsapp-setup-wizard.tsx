@@ -94,12 +94,17 @@ export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initi
 
     setTesting(true);
     try {
-      const res = await fetch(`${url}/health`, { mode: "cors" });
+      // Use server-side proxy to avoid CORS issues
+      const res = await fetch("/api/bot-health", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
       if (!res.ok) {
-        toast.error("Bot responded with an error. Check the URL and try again.");
+        toast.error(data.error || "Bot responded with an error. Check the URL and try again.");
         return;
       }
-      const data = await res.json();
       if (data.status === "connected" || data.status === "running") {
         setSaving(true);
         await updateConfig("whatsapp_bot_url", url);
