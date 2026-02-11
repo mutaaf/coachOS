@@ -5,6 +5,12 @@ import * as http from "http";
 // This MUST run before any other imports that
 // could crash (Puppeteer, Supabase, etc.)
 // ============================================
+console.log("=== Bot process starting ===");
+console.log("PORT env:", process.env.PORT);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("SUPABASE_URL set:", !!process.env.SUPABASE_URL);
+console.log("SUPABASE_SERVICE_ROLE_KEY set:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 const port = parseInt(process.env.PORT || "8080", 10);
 let whatsappReady = false;
 let botStatus = "starting";
@@ -33,6 +39,10 @@ const server = http.createServer((req, res) => {
 
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: "Not found" }));
+});
+
+server.on("error", (err) => {
+  console.error("Health server error:", err);
 });
 
 server.listen(port, "0.0.0.0", () => {
