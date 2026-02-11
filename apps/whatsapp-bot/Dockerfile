@@ -6,12 +6,15 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+# Copy package files
+COPY package.json ./
+RUN npm install --production=false
 
+# Copy source
 COPY . .
 RUN npm run build
 

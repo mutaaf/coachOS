@@ -2,6 +2,8 @@ import * as http from "http";
 import type { WhatsAppClient } from "./client";
 
 export function startHealthServer(whatsapp: WhatsAppClient, port: number) {
+  const startedAt = new Date().toISOString();
+
   const server = http.createServer((req, res) => {
     // CORS headers
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -19,6 +21,7 @@ export function startHealthServer(whatsapp: WhatsAppClient, port: number) {
       const body = JSON.stringify({
         status: isReady ? "connected" : "running",
         whatsapp_ready: isReady,
+        started_at: startedAt,
         timestamp: new Date().toISOString(),
       });
 
@@ -27,12 +30,19 @@ export function startHealthServer(whatsapp: WhatsAppClient, port: number) {
       return;
     }
 
+    // Root path also returns health for simpler healthcheck config
+    if (req.url === "/" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok" }));
+      return;
+    }
+
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
   });
 
-  server.listen(port, () => {
-    console.log(`Health server listening on port ${port}`);
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Health server listening on 0.0.0.0:${port}`);
   });
 
   return server;

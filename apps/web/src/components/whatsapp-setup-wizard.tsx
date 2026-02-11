@@ -14,6 +14,8 @@ import {
   Loader2,
   ExternalLink,
   ArrowRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { updateConfig } from "@/lib/actions/config";
@@ -32,6 +34,26 @@ function detectStep(whatsappState: WhatsAppState | null, botUrl: string): Step {
   if (whatsappState?.status === "qr_ready") return 3;
   if (botUrl) return 2;
   return 1;
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+    >
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
 }
 
 export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initialBotUrl }: WhatsAppSetupWizardProps) {
@@ -79,7 +101,6 @@ export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initi
       }
       const data = await res.json();
       if (data.status === "connected" || data.status === "running") {
-        // Save the URL to config
         setSaving(true);
         await updateConfig("whatsapp_bot_url", url);
         setBotUrl(url);
@@ -148,48 +169,67 @@ export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initi
               <div className="space-y-2">
                 <p className="font-medium text-blue-900">Deploy your WhatsApp bot</p>
                 <p className="text-sm text-blue-700">
-                  Railway is like a cloud computer that runs your WhatsApp bot 24/7 so messages send
+                  Railway is a cloud service that runs your WhatsApp bot 24/7 so messages send
                   automatically. It costs about $5/month.
                 </p>
-                <ol className="text-sm text-blue-700 list-decimal list-inside space-y-1">
-                  <li>Click the button below to open Railway</li>
-                  <li>Sign in with GitHub (free account)</li>
-                  <li>It will ask for your Supabase details — copy them from your Supabase dashboard</li>
-                  <li>Click &quot;Deploy&quot; and wait about 2 minutes</li>
-                </ol>
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-center gap-3">
-            <Button
-              size="lg"
-              className="gap-2"
-              onClick={() => {
-                window.open(
-                  "https://railway.app/template",
-                  "_blank"
-                );
-              }}
-            >
-              <Rocket className="h-4 w-4" />
-              Deploy to Railway
-              <ExternalLink className="h-4 w-4" />
-            </Button>
+
+          <div className="rounded-xl border p-4 space-y-3">
+            <p className="text-sm font-medium">Quick setup steps:</p>
+            <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-2">
+              <li>
+                Go to <a href="https://railway.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">railway.app</a> and sign in with GitHub
+              </li>
+              <li>
+                Click <strong>New Project</strong> → <strong>Deploy from GitHub repo</strong> → select your CoachOS repo
+              </li>
+              <li>
+                In the service settings, set <strong>Root Directory</strong> to: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">apps/whatsapp-bot</code> <CopyButton text="apps/whatsapp-bot" />
+              </li>
+              <li>
+                Add these environment variables in the <strong>Variables</strong> tab:
+                <div className="mt-2 space-y-1.5 ml-4">
+                  <div className="flex items-center gap-2">
+                    <code className="bg-muted px-1.5 py-0.5 rounded text-xs">SUPABASE_URL</code>
+                    <span className="text-xs">— your Supabase project URL</span>
+                    <CopyButton text="SUPABASE_URL" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="bg-muted px-1.5 py-0.5 rounded text-xs">SUPABASE_SERVICE_ROLE_KEY</code>
+                    <span className="text-xs">— from Supabase Settings → API</span>
+                    <CopyButton text="SUPABASE_SERVICE_ROLE_KEY" />
+                  </div>
+                </div>
+              </li>
+              <li>Click <strong>Deploy</strong> and wait 2-3 minutes for it to build</li>
+              <li>Once deployed, copy the bot&apos;s public URL from Railway and paste it below</li>
+            </ol>
+          </div>
+
+          <div className="rounded-xl border border-dashed p-4 space-y-3">
+            <Label className="text-sm font-medium">Bot URL</Label>
             <p className="text-xs text-muted-foreground">
-              Already deployed? Enter your bot URL below.
+              Find this in Railway → your service → Settings → Networking → Public URL.
+              It looks like <code className="bg-muted px-1 py-0.5 rounded">https://something.railway.app</code>
             </p>
-            <div className="flex gap-2 w-full max-w-md">
+            <div className="flex gap-2">
               <Input
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="https://your-bot.railway.app"
               />
               <Button
-                variant="outline"
                 onClick={handleTestConnection}
-                disabled={testing || saving}
+                disabled={testing || saving || !urlInput.trim()}
               >
-                {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                {testing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                )}
+                Test & Save
               </Button>
             </div>
           </div>
@@ -205,8 +245,8 @@ export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initi
               <div className="space-y-1">
                 <p className="font-medium text-amber-900">Bot deployed — waiting for WhatsApp connection</p>
                 <p className="text-sm text-amber-700">
-                  Your bot is running but hasn&apos;t connected to WhatsApp yet. If you just deployed it,
-                  wait a moment — a QR code will appear automatically.
+                  Your bot is running but hasn&apos;t connected to WhatsApp yet. A QR code will appear
+                  automatically once the bot is ready — this usually takes 1-2 minutes after deploy.
                 </p>
               </div>
             </div>

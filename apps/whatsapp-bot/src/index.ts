@@ -2,35 +2,40 @@ import { WhatsAppClient } from "./client";
 import { MessageQueueProcessor } from "./services/message-queue";
 import { startHealthServer } from "./health";
 
-async function main() {
-  console.log("CoachOS WhatsApp Bot starting...");
+const whatsapp = new WhatsAppClient();
+const processor = new MessageQueueProcessor(whatsapp);
 
-  const whatsapp = new WhatsAppClient();
-  const processor = new MessageQueueProcessor(whatsapp);
+// Start health server FIRST — must be reachable before anything else
+const port = parseInt(process.env.PORT || "3001", 10);
+startHealthServer(whatsapp, port);
 
-  const port = parseInt(process.env.PORT || "3001", 10);
-  startHealthServer(whatsapp, port);
-
-  await whatsapp.initialize();
-  processor.start();
-
-  // Graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("Shutting down...");
-    processor.stop();
-    await whatsapp.destroy();
-    process.exit(0);
-  });
-
-  process.on("SIGTERM", async () => {
-    console.log("Shutting down...");
-    processor.stop();
-    await whatsapp.destroy();
-    process.exit(0);
-  });
+// Initialize WhatsApp in the background — don't crash if it fails
+async function initWhatsApp() {
+  try {
+    console.log("CoachOS WhatsApp Bot starting...");
+    await whatsapp.initialize();
+    console.log("WhatsApp initialized, starting message processor...");
+    processor.start();
+  } catch (err) {
+    console.error("WhatsApp initialization failed:", err);
+    console.log("Health server is still running. Will retry in 30 seconds...");
+    setTimeout(initWhatsApp, 30000);
+  }
 }
 
-main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
+initWhatsApp();
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("Shutting down...");
+  processor.stop();
+  await whatsapp.destroy().catch(() => {});
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("Shutting down...");
+  processor.stop();
+  await whatsapp.destroy().catch(() => {});
+  process.exit(0);
 });
