@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Every morning, so a break is found before the week's sessions start
+    # rather than while someone is trying to register a child.
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Integration and run-book
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start the local Supabase stack
+        # The same throwaway database the tests use locally: every migration
+        # applied to an empty Postgres, so a migration that cannot build from
+        # scratch fails here rather than on someone's laptop.
+        run: supabase start
+
+      - name: Integration tests
+        run: npm test
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests, including the run-book
+        run: npm run test:e2e
+
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
