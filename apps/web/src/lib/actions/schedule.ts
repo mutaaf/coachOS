@@ -142,18 +142,15 @@ export async function generateSessions(programId: string | null, weeksAhead: num
     // For each template, calculate the next N occurrences of that day_of_week
     const targetDay = template.day_of_week; // 0=Sunday, 6=Saturday
 
+    // Days from today to the next occurrence of the target weekday: 0 when it
+    // is today, otherwise 1-6. This is computed once, outside the loop — it
+    // used to be corrected only on week 0, so a weekday earlier in the week
+    // than today produced week 1 as a duplicate of week 0 and the run silently
+    // came up one session short.
+    const currentDay = today.getDay(); // 0=Sunday
+    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
+
     for (let week = 0; week < weeksAhead; week++) {
-      // Calculate the date for this day_of_week in the target week
-      const currentDay = today.getDay(); // 0=Sunday
-      let daysUntilTarget = targetDay - currentDay;
-
-      // If the target day has already passed this week (and we're on week 0),
-      // we still include it if it's today
-      if (daysUntilTarget < 0 && week === 0) {
-        // Skip past days in current week unless it's today
-        daysUntilTarget += 7;
-      }
-
       const sessionDate = new Date(today);
       sessionDate.setDate(today.getDate() + daysUntilTarget + week * 7);
 

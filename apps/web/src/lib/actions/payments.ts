@@ -22,10 +22,10 @@ export async function generateMonthlyInvoices(month?: string) {
     .select("parent_id, student_id, program_id")
     .eq("month", targetMonth);
 
+  // Keyed by child and program, deliberately not by parent: one child on one
+  // program owes one fee, whoever pays it.
   const existingKeys = new Set(
-    (existingInvoices || []).map(
-      (inv) => `${inv.parent_id}|${inv.student_id}|${inv.program_id}`
-    )
+    (existingInvoices || []).map((inv) => `${inv.student_id}|${inv.program_id}`)
   );
 
   let created = 0;
@@ -42,28 +42,33 @@ export async function generateMonthlyInvoices(month?: string) {
       continue;
     }
 
-    for (const link of parentLinks) {
-      const key = `${link.parent_id}|${enrollment.student_id}|${enrollment.program_id}`;
+    const key = `${enrollment.student_id}|${enrollment.program_id}`;
 
-      if (existingKeys.has(key)) {
-        skipped++;
-        continue;
-      }
+    if (existingKeys.has(key)) {
+      skipped++;
+      continue;
+    }
 
-      const { error } = await supabase.from("invoices").insert({
-        parent_id: link.parent_id,
-        student_id: enrollment.student_id,
-        program_id: enrollment.program_id,
-        amount: program.monthly_fee,
-        month: targetMonth,
-        due_date: dueDate,
-        status: "pending",
-      });
+    // Bill a single parent. Iterating every link used to create one invoice
+    // per parent, so a family with both parents on file was charged twice for
+    // the same child. Sorted so repeat runs always pick the same one.
+    const billTo = [...parentLinks].sort((a, b) =>
+      String(a.parent_id).localeCompare(String(b.parent_id))
+    )[0];
 
-      if (!error) {
-        created++;
-        existingKeys.add(key);
-      }
+    const { error } = await supabase.from("invoices").insert({
+      parent_id: billTo.parent_id,
+      student_id: enrollment.student_id,
+      program_id: enrollment.program_id,
+      amount: program.monthly_fee,
+      month: targetMonth,
+      due_date: dueDate,
+      status: "pending",
+    });
+
+    if (!error) {
+      created++;
+      existingKeys.add(key);
     }
   }
 
@@ -131,6 +136,17 @@ export async function fetchInvoiceDetail(id: string) {
   return data;
 }
 
+/**
+ * An invoice is overdue only once its due date has passed — not during it.
+ * Comparing the date to a timestamp marked everything due today as overdue from
+ * midnight, which put families who had just paid onto the overdue list.
+ */
+function isPastDue(dueDate: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(`${dueDate}T00:00:00`) < today;
+}
+
 async function recalculateInvoiceStatus(supabase: any, invoiceId: string) {
   const { data: invoice } = await supabase
     .from("invoices")
@@ -150,7 +166,7 @@ async function recalculateInvoiceStatus(supabase: any, invoiceId: string) {
   let newStatus: string;
   if (totalPaid >= Number(invoice.amount)) {
     newStatus = "paid";
-  } else if (new Date(invoice.due_date) < new Date()) {
+  } else if (isPastDue(invoice.due_date)) {
     newStatus = "overdue";
   } else {
     newStatus = "pending";
