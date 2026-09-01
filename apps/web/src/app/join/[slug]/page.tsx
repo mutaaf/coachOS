@@ -101,7 +101,9 @@ export default async function JoinPage({ params }: { params: { slug: string } })
               <dd className="mt-1 text-sm font-medium text-slate-900">
                 {isFull ? (
                   <span className="text-amber-700">
-                    Full — {program.waitlist_count} on the waitlist
+                    {program.waitlist_count > 0
+                      ? `Full · ${program.waitlist_count} on the waitlist`
+                      : "Full"}
                   </span>
                 ) : (
                   <>

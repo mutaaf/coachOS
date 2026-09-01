@@ -4,6 +4,31 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Security
+- **Closed public write access to the marketing CMS.** `programs`,
+  `partnerships`, and `testimonials` each carried a policy named for
+  authenticated users that was in fact `FOR ALL TO public USING (true) WITH
+  CHECK (true)`. Since the anon key ships in the marketing site's JavaScript
+  bundle, any visitor could rewrite or delete every program listing and
+  testimonial on risingstars.training. Public reads are unchanged; writes now
+  require a signed-in user, matching what the `content_*` tables already did.
+
+### Added
+- Public registration surface for the marketing site: `public.program_availability`
+  (aggregate seat counts, no PII) and `public.submit_registration` (creates one
+  registration, returns only the outcome), both callable with the anon key while
+  `ops` itself stays unreachable
+- `public.programs.ops_program_id`, linking a marketing listing to the
+  operational program that owns its roster and seat cap
+- Test suite: Vitest integration tests and Playwright end-to-end tests, run
+  against a local Supabase stack in Docker. See `docs/TESTING.md`
+- CMS baseline migration — the seven marketing tables were created through the
+  dashboard and existed in no migration, so a fresh database could not be built
+
+### Changed
+- Migrations renumbered to Supabase timestamp convention, leaving room to insert
+  the CMS baseline ahead of the schema that depends on it
+
 ### Added
 - `ops` schema — operational tables are namespaced away from the marketing CMS
   that shares this Supabase project, which also owns a `programs` table

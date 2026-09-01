@@ -13,3 +13,7 @@ dist/
 # Backups of env files (these hold real keys)
 .env*.bak*
 *.env.bak
+
+# Test artifacts
+test-results/
+playwright-report/

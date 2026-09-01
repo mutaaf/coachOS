@@ -10,7 +10,10 @@ enabled = true
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
-schemas = ["public", "graphql_public"]
+# `ops` holds the operational tables. Exposing it here only makes PostgREST
+# serve it; `anon` still has no USAGE on the schema, so public traffic gets
+# a permission error rather than data. This mirrors the production setting.
+schemas = ["public", "graphql_public", "ops"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
@@ -369,7 +372,10 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+# Disabled for local development: the analytics stack mounts the Docker socket
+# at /var/run/docker.sock, which Colima does not provide. Nothing in the test
+# suite depends on log analytics.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"

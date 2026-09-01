@@ -167,7 +167,15 @@ cd apps/web && npx next build  # Build web only
 
 ### Running Database Migrations
 ```bash
-npm run db:migrate   # Pushes migrations via Supabase CLI
+npm run db:migrate   # Pushes migrations to the hosted project
+```
+
+### Running Tests
+```bash
+npm run db:start     # Local Supabase stack (Docker via Colima)
+npm run test         # Integration tests
+npm run test:e2e     # End-to-end tests
+npm run test:all     # Everything, from cold
 ```
 
 ---
@@ -179,7 +187,10 @@ npm run db:migrate   # Pushes migrations via Supabase CLI
 3. **Bulk import uses JSON** — unlike single-record actions that use FormData, bulk import actions accept typed arrays directly.
 4. **WhatsApp bot requires Chromium** — the bot uses Puppeteer with a real Chromium instance. Local dev needs Chrome/Chromium installed. Docker image bundles chromium-slim.
 5. **Polling, not realtime** — the WhatsApp setup wizard polls `whatsapp_state` every 3 seconds. The app does not use Supabase realtime subscriptions.
-6. **No test framework** — there are currently no unit or integration tests configured.
+6. **Tests run against a local Supabase stack in Docker, never the hosted project** —
+   `npm run db:start` then `npm run test` (Vitest integration) and
+   `npm run test:e2e` (Playwright). The helpers refuse to run if the API URL is
+   not on localhost. See [docs/TESTING.md](./docs/TESTING.md).
 7. **Owner terminology** — the UI calls the user "Boss" (not "Coach"). Keep this consistent.
 8. **US phone formatting** — phone numbers default to US (+1) when only 10 digits are provided.
 9. **Payments have full CRUD** — invoices and payments can be edited and deleted. Deleting an invoice requires deleting its payments first. Payment changes trigger automatic invoice status recalculation via `recalculateInvoiceStatus()`.
@@ -204,11 +215,10 @@ npm run db:migrate   # Pushes migrations via Supabase CLI
 
 ## Future Roadmap Ideas
 
-1. Add unit and integration tests (vitest or jest)
-2. Supabase realtime subscriptions to replace polling
-3. Student attendance reports and analytics dashboard
-4. Parent-facing portal for viewing invoices and making payments
-5. Multi-user support with role-based access control
-6. WhatsApp bot incoming message handling (two-way chat)
-7. Export data to CSV/Excel
-8. Mobile app or PWA for field use during sessions
+1. Supabase realtime subscriptions to replace polling
+2. Student attendance reports and analytics dashboard
+3. Parent-facing portal for viewing invoices and making payments
+4. Multi-user support with role-based access control
+5. WhatsApp bot incoming message handling (two-way chat)
+6. Export data to CSV/Excel
+7. Mobile app or PWA for field use during sessions
