@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SchoolFormDialog } from "@/components/school-form-dialog";
 import { ProgramFormDialog } from "@/components/program-form-dialog";
+import type { WebsiteListing } from "@/lib/queries/registrations";
 import { ScheduleTemplateFormDialog } from "@/components/schedule-template-form-dialog";
 import { AddStudentToSchoolDialog } from "@/components/add-student-to-school-dialog";
 import { EnrollStudentDialog } from "@/components/enroll-student-dialog";
@@ -58,6 +59,7 @@ interface SchoolDetailClientProps {
   invoices: SchoolInvoice[];
   allSchools: (School & { program_count: number; student_count: number })[];
   allParents: Parent[];
+  websiteListings: WebsiteListing[];
 }
 
 function getStatusBadgeVariant(
@@ -140,6 +142,7 @@ export function SchoolDetailClient({
   invoices,
   allSchools,
   allParents,
+  websiteListings,
 }: SchoolDetailClientProps) {
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -959,6 +962,7 @@ export function SchoolDetailClient({
         schoolId={editingProgram || !duplicatingProgram ? school.id : undefined}
         program={editingProgram}
         defaultValues={duplicatingProgram}
+        websiteListings={websiteListings}
       />
 
       <AddStudentToSchoolDialog

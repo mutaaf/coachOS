@@ -17,6 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+
+interface WebsiteListingOption {
+  id: string;
+  title: string;
+  ops_program_id: string | null;
+}
 
 interface ProgramFormDialogProps {
   open: boolean;
@@ -25,6 +32,8 @@ interface ProgramFormDialogProps {
   schoolId?: string;
   program?: Program;
   defaultValues?: Partial<Program>;
+  /** Marketing-site listings this program can be shown as. */
+  websiteListings?: WebsiteListingOption[];
 }
 
 const statusOptions = [
@@ -41,11 +50,27 @@ export function ProgramFormDialog({
   schoolId,
   program,
   defaultValues,
+  websiteListings = [],
 }: ProgramFormDialogProps) {
   const router = useRouter();
   const isEditing = !!program;
   const defaults = program ?? defaultValues;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationOpen, setRegistrationOpen] = useState(
+    defaults?.registration_open ?? false
+  );
+
+  // The listing currently pointing at this program, if any.
+  const linkedListingId =
+    websiteListings.find((l) => l.ops_program_id && l.ops_program_id === program?.id)?.id ?? "";
+
+  const listingOptions = [
+    { value: "", label: "Not shown on the website" },
+    ...websiteListings
+      // Hide listings already claimed by a different program.
+      .filter((l) => !l.ops_program_id || l.ops_program_id === program?.id)
+      .map((l) => ({ value: l.id, label: l.title })),
+  ];
 
   const schoolOptions = schools.map((s) => ({
     value: s.id,
@@ -192,6 +217,85 @@ export function ProgramFormDialog({
                 disabled={isSubmitting}
               />
             </div>
+          </div>
+
+          {/* Registration — everything a parent sees */}
+          <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Open registration</p>
+                <p className="text-xs text-muted-foreground">
+                  Gives this program a link parents can use to sign up themselves.
+                  Anyone past the cap joins the waitlist.
+                </p>
+              </div>
+              <Switch
+                checked={registrationOpen}
+                onCheckedChange={setRegistrationOpen}
+                disabled={isSubmitting}
+                aria-label="Open registration"
+              />
+            </div>
+            {/* A Switch is a button, so its value has to be carried separately. */}
+            <input
+              type="hidden"
+              name="registration_open"
+              value={registrationOpen ? "true" : "false"}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Spots</Label>
+                <Input
+                  id="capacity"
+                  name="capacity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue={defaults?.capacity ?? 12}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  name="location"
+                  placeholder="Where sessions happen"
+                  defaultValue={defaults?.location ?? ""}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="public_description">Description for parents</Label>
+              <Textarea
+                id="public_description"
+                name="public_description"
+                placeholder="Shown on the registration page..."
+                rows={2}
+                defaultValue={defaults?.public_description ?? ""}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {websiteListings.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="website_listing_id">Show as website listing</Label>
+                <Select
+                  id="website_listing_id"
+                  name="website_listing_id"
+                  options={listingOptions}
+                  defaultValue={linkedListingId}
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Links this program to a listing on risingstars.training, so the site
+                  shows real remaining spots instead of typed text.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Notes */}

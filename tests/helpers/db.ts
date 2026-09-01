@@ -203,3 +203,33 @@ export async function truncateAll() {
     }
   }
 }
+
+export const TEST_USER = {
+  email: "test-owner@example.test",
+  password: "test-password-1234",
+};
+
+/**
+ * Ensure a confirmed account exists so end-to-end tests can sign in.
+ *
+ * The dashboard is the part of the product that holds every child's details,
+ * and until this existed none of its signed-in behaviour could be tested — only
+ * that signed-out visitors are turned away.
+ */
+export async function ensureTestUser() {
+  const authAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: existing } = await authAdmin.auth.admin.listUsers();
+  const already = existing?.users?.find((u) => u.email === TEST_USER.email);
+  if (already) return already.id;
+
+  const { data, error } = await authAdmin.auth.admin.createUser({
+    email: TEST_USER.email,
+    password: TEST_USER.password,
+    email_confirm: true,
+  });
+  if (error) throw error;
+  return data.user!.id;
+}

@@ -1,4 +1,4 @@
-import { createAdminSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase, createAdminPublicSupabase } from "@/lib/supabase/server";
 import type { ProgramAvailability, Registration } from "@/types/database";
 
 export type RegistrationWithProgram = Registration & {
@@ -29,4 +29,30 @@ export async function getProgramAvailability() {
 
   if (error) throw error;
   return (data ?? []) as ProgramAvailability[];
+}
+
+export interface WebsiteListing {
+  id: string;
+  title: string;
+  type: string;
+  ops_program_id: string | null;
+}
+
+/**
+ * Program listings on the marketing site (`public.programs`).
+ *
+ * These are CMS rows edited at risingstars.training/admin — separate from the
+ * operational programs that own rosters. Linking one to a program is what makes
+ * the website show live seat counts and take real registrations.
+ */
+export async function getWebsiteListings() {
+  const supabase = createAdminPublicSupabase();
+
+  const { data, error } = await supabase
+    .from("programs")
+    .select("id, title, type, ops_program_id")
+    .order("title");
+
+  if (error) throw error;
+  return (data ?? []) as WebsiteListing[];
 }

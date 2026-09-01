@@ -33,7 +33,9 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "relative z-50 w-full max-w-lg rounded-2xl bg-background p-6 shadow-xl animate-in fade-in-0 zoom-in-95",
+      // Cap the height and scroll inside: without this, a dialog taller than the
+      // window puts its own submit button out of reach.
+      "relative z-50 max-h-[calc(100vh-4rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-background p-6 shadow-xl animate-in fade-in-0 zoom-in-95",
       className
     )}
     onClick={(e) => e.stopPropagation()}

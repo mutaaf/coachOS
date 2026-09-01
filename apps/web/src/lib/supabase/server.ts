@@ -39,3 +39,16 @@ export function createAdminSupabase() {
     OPS_SCHEMA
   );
 }
+
+/**
+ * Service-role client against the `public` schema — the marketing site's CMS.
+ *
+ * Used only to link a program to its website listing; everything operational
+ * goes through createAdminSupabase() and the `ops` schema.
+ */
+export function createAdminPublicSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}

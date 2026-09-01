@@ -7,6 +7,7 @@ import {
 } from "@/lib/queries/schools";
 import { getSchools } from "@/lib/queries/schools";
 import { getParents } from "@/lib/queries/students";
+import { getWebsiteListings } from "@/lib/queries/registrations";
 import { SchoolDetailClient } from "@/components/school-detail-client";
 
 interface SchoolDetailPageProps {
@@ -22,14 +23,21 @@ export default async function SchoolDetailPage({
     notFound();
   }
 
-  const [students, { templates, sessions }, invoices, allSchools, allParents] =
-    await Promise.all([
-      getSchoolStudents(params.schoolId),
-      getSchoolSessions(params.schoolId),
-      getSchoolInvoices(params.schoolId),
-      getSchools(),
-      getParents(),
-    ]);
+  const [
+    students,
+    { templates, sessions },
+    invoices,
+    allSchools,
+    allParents,
+    websiteListings,
+  ] = await Promise.all([
+    getSchoolStudents(params.schoolId),
+    getSchoolSessions(params.schoolId),
+    getSchoolInvoices(params.schoolId),
+    getSchools(),
+    getParents(),
+    getWebsiteListings(),
+  ]);
 
   return (
     <SchoolDetailClient
@@ -41,6 +49,7 @@ export default async function SchoolDetailPage({
       invoices={invoices}
       allSchools={allSchools}
       allParents={allParents}
+      websiteListings={websiteListings}
     />
   );
 }
