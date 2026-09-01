@@ -10,6 +10,11 @@ import { getParents } from "@/lib/queries/students";
 import { getWebsiteListings } from "@/lib/queries/registrations";
 import { SchoolDetailClient } from "@/components/school-detail-client";
 
+// Every dashboard page reads live business data behind a login, so it must be
+// rendered per request. Without this Next prerenders it at build time and the
+// page keeps serving whatever the database held when it was deployed.
+export const dynamic = "force-dynamic";
+
 interface SchoolDetailPageProps {
   params: { schoolId: string };
 }

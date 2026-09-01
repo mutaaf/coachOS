@@ -23,6 +23,11 @@ import {
   Clock,
 } from "lucide-react";
 
+// Every dashboard page reads live business data behind a login, so it must be
+// rendered per request. Without this Next prerenders it at build time and the
+// page keeps serving whatever the database held when it was deployed.
+export const dynamic = "force-dynamic";
+
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
