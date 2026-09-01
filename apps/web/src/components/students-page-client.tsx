@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,30 +9,48 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StudentFormDialog } from "@/components/student-form-dialog";
 import { ParentFormDialog } from "@/components/parent-form-dialog";
 import { EnrollStudentDialog } from "@/components/enroll-student-dialog";
-import { Users, UserPlus, Search, Phone, Mail, GraduationCap, Plus, Upload } from "lucide-react";
+import type { EnrollableProgram } from "@/components/enroll-student-dialog";
+import { Users, UserPlus, Search, Phone, Mail, GraduationCap, Plus, Upload, Pencil, Link2, Trash2 } from "lucide-react";
 import { BulkImportDialog } from "@/components/bulk-import-dialog";
+import { LinkParentDialog } from "@/components/link-parent-dialog";
+import { deleteStudent, deleteParent } from "@/lib/actions/students";
+import { toast } from "sonner";
 import type { Student, Parent } from "@/types/database";
+import type { StudentEnrollmentInfo, ParentWithStudents } from "@/lib/queries/students";
 
-type StudentWithParents = Student & { parents: (Parent & { relationship: string })[] };
+type StudentWithParents = Student & {
+  parents: (Parent & { relationship: string })[];
+  enrollments: StudentEnrollmentInfo[];
+};
 
 interface StudentsPageClientProps {
   students: StudentWithParents[];
-  parents: Parent[];
+  parents: ParentWithStudents[];
+  enrollablePrograms: EnrollableProgram[];
 }
 
-export function StudentsPageClient({ students, parents }: StudentsPageClientProps) {
+export function StudentsPageClient({ students, parents, enrollablePrograms }: StudentsPageClientProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [showStudentForm, setShowStudentForm] = useState(false);
   const [showParentForm, setShowParentForm] = useState(false);
   const [bulkStudentsOpen, setBulkStudentsOpen] = useState(false);
   const [bulkParentsOpen, setBulkParentsOpen] = useState(false);
   const [enrollStudent, setEnrollStudent] = useState<{ id: string; name: string } | null>(null);
+  const [editingStudent, setEditingStudent] = useState<StudentWithParents | undefined>();
+  const [editingParent, setEditingParent] = useState<ParentWithStudents | undefined>();
+  const [linkingStudent, setLinkingStudent] = useState<StudentWithParents | null>(null);
 
-  const filteredStudents = students.filter(
-    (s) =>
-      `${s.first_name} ${s.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
-      s.parents.some((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredStudents = students.filter((s) => {
+    const q = search.toLowerCase();
+    return (
+      `${s.first_name} ${s.last_name}`.toLowerCase().includes(q) ||
+      s.parents.some((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)) ||
+      s.enrollments.some(
+        (e) => e.schoolName.toLowerCase().includes(q) || e.programName.toLowerCase().includes(q)
+      )
+    );
+  });
 
   const filteredParents = parents.filter(
     (p) =>
@@ -42,9 +61,9 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">Students & Parents</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setBulkStudentsOpen(true)}>
             <Upload className="h-4 w-4 mr-2" /> Bulk Students
           </Button>
@@ -94,6 +113,7 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Grade</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Parents</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Schools & Programs</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
                     <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
                   </tr>
@@ -122,6 +142,20 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
                           )}
                         </div>
                       </td>
+                      <td className="p-4 hidden lg:table-cell">
+                        <div className="text-sm">
+                          {student.enrollments.length === 0 ? (
+                            <span className="text-muted-foreground">Not enrolled</span>
+                          ) : (
+                            student.enrollments.map((e, i) => (
+                              <div key={i}>
+                                <span className="font-medium">{e.schoolName}</span>
+                                <span className="text-muted-foreground"> — {e.programName}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4">
                         <Badge variant={student.status === "active" ? "success" : "secondary"}>
                           {student.status}
@@ -131,9 +165,39 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => setEditingStudent(student)}
+                          title="Edit student"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setLinkingStudent(student)}
+                          title="Link parents"
+                        >
+                          <Link2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setEnrollStudent({ id: student.id, name: `${student.first_name} ${student.last_name}` })}
                         >
                           Enroll
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          title="Delete student"
+                          onClick={async () => {
+                            if (!window.confirm(`Delete ${student.first_name} ${student.last_name}?`)) return;
+                            const result = await deleteStudent(student.id);
+                            if (result.error) toast.error(result.error);
+                            else { toast.success("Student deleted"); router.refresh(); }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </td>
                     </tr>
@@ -162,7 +226,9 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Phone</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Email</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Linked Students</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Payment</th>
+                    <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,8 +245,47 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
                           <Mail className="h-3.5 w-3.5" /> {parent.email || "—"}
                         </div>
                       </td>
+                      <td className="p-4 hidden lg:table-cell">
+                        <div className="text-sm">
+                          {parent.students.length === 0 ? (
+                            <span className="text-muted-foreground">No students linked</span>
+                          ) : (
+                            parent.students.map((s, i) => (
+                              <span key={s.id}>
+                                {i > 0 && ", "}
+                                {s.first_name} {s.last_name}
+                                <span className="text-muted-foreground"> ({s.relationship})</span>
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4">
                         <Badge variant="outline">{parent.preferred_payment}</Badge>
+                      </td>
+                      <td className="p-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingParent(parent)}
+                          title="Edit parent"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          title="Delete parent"
+                          onClick={async () => {
+                            if (!window.confirm(`Delete ${parent.first_name} ${parent.last_name}?`)) return;
+                            const result = await deleteParent(parent.id);
+                            if (result.error) toast.error(result.error);
+                            else { toast.success("Parent deleted"); router.refresh(); }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -194,13 +299,49 @@ export function StudentsPageClient({ students, parents }: StudentsPageClientProp
       <BulkImportDialog open={bulkStudentsOpen} onOpenChange={setBulkStudentsOpen} entityType="students" />
       <BulkImportDialog open={bulkParentsOpen} onOpenChange={setBulkParentsOpen} entityType="parents" />
       <StudentFormDialog open={showStudentForm} onOpenChange={setShowStudentForm} />
+      <StudentFormDialog
+        open={!!editingStudent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingStudent(undefined);
+            router.refresh();
+          }
+        }}
+        student={editingStudent}
+      />
       <ParentFormDialog open={showParentForm} onOpenChange={setShowParentForm} />
+      <ParentFormDialog
+        open={!!editingParent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingParent(undefined);
+            router.refresh();
+          }
+        }}
+        parent={editingParent}
+      />
+      {linkingStudent && (
+        <LinkParentDialog
+          open={!!linkingStudent}
+          onOpenChange={(open) => { if (!open) setLinkingStudent(null); }}
+          studentId={linkingStudent.id}
+          studentName={`${linkingStudent.first_name} ${linkingStudent.last_name}`}
+          linkedParents={linkingStudent.parents}
+          allParents={parents}
+        />
+      )}
       {enrollStudent && (
         <EnrollStudentDialog
           open={!!enrollStudent}
           onOpenChange={() => setEnrollStudent(null)}
           studentId={enrollStudent.id}
           studentName={enrollStudent.name}
+          programs={enrollablePrograms}
+          studentEnrolledProgramIds={
+            students
+              .find((s) => s.id === enrollStudent.id)
+              ?.enrollments.map((e) => e.programId) || []
+          }
         />
       )}
     </div>

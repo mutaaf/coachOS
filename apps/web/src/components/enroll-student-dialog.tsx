@@ -1,44 +1,70 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import type { SelectGroup } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { enrollStudent } from "@/lib/actions/students";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import type { EnrollableProgram } from "@/lib/queries/programs";
+
+export type { EnrollableProgram };
 
 interface EnrollStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   studentId: string;
   studentName: string;
+  programs: EnrollableProgram[];
+  studentEnrolledProgramIds: string[];
+  schoolId?: string;
 }
 
-export function EnrollStudentDialog({ open, onOpenChange, studentId, studentName }: EnrollStudentDialogProps) {
+export function EnrollStudentDialog({
+  open,
+  onOpenChange,
+  studentId,
+  studentName,
+  programs,
+  studentEnrolledProgramIds,
+  schoolId,
+}: EnrollStudentDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [programs, setPrograms] = useState<{ value: string; label: string }[]>([]);
   const [selectedProgram, setSelectedProgram] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      const supabase = createClient();
-      supabase
-        .from("programs")
-        .select("id, name, schools(name)")
-        .eq("status", "active")
-        .then(({ data }) => {
-          if (data) {
-            setPrograms(
-              data.map((p: any) => ({
-                value: p.id,
-                label: `${p.schools?.name || "Unknown"} — ${p.name}`,
-              }))
-            );
-          }
-        });
+  const programGroups = useMemo(() => {
+    const filtered = schoolId
+      ? programs.filter((p) => p.school_id === schoolId)
+      : programs;
+
+    const enrolledSet = new Set(studentEnrolledProgramIds);
+
+    const schoolMap = new Map<string, { name: string; options: SelectGroup["options"] }>();
+
+    for (const p of filtered) {
+      const schoolName = p.school?.name || "Unknown School";
+      const key = p.school_id || schoolName;
+
+      if (!schoolMap.has(key)) {
+        schoolMap.set(key, { name: schoolName, options: [] });
+      }
+
+      const isEnrolled = enrolledSet.has(p.id);
+      const statusLabel = p.status === "upcoming" ? " (upcoming)" : "";
+
+      schoolMap.get(key)!.options.push({
+        value: p.id,
+        label: `${p.name}${statusLabel}${isEnrolled ? " (enrolled)" : ""}`,
+        disabled: isEnrolled,
+      });
     }
-  }, [open]);
+
+    return Array.from(schoolMap.values()).map((s) => ({
+      label: s.name,
+      options: s.options,
+    }));
+  }, [programs, studentEnrolledProgramIds, schoolId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +90,7 @@ export function EnrollStudentDialog({ open, onOpenChange, studentId, studentName
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <p className="text-sm text-muted-foreground">Select a program to enroll this student in.</p>
           <Select
-            options={programs}
+            groups={programGroups}
             placeholder="Select a program"
             value={selectedProgram}
             onChange={(e) => setSelectedProgram(e.target.value)}

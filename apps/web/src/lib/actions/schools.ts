@@ -1,10 +1,10 @@
 "use server";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function createSchool(formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const name = formData.get("name") as string;
   const address = formData.get("address") as string | null;
@@ -41,7 +41,7 @@ export async function createSchool(formData: FormData) {
 }
 
 export async function updateSchool(id: string, formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const name = formData.get("name") as string;
   const address = formData.get("address") as string | null;
@@ -80,7 +80,7 @@ export async function updateSchool(id: string, formData: FormData) {
 }
 
 export async function archiveSchool(id: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { error } = await supabase
     .from("schools")

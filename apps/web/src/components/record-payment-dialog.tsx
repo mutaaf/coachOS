@@ -7,48 +7,44 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { recordPayment } from "@/lib/actions/payments";
-import { createClient } from "@/lib/supabase/client";
+import { recordPayment, updatePayment, fetchPendingInvoices, fetchInvoiceDetail } from "@/lib/actions/payments";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface RecordPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceId?: string | null;
+  payment?: any;
 }
 
-export function RecordPaymentDialog({ open, onOpenChange, invoiceId }: RecordPaymentDialogProps) {
+export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: RecordPaymentDialogProps) {
+  const router = useRouter();
+  const isEditing = !!payment;
   const [loading, setLoading] = useState(false);
-  const [method, setMethod] = useState("cash");
+  const [method, setMethod] = useState(payment?.method || "cash");
   const [invoices, setInvoices] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState(invoiceId || "");
   const [invoiceDetail, setInvoiceDetail] = useState<any>(null);
 
   useEffect(() => {
+    if (isEditing) {
+      setMethod(payment.method || "cash");
+      return;
+    }
     if (open && !invoiceId) {
-      const supabase = createClient();
-      supabase
-        .from("invoices")
-        .select("*, parents(*), students(*), programs(*)")
-        .in("status", ["pending", "overdue"])
-        .order("due_date")
-        .then(({ data }) => setInvoices(data || []));
+      fetchPendingInvoices().then((data) => setInvoices(data));
     }
     if (invoiceId) setSelectedInvoice(invoiceId);
-  }, [open, invoiceId]);
+  }, [open, invoiceId, isEditing, payment]);
 
   useEffect(() => {
+    if (isEditing) return;
     if (selectedInvoice && open) {
-      const supabase = createClient();
-      supabase
-        .from("invoices")
-        .select("*, parents(*), students(*), programs(*), payments(amount)")
-        .eq("id", selectedInvoice)
-        .single()
-        .then(({ data }) => setInvoiceDetail(data));
+      fetchInvoiceDetail(selectedInvoice).then((data) => setInvoiceDetail(data));
     }
-  }, [selectedInvoice, open]);
+  }, [selectedInvoice, open, isEditing]);
 
   const totalPaid = invoiceDetail?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
   const remaining = invoiceDetail ? Number(invoiceDetail.amount) - totalPaid : 0;
@@ -58,12 +54,22 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId }: RecordPay
     setLoading(true);
     try {
       const formData = new FormData(e.currentTarget);
-      formData.set("invoice_id", selectedInvoice);
-      await recordPayment(formData);
-      toast.success("Payment recorded");
+      if (isEditing) {
+        const result = await updatePayment(payment.id, formData);
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success("Payment updated");
+        router.refresh();
+      } else {
+        formData.set("invoice_id", selectedInvoice);
+        await recordPayment(formData);
+        toast.success("Payment recorded");
+      }
       onOpenChange(false);
     } catch {
-      toast.error("Failed to record payment");
+      toast.error(isEditing ? "Failed to update payment" : "Failed to record payment");
     } finally {
       setLoading(false);
     }
@@ -73,16 +79,17 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId }: RecordPay
     cash: "Receipt #",
     zelle: "Zelle transaction ID",
     venmo: "@handle or transaction ID",
+    stripe: "Stripe payment ID",
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)}>
         <DialogHeader>
-          <DialogTitle>Record Payment</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Payment" : "Record Payment"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {!invoiceId && (
+          {!isEditing && !invoiceId && (
             <div className="space-y-2">
               <Label>Invoice</Label>
               <Select
@@ -98,7 +105,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId }: RecordPay
             </div>
           )}
 
-          {invoiceDetail && (
+          {!isEditing && invoiceDetail && (
             <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1">
               <div><span className="text-muted-foreground">Student:</span> {invoiceDetail.students?.first_name} {invoiceDetail.students?.last_name}</div>
               <div><span className="text-muted-foreground">Amount Due:</span> {formatCurrency(invoiceDetail.amount)}</div>
@@ -114,7 +121,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId }: RecordPay
               type="number"
               step="0.01"
               required
-              defaultValue={remaining > 0 ? remaining : ""}
+              defaultValue={isEditing ? payment.amount : remaining > 0 ? remaining : ""}
             />
           </div>
           <div className="space-y-2">
@@ -128,21 +135,22 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId }: RecordPay
                 { value: "cash", label: "Cash" },
                 { value: "zelle", label: "Zelle" },
                 { value: "venmo", label: "Venmo" },
+                { value: "stripe", label: "Stripe" },
               ]}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="reference">Reference</Label>
-            <Input id="reference" name="reference" placeholder={placeholders[method]} />
+            <Input id="reference" name="reference" placeholder={placeholders[method]} defaultValue={isEditing ? payment.reference || "" : ""} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" name="notes" />
+            <Textarea id="notes" name="notes" defaultValue={isEditing ? payment.notes || "" : ""} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || !selectedInvoice}>
-              {loading ? "Recording..." : "Record Payment"}
+            <Button type="submit" disabled={loading || (!isEditing && !selectedInvoice)}>
+              {loading ? (isEditing ? "Saving..." : "Recording...") : (isEditing ? "Save Changes" : "Record Payment")}
             </Button>
           </div>
         </form>

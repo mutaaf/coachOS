@@ -25,7 +25,18 @@ export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesD
       const formData = new FormData(e.currentTarget);
       const month = formData.get("month") as string;
       const result = await generateMonthlyInvoices(month);
-      toast.success(`${result.count} invoice(s) generated`);
+      if (result.created > 0 && result.skipped > 0) {
+        toast.success(`Created ${result.created} invoice(s) (${result.skipped} already existed)`);
+      } else if (result.created > 0) {
+        toast.success(`${result.created} invoice(s) generated`);
+      } else if (result.skipped > 0) {
+        toast.info(`All ${result.skipped} invoice(s) already exist for this month`);
+      } else {
+        toast.info("No active enrollments found to invoice");
+      }
+      if (result.noParent && result.noParent > 0) {
+        toast.warning(`${result.noParent} enrollment(s) skipped — no parent linked to student`);
+      }
       onOpenChange(false);
     } catch {
       toast.error("Failed to generate invoices");
@@ -42,7 +53,7 @@ export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesD
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <p className="text-sm text-muted-foreground">
-            This will create invoices for all active enrollments that don&apos;t already have one for the selected month.
+            This will create invoices for all active enrollments for the selected month. Already-existing invoices will be skipped.
           </p>
           <div className="space-y-2">
             <Label htmlFor="month">Month</Label>

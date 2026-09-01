@@ -17,8 +17,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { updateConfig } from "@/lib/actions/config";
+import { updateConfig, fetchWhatsAppState } from "@/lib/actions/config";
 import { toast } from "sonner";
 import type { WhatsAppState } from "@/types/database";
 
@@ -67,12 +66,7 @@ export function WhatsAppSetupWizard({ whatsappState: initialState, botUrl: initi
 
   // Poll whatsapp_state every 3 seconds during steps 2-3
   const pollState = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("whatsapp_state")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
+    const data = await fetchWhatsAppState();
     if (data) {
       setWhatsappState(data);
     }

@@ -1,7 +1,7 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
 export async function getLeads(stage?: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   let query = supabase
     .from("leads")
     .select("*")
@@ -15,7 +15,7 @@ export async function getLeads(stage?: string) {
 }
 
 export async function getLead(id: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("leads")
     .select("*")
@@ -26,7 +26,7 @@ export async function getLead(id: string) {
 }
 
 export async function getLeadActivities(leadId: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("lead_activities")
     .select("*")

@@ -1,4 +1,4 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import type {
   Session,
   ScheduleTemplate,
@@ -17,7 +17,7 @@ export type ScheduleTemplateWithProgram = ScheduleTemplate & {
 export async function getScheduleTemplates(
   programId?: string
 ): Promise<ScheduleTemplateWithProgram[]> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   let query = supabase
     .from("schedule_templates")
@@ -63,7 +63,7 @@ export async function getSessions(filters: {
   programId?: string;
   status?: string;
 }): Promise<SessionWithProgram[]> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   let query = supabase
     .from("sessions")
@@ -104,7 +104,7 @@ export async function getSessions(filters: {
 export async function getSession(
   id: string
 ): Promise<SessionWithAttendance | null> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
@@ -149,7 +149,7 @@ export async function getUpcomingSessions(
 ): Promise<SessionWithProgram[]> {
   const today = new Date().toISOString().split("T")[0];
 
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data, error } = await supabase
     .from("sessions")

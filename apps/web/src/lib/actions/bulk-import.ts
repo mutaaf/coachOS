@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export type BulkSchoolRow = {
@@ -34,7 +34,7 @@ export type BulkImportResult = {
 export async function bulkCreateSchools(
   rows: BulkSchoolRow[]
 ): Promise<BulkImportResult> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
   const validRows: { name: string; address: string | null; contact_name: string | null; contact_phone: string | null; status: "active" }[] = [];
 
@@ -76,7 +76,7 @@ export async function bulkCreateSchools(
 export async function bulkCreateStudents(
   rows: BulkStudentRow[]
 ): Promise<BulkImportResult> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
   const validRows: { first_name: string; last_name: string; grade: string | null }[] = [];
   const validIndices: number[] = [];
@@ -122,14 +122,14 @@ export async function bulkCreateStudents(
 export async function bulkCreateParents(
   rows: BulkParentRow[]
 ): Promise<BulkImportResult> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
   const validRows: {
     first_name: string;
     last_name: string;
     phone: string;
     email: string | null;
-    preferred_payment: "cash" | "zelle" | "venmo";
+    preferred_payment: "cash" | "zelle" | "venmo" | "stripe";
   }[] = [];
 
   for (let i = 0; i < rows.length; i++) {
@@ -148,7 +148,7 @@ export async function bulkCreateParents(
     }
     const payment = row.preferred_payment?.trim().toLowerCase();
     const validPayment =
-      payment === "zelle" || payment === "venmo" ? payment : "cash";
+      payment === "zelle" || payment === "venmo" || payment === "stripe" ? payment : "cash";
     validRows.push({
       first_name: row.first_name.trim(),
       last_name: row.last_name.trim(),

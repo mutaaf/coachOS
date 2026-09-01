@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
 export async function createProgram(formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const schoolId = formData.get("school_id") as string;
   const name = formData.get("name") as string;
@@ -41,7 +41,7 @@ export async function createProgram(formData: FormData) {
 }
 
 export async function updateProgram(id: string, formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const schoolId = formData.get("school_id") as string;
   const name = formData.get("name") as string;
@@ -84,7 +84,7 @@ export async function updateProgramStatus(
   id: string,
   status: "active" | "upcoming" | "completed" | "cancelled"
 ) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   // Fetch the program first to get the school_id for revalidation
   const { data: program } = await supabase
@@ -106,6 +106,67 @@ export async function updateProgramStatus(
   if (program?.school_id) {
     revalidatePath(`/schools/${program.school_id}`);
   }
+
+  return { success: true };
+}
+
+export async function duplicateProgram(
+  programId: string,
+  targetSchoolId: string
+) {
+  const supabase = createAdminSupabase();
+
+  // Fetch source program
+  const { data: source, error: fetchError } = await supabase
+    .from("programs")
+    .select("*")
+    .eq("id", programId)
+    .single();
+
+  if (fetchError || !source) {
+    return { error: "Source program not found." };
+  }
+
+  // Insert copy with target school and upcoming status
+  const { data: newProgram, error: insertError } = await supabase
+    .from("programs")
+    .insert({
+      school_id: targetSchoolId,
+      name: source.name,
+      season: source.season,
+      start_date: source.start_date,
+      end_date: source.end_date,
+      monthly_fee: source.monthly_fee,
+      status: "upcoming",
+      notes: source.notes,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !newProgram) {
+    return { error: insertError?.message || "Failed to duplicate program." };
+  }
+
+  // Copy schedule templates
+  const { data: templates } = await supabase
+    .from("schedule_templates")
+    .select("day_of_week, start_time, end_time, location")
+    .eq("program_id", programId);
+
+  if (templates && templates.length > 0) {
+    await supabase.from("schedule_templates").insert(
+      templates.map((t) => ({
+        program_id: newProgram.id,
+        day_of_week: t.day_of_week,
+        start_time: t.start_time,
+        end_time: t.end_time,
+        location: t.location,
+      }))
+    );
+  }
+
+  revalidatePath("/schools");
+  revalidatePath(`/schools/${targetSchoolId}`);
 
   return { success: true };
 }

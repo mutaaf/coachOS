@@ -1,8 +1,8 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Config, WhatsAppState } from "@/types/database";
 
 export async function getConfig(): Promise<Config[]> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("config")
     .select("*")
@@ -13,7 +13,7 @@ export async function getConfig(): Promise<Config[]> {
 }
 
 export async function getConfigByCategory(category: string): Promise<Config[]> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("config")
     .select("*")
@@ -24,7 +24,7 @@ export async function getConfigByCategory(category: string): Promise<Config[]> {
 }
 
 export async function getConfigValue(key: string): Promise<string | null> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("config")
     .select("value")
@@ -35,12 +35,12 @@ export async function getConfigValue(key: string): Promise<string | null> {
 }
 
 export async function getWhatsAppState(): Promise<WhatsAppState | null> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("whatsapp_state")
     .select("*")
     .limit(1)
-    .single();
+    .maybeSingle();
   if (error) return null;
   return data;
 }

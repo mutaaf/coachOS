@@ -20,6 +20,7 @@
     "react-dom": "^18.3.1",
     "shared": "*",
     "sonner": "^1.7.1",
+    "stripe": "^20.3.1",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7"
   },

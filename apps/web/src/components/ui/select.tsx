@@ -4,14 +4,20 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
+export interface SelectGroup {
+  label: string;
+  options: { value: string; label: string; disabled?: boolean }[];
+}
+
 export interface SelectProps
   extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
+  groups?: SelectGroup[];
   placeholder?: string;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, options, placeholder, ...props }, ref) => {
+  ({ className, options, groups, placeholder, ...props }, ref) => {
     return (
       <div className="relative">
         <select
@@ -27,11 +33,21 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               {placeholder}
             </option>
           )}
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          {groups
+            ? groups.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map((option) => (
+                    <option key={option.value} value={option.value} disabled={option.disabled}>
+                      {option.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            : options?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
         </select>
         <ChevronDown className="absolute right-3 top-3 h-4 w-4 opacity-50 pointer-events-none" />
       </div>

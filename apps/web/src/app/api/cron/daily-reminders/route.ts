@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import { renderTemplate } from "shared";
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -15,7 +8,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getSupabase();
+  const supabase = createAdminSupabase();
   const results = { practiceReminders: 0, paymentReminders: 0 };
 
   async function getConfigValue(key: string): Promise<string> {

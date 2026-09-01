@@ -1,12 +1,24 @@
 "use server";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getScheduleTemplates } from "@/lib/queries/schedule";
+import { getSessions } from "@/lib/queries/schedule";
+
+// ---------- Server Action Wrappers ----------
+
+export async function fetchScheduleTemplates(programId?: string) {
+  return getScheduleTemplates(programId);
+}
+
+export async function fetchSessionsForWeek(startDate: string, endDate: string) {
+  return getSessions({ startDate, endDate });
+}
 
 // ---------- Schedule Template Actions ----------
 
 export async function createScheduleTemplate(formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const program_id = formData.get("program_id") as string;
   const day_of_week = parseInt(formData.get("day_of_week") as string, 10);
@@ -40,11 +52,12 @@ export async function createScheduleTemplate(formData: FormData) {
   }
 
   revalidatePath("/schedule");
+  revalidatePath("/schools");
   return { data };
 }
 
 export async function updateScheduleTemplate(id: string, formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const program_id = formData.get("program_id") as string;
   const day_of_week = parseInt(formData.get("day_of_week") as string, 10);
@@ -75,11 +88,12 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
   }
 
   revalidatePath("/schedule");
+  revalidatePath("/schools");
   return { data };
 }
 
 export async function deleteScheduleTemplate(id: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { error } = await supabase
     .from("schedule_templates")
@@ -92,16 +106,17 @@ export async function deleteScheduleTemplate(id: string) {
   }
 
   revalidatePath("/schedule");
+  revalidatePath("/schools");
   return { success: true };
 }
 
 // ---------- Session Generation ----------
 
 export async function generateSessions(programId: string | null, weeksAhead: number) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
-  // Fetch schedule templates
-  let templateQuery = supabase.from("schedule_templates").select("*");
+  // Fetch schedule templates with program date range
+  let templateQuery = supabase.from("schedule_templates").select("*, programs(start_date, end_date)");
   if (programId) {
     templateQuery = templateQuery.eq("program_id", programId);
   }
@@ -123,6 +138,7 @@ export async function generateSessions(programId: string | null, weeksAhead: num
   let sessionsCreated = 0;
 
   for (const template of templates) {
+    const program = template.programs as any;
     // For each template, calculate the next N occurrences of that day_of_week
     const targetDay = template.day_of_week; // 0=Sunday, 6=Saturday
 
@@ -145,6 +161,10 @@ export async function generateSessions(programId: string | null, weeksAhead: num
       if (sessionDate < today) continue;
 
       const dateStr = sessionDate.toISOString().split("T")[0];
+
+      // Don't create sessions outside program date range
+      if (program?.start_date && dateStr < program.start_date) continue;
+      if (program?.end_date && dateStr > program.end_date) continue;
 
       // Check if session already exists for this program + date + start_time
       const { data: existing } = await supabase
@@ -184,7 +204,7 @@ export async function generateSessions(programId: string | null, weeksAhead: num
 // ---------- Session Status Actions ----------
 
 export async function cancelSession(id: string, reason: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   if (!reason || reason.trim().length === 0) {
     return { error: "Cancellation reason is required." };
@@ -210,7 +230,7 @@ export async function cancelSession(id: string, reason: string) {
 }
 
 export async function completeSession(id: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data, error } = await supabase
     .from("sessions")
@@ -233,7 +253,7 @@ export async function completeSession(id: string) {
 // ---------- Makeup Session ----------
 
 export async function createMakeupSession(formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const program_id = formData.get("program_id") as string;
   const date = formData.get("date") as string;
@@ -274,7 +294,7 @@ export async function recordAttendance(
   sessionId: string,
   records: { studentId: string; status: "present" | "absent" | "late" | "excused" }[]
 ) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   if (!sessionId || !records || records.length === 0) {
     return { error: "Session ID and attendance records are required." };

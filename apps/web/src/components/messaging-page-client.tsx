@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { sendBulkMessages, createMessageTemplate, deleteMessageTemplate, retryFailedMessage } from "@/lib/actions/messages";
-import { createClient } from "@/lib/supabase/client";
+import { sendBulkMessages, createMessageTemplate, updateMessageTemplate, deleteMessageTemplate, retryFailedMessage, fetchRecipients } from "@/lib/actions/messages";
 import { toast } from "sonner";
 import { MessageSquare, Send, Users, Plus, Pencil, Trash2, RefreshCw, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import type { MessageTemplate } from "@/types/database";
@@ -19,58 +19,24 @@ interface MessagingPageClientProps {
   templates: MessageTemplate[];
   log: any[];
   stats: { totalSent: number; pendingCount: number; failedCount: number };
+  schools: any[];
+  programs: any[];
 }
 
-export function MessagingPageClient({ templates, log, stats }: MessagingPageClientProps) {
+export function MessagingPageClient({ templates, log, stats, schools, programs }: MessagingPageClientProps) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [recipients, setRecipients] = useState<{ phone: string; name: string }[]>([]);
   const [recipientMode, setRecipientMode] = useState<"all" | "school" | "program">("all");
-  const [schools, setSchools] = useState<any[]>([]);
-  const [programs, setPrograms] = useState<any[]>([]);
   const [selectedSchoolOrProgram, setSelectedSchoolOrProgram] = useState("");
   const [sending, setSending] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.from("schools").select("*").eq("status", "active").then(({ data }) => setSchools(data || []));
-    supabase.from("programs").select("*, schools(name)").eq("status", "active").then(({ data }) => setPrograms(data || []));
-  }, []);
+  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
 
   async function loadRecipients(mode: string, id?: string) {
-    const supabase = createClient();
-    let parentIds: string[] = [];
-
-    if (mode === "all") {
-      const { data } = await supabase.from("parents").select("id, first_name, last_name, phone");
-      setRecipients((data || []).map((p: any) => ({ phone: p.phone, name: `${p.first_name} ${p.last_name}` })));
-      return;
-    }
-
-    if (mode === "school" && id) {
-      const { data: progs } = await supabase.from("programs").select("id").eq("school_id", id);
-      const progIds = (progs || []).map((p: any) => p.id);
-      if (progIds.length === 0) { setRecipients([]); return; }
-      const { data: enrollments } = await supabase.from("enrollments").select("student_id").in("program_id", progIds).eq("status", "active");
-      const studentIds = [...new Set((enrollments || []).map((e: any) => e.student_id))];
-      if (studentIds.length === 0) { setRecipients([]); return; }
-      const { data: links } = await supabase.from("student_parents").select("parent_id").in("student_id", studentIds);
-      parentIds = [...new Set((links || []).map((l: any) => l.parent_id))];
-    }
-
-    if (mode === "program" && id) {
-      const { data: enrollments } = await supabase.from("enrollments").select("student_id").eq("program_id", id).eq("status", "active");
-      const studentIds = [...new Set((enrollments || []).map((e: any) => e.student_id))];
-      if (studentIds.length === 0) { setRecipients([]); return; }
-      const { data: links } = await supabase.from("student_parents").select("parent_id").in("student_id", studentIds);
-      parentIds = [...new Set((links || []).map((l: any) => l.parent_id))];
-    }
-
-    if (parentIds.length > 0) {
-      const { data: parents } = await supabase.from("parents").select("id, first_name, last_name, phone").in("id", parentIds);
-      setRecipients((parents || []).map((p: any) => ({ phone: p.phone, name: `${p.first_name} ${p.last_name}` })));
-    }
+    const data = await fetchRecipients(mode as "all" | "school" | "program", id);
+    setRecipients(data);
   }
 
   function handleTemplateSelect(templateId: string) {
@@ -101,17 +67,24 @@ export function MessagingPageClient({ templates, log, stats }: MessagingPageClie
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     try {
-      await createMessageTemplate(formData);
-      toast.success("Template created");
+      if (editingTemplate) {
+        await updateMessageTemplate(editingTemplate.id, formData);
+        toast.success("Template updated");
+      } else {
+        await createMessageTemplate(formData);
+        toast.success("Template created");
+      }
       setShowTemplateForm(false);
+      setEditingTemplate(null);
+      router.refresh();
     } catch {
-      toast.error("Failed to create template");
+      toast.error(editingTemplate ? "Failed to update template" : "Failed to create template");
     }
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Messaging</h1>
           <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
@@ -168,7 +141,7 @@ export function MessagingPageClient({ templates, log, stats }: MessagingPageClie
               {recipientMode === "program" && (
                 <Select
                   placeholder="Select a program"
-                  options={programs.map((p: any) => ({ value: p.id, label: `${p.schools?.name} — ${p.name}` }))}
+                  options={programs.map((p: any) => ({ value: p.id, label: `${p.school?.name ?? ""} — ${p.name}` }))}
                   value={selectedSchoolOrProgram}
                   onChange={(e) => { setSelectedSchoolOrProgram(e.target.value); loadRecipients("program", e.target.value); }}
                 />
@@ -247,9 +220,17 @@ export function MessagingPageClient({ templates, log, stats }: MessagingPageClie
                   <Button size="sm" variant="ghost" onClick={() => { setMessage(tmpl.body); }}>
                     <Eye className="h-3.5 w-3.5 mr-1" /> Use
                   </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingTemplate(tmpl); setShowTemplateForm(true); }}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                  </Button>
                   <Button size="sm" variant="ghost" className="text-red-600" onClick={async () => {
-                    await deleteMessageTemplate(tmpl.id);
-                    toast.success("Template deleted");
+                    try {
+                      await deleteMessageTemplate(tmpl.id);
+                      toast.success("Template deleted");
+                      router.refresh();
+                    } catch {
+                      toast.error("Failed to delete template");
+                    }
                   }}>
                     <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
                   </Button>
@@ -258,17 +239,17 @@ export function MessagingPageClient({ templates, log, stats }: MessagingPageClie
             ))}
           </div>
 
-          <Dialog open={showTemplateForm} onOpenChange={setShowTemplateForm}>
-            <DialogContent onClose={() => setShowTemplateForm(false)}>
-              <DialogHeader><DialogTitle>New Template</DialogTitle></DialogHeader>
+          <Dialog open={showTemplateForm} onOpenChange={(open) => { setShowTemplateForm(open); if (!open) setEditingTemplate(null); }}>
+            <DialogContent onClose={() => { setShowTemplateForm(false); setEditingTemplate(null); }}>
+              <DialogHeader><DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle></DialogHeader>
               <form onSubmit={handleCreateTemplate} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Name *</label>
-                  <input name="name" required className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                  <input name="name" required defaultValue={editingTemplate?.name || ""} key={editingTemplate?.id || "new"} className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category *</label>
-                  <Select name="category" options={[
+                  <Select name="category" defaultValue={editingTemplate?.category || "reminder"} key={`cat-${editingTemplate?.id || "new"}`} options={[
                     { value: "reminder", label: "Reminder" },
                     { value: "payment", label: "Payment" },
                     { value: "welcome", label: "Welcome" },
@@ -278,7 +259,7 @@ export function MessagingPageClient({ templates, log, stats }: MessagingPageClie
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Message Body *</label>
-                  <Textarea name="body" required rows={4} placeholder="Hi {{parent_name}}, ..." />
+                  <Textarea name="body" required rows={4} placeholder="Hi {{parent_name}}, ..." defaultValue={editingTemplate?.body || ""} key={`body-${editingTemplate?.id || "new"}`} />
                   <div className="flex flex-wrap gap-1">
                     {VARIABLES.map((v) => (
                       <span key={v} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground cursor-default">{`{{${v}}}`}</span>
@@ -286,8 +267,8 @@ export function MessagingPageClient({ templates, log, stats }: MessagingPageClie
                   </div>
                 </div>
                 <div className="flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setShowTemplateForm(false)}>Cancel</Button>
-                  <Button type="submit">Create Template</Button>
+                  <Button type="button" variant="outline" onClick={() => { setShowTemplateForm(false); setEditingTemplate(null); }}>Cancel</Button>
+                  <Button type="submit">{editingTemplate ? "Update Template" : "Create Template"}</Button>
                 </div>
               </form>
             </DialogContent>

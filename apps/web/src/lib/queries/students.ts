@@ -1,4 +1,4 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import type {
   Student,
   Parent,
@@ -13,6 +13,17 @@ export type ParentWithStudents = Parent & {
   students: (Student & { relationship: string })[];
 };
 
+export type StudentEnrollmentInfo = {
+  programName: string;
+  programId: string;
+  schoolName: string;
+  schoolId: string;
+};
+
+export type StudentWithParentsAndEnrollments = StudentWithParents & {
+  enrollments: StudentEnrollmentInfo[];
+};
+
 export type StudentWithDetails = Student & {
   parents: (Parent & { relationship: string })[];
   enrollments: (Enrollment & {
@@ -20,8 +31,8 @@ export type StudentWithDetails = Student & {
   })[];
 };
 
-export async function getStudents(): Promise<StudentWithParents[]> {
-  const supabase = createServerSupabase();
+export async function getStudents(): Promise<StudentWithParentsAndEnrollments[]> {
+  const supabase = createAdminSupabase();
 
   const { data: students, error: studentsError } = await supabase
     .from("students")
@@ -37,14 +48,20 @@ export async function getStudents(): Promise<StudentWithParents[]> {
 
   const studentIds = students.map((s: Student) => s.id);
 
-  const { data: links, error: linksError } = await supabase
-    .from("student_parents")
-    .select("*, parents(*)")
-    .in("student_id", studentIds);
+  const [{ data: links, error: linksError }, { data: enrollments }] = await Promise.all([
+    supabase
+      .from("student_parents")
+      .select("*, parents(*)")
+      .in("student_id", studentIds),
+    supabase
+      .from("enrollments")
+      .select("student_id, status, programs(id, name, school_id, schools(id, name))")
+      .in("student_id", studentIds)
+      .eq("status", "active"),
+  ]);
 
   if (linksError) {
     console.error("Error fetching student-parent links:", linksError);
-    return students.map((s: Student) => ({ ...s, parents: [] }));
   }
 
   const parentsByStudent = new Map<
@@ -61,16 +78,36 @@ export async function getStudents(): Promise<StudentWithParents[]> {
     parentsByStudent.set(link.student_id, existing);
   }
 
+  const enrollmentsByStudent = new Map<string, StudentEnrollmentInfo[]>();
+
+  for (const enrollment of (enrollments || []) as any[]) {
+    const program = enrollment.programs;
+    if (!program) continue;
+
+    const school = program.schools;
+    const info: StudentEnrollmentInfo = {
+      programName: program.name,
+      programId: program.id,
+      schoolName: school?.name || "Unknown",
+      schoolId: school?.id || "",
+    };
+
+    const existing = enrollmentsByStudent.get(enrollment.student_id) || [];
+    existing.push(info);
+    enrollmentsByStudent.set(enrollment.student_id, existing);
+  }
+
   return students.map((student: Student) => ({
     ...student,
     parents: parentsByStudent.get(student.id) || [],
+    enrollments: enrollmentsByStudent.get(student.id) || [],
   }));
 }
 
 export async function getStudent(
   id: string
 ): Promise<StudentWithDetails | null> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data: student, error: studentError } = await supabase
     .from("students")
@@ -122,7 +159,7 @@ export async function getStudent(
 }
 
 export async function getParents(): Promise<ParentWithStudents[]> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data: parents, error: parentsError } = await supabase
     .from("parents")
@@ -171,7 +208,7 @@ export async function getParents(): Promise<ParentWithStudents[]> {
 export async function getParent(
   id: string
 ): Promise<ParentWithStudents | null> {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data: parent, error: parentError } = await supabase
     .from("parents")

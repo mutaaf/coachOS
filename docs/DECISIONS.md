@@ -231,3 +231,66 @@ Build a bulk import system with two input modes: a spreadsheet-like Quick Entry 
 - Bulk actions break the FormData convention (accept JSON arrays instead)
 - Parser handles common formats but may need tuning for edge cases
 - No duplicate detection — importing the same data twice creates duplicates
+
+---
+
+## ADR-008: Optional Stripe Integration via Config Table
+
+### Status
+Accepted
+
+### Context
+Some parents prefer online payments over cash/Zelle/Venmo. The business owner needed a way to generate payment links and send them via WhatsApp, but Stripe shouldn't be mandatory since many parents still pay in person.
+
+### Decision
+Add Stripe as an optional integration controlled by config table entries (`stripe_enabled`, `stripe_secret_key`). When enabled, invoice generation auto-creates Stripe invoices and a "Send Link" button queues WhatsApp messages with the hosted invoice URL.
+
+### Rationale
+1. Config-driven toggle avoids hard dependency — Stripe can be turned on/off without code changes
+2. Stripe's hosted invoice page handles payment collection, PCI compliance, and receipts
+3. Sending links via WhatsApp (the existing communication channel) is natural for parents
+4. `getOrCreateStripeCustomer()` lazily creates Stripe customers only when needed, storing `stripe_customer_id` on the parent row
+
+### Implementation
+- `actions/stripe.ts`: `getStripeClient()` reads config, returns null if disabled
+- `createStripeInvoice()`: creates customer → invoice → line item → finalize → save URL
+- `generateMonthlyInvoices()` in `payments.ts` calls `createStripeInvoicesForMonth()` after batch creation
+- `sendStripePaymentLink()` queues a WhatsApp message with the payment URL
+
+### Consequences
+- Stripe secret key is stored in the config table (database), not environment variables
+- Parents without email can still receive Stripe links via WhatsApp (phone-based)
+- Manual payments (cash/Zelle/Venmo) and Stripe payments coexist on the same invoice
+- No Stripe webhook handling yet — payment status sync is manual
+
+---
+
+## ADR-009: Full CRUD for Invoices and Payments with Auto-Recalculation
+
+### Status
+Accepted
+
+### Context
+Invoices and payments were initially write-once: invoices could only be generated/waived, and payments could only be recorded. The business owner needed to correct mistakes (wrong amounts, wrong methods) and clean up test data.
+
+### Decision
+Add full edit and delete capabilities for both invoices and payments, with automatic invoice status recalculation via a shared `recalculateInvoiceStatus()` helper.
+
+### Rationale
+1. Data entry mistakes are inevitable — the owner needs to fix them without database access
+2. Automatic status recalculation prevents stale statuses when payments are edited/deleted
+3. Delete guard on invoices (must delete payments first) prevents orphaned payment records
+4. Client-side filtering (student, parent, program, method) helps trace payments in growing datasets
+
+### Implementation
+- `recalculateInvoiceStatus(supabase, invoiceId)`: sums payments, compares to invoice amount, checks due date, skips waived
+- `updateInvoice/deleteInvoice`: standard CRUD with guard on delete
+- `updatePayment/deletePayment`: CRUD + trigger recalculation on linked invoice
+- `invoice-form-dialog.tsx`: edit dialog with read-only context (student/parent/program) and editable fields
+- `record-payment-dialog.tsx`: optional `payment` prop enables edit mode
+- `payments-page-client.tsx`: Pencil/Trash2 buttons on every row, `<Select>` filter dropdowns
+
+### Consequences
+- Invoice status is derived from payment totals — manual status overrides (e.g., setting to "paid" without full payment) are possible but may be recalculated on next payment change
+- Deleting a payment may change an invoice from "paid" back to "pending" or "overdue"
+- Filter dropdowns only appear when there are 2+ unique values (avoids clutter for small datasets)

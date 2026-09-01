@@ -1,10 +1,15 @@
 "use server";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getLeadActivities } from "@/lib/queries/leads";
+
+export async function fetchLeadActivities(leadId: string) {
+  return getLeadActivities(leadId);
+}
 
 export async function createLead(formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { error } = await supabase.from("leads").insert({
     school_name: formData.get("school_name") as string,
     contact_name: formData.get("contact_name") as string || null,
@@ -20,7 +25,7 @@ export async function createLead(formData: FormData) {
 }
 
 export async function updateLead(id: string, formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("leads")
     .update({
@@ -39,7 +44,7 @@ export async function updateLead(id: string, formData: FormData) {
 }
 
 export async function updateLeadStage(id: string, stage: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("leads")
     .update({ stage })
@@ -57,7 +62,7 @@ export async function updateLeadStage(id: string, stage: string) {
 }
 
 export async function addLeadActivity(leadId: string, formData: FormData) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { error } = await supabase.from("lead_activities").insert({
     lead_id: leadId,
     type: formData.get("type") as string,
@@ -67,8 +72,19 @@ export async function addLeadActivity(leadId: string, formData: FormData) {
   revalidatePath("/marketing");
 }
 
+export async function deleteLead(leadId: string) {
+  const supabase = createAdminSupabase();
+
+  // Delete lead activities first
+  await supabase.from("lead_activities").delete().eq("lead_id", leadId);
+
+  const { error } = await supabase.from("leads").delete().eq("id", leadId);
+  if (error) throw error;
+  revalidatePath("/marketing");
+}
+
 export async function convertLeadToSchool(leadId: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
 
   const { data: lead, error: leadError } = await supabase
     .from("leads")

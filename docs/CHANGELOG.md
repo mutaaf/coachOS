@@ -6,6 +6,15 @@ All notable changes to CoachOS.
 
 ### Added
 - Comprehensive project documentation (CLAUDE.md, KNOWLEDGE_BASE.md, docs/)
+- Stripe integration — optional invoice creation and hosted payment links (`actions/stripe.ts`)
+- Send Stripe payment link via WhatsApp from invoice row
+- Full CRUD for invoices — edit amount, due date, month, status, notes (`invoice-form-dialog.tsx`)
+- Full CRUD for payments — edit amount, method, reference, notes (edit mode in `record-payment-dialog.tsx`)
+- Delete invoices (with guard: must delete payments first) and delete payments
+- Automatic invoice status recalculation (`recalculateInvoiceStatus`) after payment changes
+- Invoice tab filters: student, parent, program (dropdown selects)
+- Payment history tab filters: student, payment method
+- Edit (pencil) and delete (trash) icon buttons on every invoice and payment row
 
 ---
 
@@ -43,8 +52,11 @@ All notable changes to CoachOS.
 
 #### Payments & Invoicing
 - Monthly invoice generation per student per program
-- Invoice status lifecycle: pending -> paid / overdue / waived
-- Payment recording with method (cash, Zelle, Venmo) and reference
+- Invoice status lifecycle: pending -> paid / overdue / waived (auto-recalculated)
+- Full CRUD for invoices (edit/delete) and payments (edit/delete)
+- Payment recording with method (cash, Zelle, Venmo, Stripe) and reference
+- Optional Stripe integration: auto-create Stripe invoices, send payment links via WhatsApp
+- Filtering by student, parent, program, and payment method
 - Overdue payment alerts on dashboard
 
 #### Messaging
@@ -89,6 +101,8 @@ All notable changes to CoachOS.
 - Railway Docker deployment for bot (ADR-005)
 - shadcn/ui component library (ADR-006)
 - Bulk import with smart paste parser (ADR-007)
+- Optional Stripe integration via config table (ADR-008)
+- Full CRUD for invoices/payments with auto-recalculation (ADR-009)
 
 ---
 

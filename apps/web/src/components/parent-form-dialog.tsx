@@ -77,6 +77,7 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
                 { value: "cash", label: "Cash" },
                 { value: "zelle", label: "Zelle" },
                 { value: "venmo", label: "Venmo" },
+                { value: "stripe", label: "Stripe" },
               ]}
             />
           </div>

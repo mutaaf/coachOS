@@ -1,7 +1,7 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
 export async function getMessageTemplates(category?: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   let query = supabase
     .from("message_templates")
     .select("*")
@@ -17,7 +17,7 @@ export async function getMessageTemplates(category?: string) {
 }
 
 export async function getMessageQueue(status?: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   let query = supabase
     .from("message_queue")
     .select("*")
@@ -32,7 +32,7 @@ export async function getMessageQueue(status?: string) {
 }
 
 export async function getMessageLog(limit: number = 50) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("message_log")
     .select("*")
@@ -44,7 +44,7 @@ export async function getMessageLog(limit: number = 50) {
 }
 
 export async function getMessageStats() {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const [sentRes, pendingRes, failedRes] = await Promise.all([
     supabase.from("message_log").select("id", { count: "exact" }).eq("status", "sent"),
     supabase.from("message_queue").select("id", { count: "exact" }).eq("status", "pending"),

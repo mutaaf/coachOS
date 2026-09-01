@@ -30,10 +30,11 @@ CoachOS is a full-stack management platform for youth sports program owners. It 
 | Layer | Technology | Version |
 |-------|------------|---------|
 | Monorepo | Turborepo | ^2.3.0 |
-| Web Framework | Next.js (App Router) | 14.2.21 |
+| Web Framework | Next.js (App Router) | ^14.2.35 |
 | UI | React + shadcn/ui + Tailwind CSS | React ^18.3, TW ^3.4.16 |
 | Database | Supabase (PostgreSQL) | @supabase/supabase-js ^2.47.10 |
 | Auth | Supabase Auth (email/password) | @supabase/ssr ^0.5.2 |
+| Payments | Stripe (optional) | stripe ^20.3.1 |
 | WhatsApp Bot | whatsapp-web.js + Puppeteer | ^1.26.0 |
 | Icons | lucide-react | ^0.468.0 |
 | Toasts | sonner | ^1.7.1 |
@@ -48,6 +49,7 @@ CoachOS is a full-stack management platform for youth sports program owners. It 
 4. **Client components for interactivity** — `*-page-client.tsx` pattern: server page fetches data, passes to client component
 5. **Shared template engine** — `packages/shared` exports `renderTemplate()` for mustache-style message templating, used by both web cron and bot
 6. **WhatsApp over email** — primary communication channel is WhatsApp via whatsapp-web.js headless browser
+7. **Stripe is optional** — enabled via config table (`stripe_enabled`, `stripe_secret_key`). When enabled, invoice generation auto-creates Stripe invoices and payment links can be sent via WhatsApp
 
 ---
 
@@ -72,12 +74,12 @@ coachOS/
 │   │   │   │   └── api/cron/         # Vercel cron jobs
 │   │   │   ├── components/
 │   │   │   │   ├── ui/               # shadcn/ui primitives
-│   │   │   │   ├── *-page-client.tsx # Interactive page components (12)
-│   │   │   │   ├── *-form-dialog.tsx # Modal forms (8)
+│   │   │   │   ├── *-page-client.tsx # Interactive page components (7)
+│   │   │   │   ├── *-form-dialog.tsx # Modal forms + dialogs (13)
 │   │   │   │   ├── bulk-import-*.tsx # Bulk import system
 │   │   │   │   └── whatsapp-setup-wizard.tsx
 │   │   │   ├── lib/
-│   │   │   │   ├── actions/          # Server actions (10 modules)
+│   │   │   │   ├── actions/          # Server actions (11 modules)
 │   │   │   │   ├── queries/          # Server queries (8 modules)
 │   │   │   │   ├── supabase/         # Client + server Supabase setup
 │   │   │   │   └── utils.ts          # cn(), formatCurrency(), formatPhone()
@@ -109,7 +111,7 @@ coachOS/
 All 18 table types + joined types (StudentWithParents, EnrollmentWithDetails, etc.). This is the single source of truth for data shapes — update here when schema changes.
 
 ### Server Actions (`apps/web/src/lib/actions/`)
-Pattern: `"use server"` → accept FormData → validate → Supabase insert/update → revalidatePath → return `{ data }` or `{ error }`. Key modules: `schools.ts`, `students.ts`, `payments.ts`, `messages.ts`, `bulk-import.ts`.
+Pattern: `"use server"` → accept FormData → validate → Supabase insert/update → revalidatePath → return `{ data }` or `{ error }`. Key modules: `schools.ts`, `students.ts`, `payments.ts`, `stripe.ts`, `messages.ts`, `bulk-import.ts`.
 
 ### Supabase Setup (`apps/web/src/lib/supabase/`)
 - `server.ts` — creates server client with cookie-based auth (used in server components and actions)
@@ -132,7 +134,7 @@ Runs daily at 6 PM (Vercel cron). Sends practice reminders for tomorrow's sessio
 ### Running the Project
 ```bash
 npm install          # Install all workspace dependencies
-npm run dev:web      # Start Next.js dev server (http://localhost:3000)
+npm run dev:web      # Start Next.js dev server (http://localhost:3050)
 npm run dev:bot      # Start WhatsApp bot dev server
 npm run dev          # Start everything via Turborepo
 ```
@@ -172,6 +174,8 @@ npm run db:migrate   # Pushes migrations via Supabase CLI
 6. **No test framework** — there are currently no unit or integration tests configured.
 7. **Owner terminology** — the UI calls the user "Boss" (not "Coach"). Keep this consistent.
 8. **US phone formatting** — phone numbers default to US (+1) when only 10 digits are provided.
+9. **Payments have full CRUD** — invoices and payments can be edited and deleted. Deleting an invoice requires deleting its payments first. Payment changes trigger automatic invoice status recalculation via `recalculateInvoiceStatus()`.
+10. **Stripe config-driven** — Stripe is toggled via `config` table entries (`stripe_enabled`, `stripe_secret_key`). When enabled, `generateMonthlyInvoices` auto-creates Stripe invoices and a "Send Link" button queues WhatsApp messages with the Stripe payment URL.
 
 ---
 

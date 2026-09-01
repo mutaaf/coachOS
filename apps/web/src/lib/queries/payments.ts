@@ -1,11 +1,11 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
 export async function getInvoices(filters?: {
   status?: string;
   month?: string;
   parentId?: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   let query = supabase
     .from("invoices")
     .select("*, parents(*), students(*), programs(*)")
@@ -21,7 +21,7 @@ export async function getInvoices(filters?: {
 }
 
 export async function getInvoice(id: string) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("invoices")
     .select("*, parents(*), students(*), programs(*), payments(*)")
@@ -36,7 +36,7 @@ export async function getPayments(filters?: {
   startDate?: string;
   endDate?: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   let query = supabase
     .from("payments")
     .select("*, invoices(*, parents(*), students(*), programs(*))")
@@ -52,7 +52,7 @@ export async function getPayments(filters?: {
 }
 
 export async function getPaymentSummary() {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
@@ -78,7 +78,7 @@ export async function getPaymentSummary() {
 }
 
 export async function getOverdueInvoices() {
-  const supabase = createServerSupabase();
+  const supabase = createAdminSupabase();
   const today = new Date().toISOString().split("T")[0];
 
   await supabase

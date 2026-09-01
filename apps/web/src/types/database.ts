@@ -45,9 +45,10 @@ export type Parent = {
   last_name: string;
   email: string | null;
   phone: string;
-  preferred_payment: "cash" | "zelle" | "venmo";
+  preferred_payment: "cash" | "zelle" | "venmo" | "stripe";
   venmo_handle: string | null;
   zelle_identifier: string | null;
+  stripe_customer_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -111,6 +112,8 @@ export type Invoice = {
   month: string; // YYYY-MM
   due_date: string;
   status: "pending" | "paid" | "overdue" | "waived";
+  stripe_invoice_id: string | null;
+  stripe_hosted_invoice_url: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -120,7 +123,7 @@ export type Payment = {
   id: string;
   invoice_id: string;
   amount: number;
-  method: "cash" | "zelle" | "venmo";
+  method: "cash" | "zelle" | "venmo" | "stripe";
   reference: string | null;
   received_at: string;
   notes: string | null;

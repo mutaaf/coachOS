@@ -24,6 +24,7 @@ interface ProgramFormDialogProps {
   schools: School[];
   schoolId?: string;
   program?: Program;
+  defaultValues?: Partial<Program>;
 }
 
 const statusOptions = [
@@ -39,9 +40,11 @@ export function ProgramFormDialog({
   schools,
   schoolId,
   program,
+  defaultValues,
 }: ProgramFormDialogProps) {
   const router = useRouter();
   const isEditing = !!program;
+  const defaults = program ?? defaultValues;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const schoolOptions = schools.map((s) => ({
@@ -87,12 +90,14 @@ export function ProgramFormDialog({
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit Program" : "New Program"}
+            {isEditing ? "Edit Program" : defaultValues ? "Duplicate Program" : "New Program"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the program details below."
-              : "Add a new program to a school."}
+              : defaultValues
+                ? "Create a copy of this program. Choose the target school."
+                : "Add a new program to a school."}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +111,7 @@ export function ProgramFormDialog({
                 name="school_id"
                 options={schoolOptions}
                 placeholder="Select a school"
-                defaultValue={program?.school_id ?? ""}
+                defaultValue={defaults?.school_id ?? ""}
                 required
                 disabled={isSubmitting}
               />
@@ -120,7 +125,7 @@ export function ProgramFormDialog({
               id="name"
               name="name"
               placeholder="e.g. After-School Soccer"
-              defaultValue={program?.name ?? ""}
+              defaultValue={defaults?.name ?? ""}
               required
               disabled={isSubmitting}
             />
@@ -133,7 +138,7 @@ export function ProgramFormDialog({
               id="season"
               name="season"
               placeholder="e.g. Spring 2026"
-              defaultValue={program?.season ?? ""}
+              defaultValue={defaults?.season ?? ""}
               disabled={isSubmitting}
             />
           </div>
@@ -146,7 +151,7 @@ export function ProgramFormDialog({
                 id="start_date"
                 name="start_date"
                 type="date"
-                defaultValue={program?.start_date ?? ""}
+                defaultValue={defaults?.start_date ?? ""}
                 disabled={isSubmitting}
               />
             </div>
@@ -156,7 +161,7 @@ export function ProgramFormDialog({
                 id="end_date"
                 name="end_date"
                 type="date"
-                defaultValue={program?.end_date ?? ""}
+                defaultValue={defaults?.end_date ?? ""}
                 disabled={isSubmitting}
               />
             </div>
@@ -173,7 +178,7 @@ export function ProgramFormDialog({
                 min="0"
                 step="0.01"
                 placeholder="120.00"
-                defaultValue={program?.monthly_fee ?? 120}
+                defaultValue={defaults?.monthly_fee ?? 120}
                 disabled={isSubmitting}
               />
             </div>
@@ -183,7 +188,7 @@ export function ProgramFormDialog({
                 id="status"
                 name="status"
                 options={statusOptions}
-                defaultValue={program?.status ?? "upcoming"}
+                defaultValue={defaults?.status ?? "upcoming"}
                 disabled={isSubmitting}
               />
             </div>
@@ -197,7 +202,7 @@ export function ProgramFormDialog({
               name="notes"
               placeholder="Optional notes about this program..."
               rows={3}
-              defaultValue={program?.notes ?? ""}
+              defaultValue={defaults?.notes ?? ""}
               disabled={isSubmitting}
             />
           </div>

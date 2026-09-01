@@ -16,7 +16,7 @@
 |-------|------------|---------|---------|
 | Monorepo | Turborepo | ^2.3.0 | Workspace orchestration |
 | Package Manager | npm workspaces | 10.2.0 | Dependency management |
-| Web Framework | Next.js (App Router) | 14.2.21 | SSR/SSG dashboard |
+| Web Framework | Next.js (App Router) | ^14.2.35 | SSR/SSG dashboard |
 | UI Library | React | ^18.3.1 | Component rendering |
 | Component Kit | shadcn/ui (CVA) | ^0.7.1 | Pre-styled UI primitives |
 | Styling | Tailwind CSS | ^3.4.16 | Utility-first CSS |
@@ -24,6 +24,7 @@
 | Class Merging | clsx + tailwind-merge | ^2.1.1 / ^2.6.0 | Conditional class names |
 | Database | Supabase (PostgreSQL) | ^2.47.10 | Data storage + auth |
 | Auth SSR | @supabase/ssr | ^0.5.2 | Cookie-based server auth |
+| Payments | Stripe | ^20.3.1 | Optional payment processing |
 | Icons | lucide-react | ^0.468.0 | SVG icon components |
 | Toasts | sonner | ^1.7.1 | Notification system |
 | Dates | date-fns | ^4.1.0 | Date formatting |
@@ -37,7 +38,7 @@
 ```bash
 # Development
 npm run dev           # Start all apps (Turborepo)
-npm run dev:web       # Start web app only (http://localhost:3000)
+npm run dev:web       # Start web app only (http://localhost:3050)
 npm run dev:bot       # Start WhatsApp bot only
 
 # Build
@@ -68,8 +69,10 @@ cd apps/whatsapp-bot && npm run dev   # Dev bot (needs Chromium)
 | 7 | Enrollment system | Complete | `actions/students.ts` (enrollStudent, withdrawEnrollment) |
 | 8 | Session scheduling | Complete | `actions/schedule.ts`, `queries/schedule.ts` |
 | 9 | Attendance tracking | Complete | `actions/schedule.ts`, `schedule-page-client.tsx` |
-| 10 | Invoice generation | Complete | `actions/payments.ts`, `queries/payments.ts` |
-| 11 | Payment recording | Complete | `actions/payments.ts`, `payments-page-client.tsx` |
+| 10 | Invoice generation + CRUD | Complete | `actions/payments.ts`, `queries/payments.ts`, `invoice-form-dialog.tsx` |
+| 11 | Payment recording + CRUD | Complete | `actions/payments.ts`, `record-payment-dialog.tsx`, `payments-page-client.tsx` |
+| 20 | Stripe invoicing + payment links | Complete | `actions/stripe.ts`, `payments-page-client.tsx` |
+| 21 | Payments filtering (student/parent/program/method) | Complete | `payments-page-client.tsx` |
 | 12 | Message templates | Complete | `actions/messages.ts`, `queries/messages.ts` |
 | 13 | Message queue + sending | Complete | `messaging-page-client.tsx`, bot `message-queue.ts` |
 | 14 | WhatsApp bot (QR, send) | Complete | `whatsapp-bot/src/client.ts`, `health.ts` |
@@ -203,6 +206,40 @@ whatsapp-web.js → WhatsApp API
 message_logs table (status: "sent")
 ```
 
+### Stripe Payment Flow
+
+```
+generateMonthlyInvoices()
+        │  (if stripe_enabled === "true")
+        v
+createStripeInvoicesForMonth(month)
+        │  for each pending invoice without stripe_invoice_id
+        v
+createStripeInvoice(invoiceId)
+        │  1. getOrCreateStripeCustomer(parentId)
+        │  2. stripe.invoices.create() + invoiceItems.create()
+        │  3. stripe.invoices.finalizeInvoice()
+        │  4. Save stripe_invoice_id + stripe_hosted_invoice_url to invoice row
+        v
+sendStripePaymentLink(invoiceId)   ← triggered by "Send Link" button
+        │  Queues WhatsApp message with payment URL to parent
+        v
+message_queue table → WhatsApp Bot → Parent receives link
+```
+
+Stripe is entirely optional — toggled via `config` table (`stripe_enabled`, `stripe_secret_key`). When disabled, invoices are managed manually with cash/Zelle/Venmo payment recording.
+
+### Invoice Status Recalculation
+
+The `recalculateInvoiceStatus()` helper runs after every payment change:
+- Sum all payments for the invoice
+- If total >= invoice amount → `"paid"`
+- Else if due_date < today → `"overdue"`
+- Else → `"pending"`
+- Skips invoices with status `"waived"`
+
+Called by: `recordPayment`, `updatePayment`, `deletePayment`
+
 ---
 
 ## Database Schema
@@ -291,11 +328,12 @@ actions/
 ├── schools.ts       # createSchool, updateSchool, archiveSchool
 ├── students.ts      # createStudent, updateStudent, createParent, updateParent, linkParentToStudent, unlinkParentFromStudent, enrollStudent, withdrawEnrollment
 ├── programs.ts      # createProgram, updateProgram
-├── payments.ts      # recordPayment, generateInvoices
+├── payments.ts      # generateMonthlyInvoices, recordPayment, updateInvoice, deleteInvoice, updatePayment, deletePayment, waiveInvoice, fetchPendingInvoices, fetchInvoiceDetail
 ├── schedule.ts      # createSession, updateAttendance
 ├── messages.ts      # sendMessage, createTemplate, updateTemplate
 ├── leads.ts         # createLead, updateLead, addLeadActivity
 ├── config.ts        # updateConfig, updateMultipleConfigs
+├── stripe.ts        # getOrCreateStripeCustomer, createStripeInvoice, createStripeInvoicesForMonth, sendStripePaymentLink
 └── bulk-import.ts   # bulkCreateSchools, bulkCreateStudents, bulkCreateParents
 ```
 
@@ -401,8 +439,11 @@ PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - Bulk import system for rapid data entry from WhatsApp contacts
 - WhatsApp setup wizard replacing technical deployment instructions
 - Terminology updated from "Coach" to "Boss" to match owner's role
+- Stripe integration added for automated invoice creation and WhatsApp payment links
+- Full CRUD for invoices and payments with automatic status recalculation
+- Payment page filtering by student, parent, program, and payment method
 
 ---
 
-*Last updated: 2026-02-11*
+*Last updated: 2026-02-12*
 *Maintained by: Development Team & AI Agents*
