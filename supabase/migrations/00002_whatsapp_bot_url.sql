@@ -1,3 +1,7 @@
+-- Operational tables live in the `ops` schema (see 00000_ops_schema.sql).
+-- `public` here is the marketing CMS; `extensions` supplies gen_random_uuid().
+SET search_path = ops, public, extensions;
+
 -- Add whatsapp_bot_url config entry
 INSERT INTO config (category, key, value, label, description, field_type, sort_order)
 VALUES (

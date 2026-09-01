@@ -5,6 +5,29 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- `ops` schema — operational tables are namespaced away from the marketing CMS
+  that shares this Supabase project, which also owns a `programs` table
+  (`supabase/migrations/00000_ops_schema.sql`)
+- Coaches — contractor records with pay rate and type, assignable to a weekly
+  slot (`schedule_templates.coach_id`) and to the session actually worked
+  (`sessions.coach_id`)
+- Seat capacity on programs (defaults to 12) plus `registration_open`,
+  `public_slug`, `public_description`, and `location` for public listing
+- `registrations` table — inbound intake, kept separate from `enrollments` so a
+  submission survives being waitlisted or declined
+- `ops.submit_registration()` — claims a seat under a row lock so concurrent
+  submissions cannot oversell the cap; overflow is waitlisted with a position
+- `ops.program_availability` view — aggregate seat counts with no PII
+- Public registration page at `/join/[slug]`, exempt from the auth middleware
+- Registrations dashboard: capacity bars, waitlist promotion, and conversion of
+  a registration into parent/student/enrollment records
+
+### Changed
+- All Supabase clients now target the `ops` schema
+- Project repointed from the (deleted) Jarvis database to the Rising Stars
+  project, which also backs risingstars.training
+
+### Added
 - Comprehensive project documentation (CLAUDE.md, KNOWLEDGE_BASE.md, docs/)
 - Stripe integration — optional invoice creation and hosted payment links (`actions/stripe.ts`)
 - Send Stripe payment link via WhatsApp from invoice row

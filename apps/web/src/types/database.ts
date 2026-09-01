@@ -22,6 +22,11 @@ export type Program = {
   monthly_fee: number;
   status: "active" | "upcoming" | "completed" | "cancelled";
   notes: string | null;
+  capacity: number;
+  registration_open: boolean;
+  public_slug: string | null;
+  public_description: string | null;
+  location: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -232,4 +237,71 @@ export type InvoiceWithDetails = Invoice & {
 export type SessionWithAttendance = Session & {
   program: Program & { school: School };
   attendance: (Attendance & { student: Student })[];
+};
+
+export type Coach = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string | null;
+  status: "active" | "inactive" | "prospective";
+  pay_rate: number | null;
+  pay_type: "per_session" | "hourly";
+  source: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RegistrationStatus =
+  | "pending"
+  | "confirmed"
+  | "waitlisted"
+  | "cancelled"
+  | "declined";
+
+export type Registration = {
+  id: string;
+  program_id: string;
+  status: RegistrationStatus;
+  child_first_name: string;
+  child_last_name: string;
+  child_grade: string | null;
+  child_date_of_birth: string | null;
+  parent_first_name: string;
+  parent_last_name: string;
+  parent_phone: string;
+  parent_email: string | null;
+  medical_notes: string | null;
+  how_heard: string | null;
+  student_id: string | null;
+  parent_id: string | null;
+  enrollment_id: string | null;
+  waitlist_position: number | null;
+  amount: number | null;
+  payment_status: "unpaid" | "paid" | "refunded" | "waived";
+  stripe_checkout_session_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Aggregate seat counts only — the `program_availability` view carries no PII. */
+export type ProgramAvailability = {
+  program_id: string;
+  public_slug: string | null;
+  name: string;
+  location: string | null;
+  public_description: string | null;
+  season: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  monthly_fee: number;
+  capacity: number;
+  registration_open: boolean;
+  school_name: string;
+  seats_taken: number;
+  seats_remaining: number;
+  waitlist_count: number;
 };

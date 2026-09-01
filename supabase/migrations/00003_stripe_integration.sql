@@ -1,3 +1,7 @@
+-- Operational tables live in the `ops` schema (see 00000_ops_schema.sql).
+-- `public` here is the marketing CMS; `extensions` supplies gen_random_uuid().
+SET search_path = ops, public, extensions;
+
 -- Stripe integration: add Stripe fields to parents, invoices, and payments
 
 ALTER TABLE parents ADD COLUMN stripe_customer_id text;

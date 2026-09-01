@@ -43,6 +43,14 @@ CoachOS is a full-stack management platform for youth sports program owners. It 
 | Deployment (bot) | Railway (Docker) | railway.json |
 
 ### Key Design Decisions
+0. **Two schemas in one database** — this Supabase project (`anzzhodsulqygshhptzt`)
+   also backs the marketing site at risingstars.training. The site's CMS tables
+   live in `public` and include their own `programs` table; every operational
+   table lives in `ops`. All Supabase clients set `db: { schema: "ops" }`, so
+   `.from("programs")` resolves to `ops.programs`. `anon` has no USAGE on `ops`,
+   which is what keeps student and parent data off the public API — the public
+   registration page reaches it only through server actions holding the service
+   role.
 1. **Supabase direct queries, no ORM** — simple `.from().select()` pattern, types defined manually in `types/database.ts`
 2. **Server Actions for mutations** — all writes go through `"use server"` functions accepting FormData, returning `{ data } | { error }`
 3. **Server queries for reads** — separate `lib/queries/` modules that throw on error, called from server components

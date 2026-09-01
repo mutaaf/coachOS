@@ -1,3 +1,7 @@
+-- Operational tables live in the `ops` schema (see 00000_ops_schema.sql).
+-- `public` here is the marketing CMS; `extensions` supplies gen_random_uuid().
+SET search_path = ops, public, extensions;
+
 -- ============================================================================
 -- CoachOS Initial Schema Migration
 -- Youth Sports Coaching Business OS

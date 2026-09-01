@@ -9,3 +9,7 @@ dist/
 .vercel
 .wwebjs_auth/
 .wwebjs_cache/
+
+# Backups of env files (these hold real keys)
+.env*.bak*
+*.env.bak

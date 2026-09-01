@@ -3,7 +3,9 @@ import { WhatsAppClient } from "../client";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  // Operational tables live in the `ops` schema (see 00000_ops_schema.sql).
+  { db: { schema: "ops" } }
 );
 
 export class MessageQueueProcessor {
