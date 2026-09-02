@@ -37,6 +37,7 @@ const FULL_DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", 
 interface SchedulePageClientProps {
   initialSessions: any[];
   programs: any[];
+  coaches?: { id: string; first_name: string; last_name: string }[];
 }
 
 function getWeekDates(offset: number): Date[] {
@@ -67,7 +68,7 @@ function formatTime(time: string): string {
   return `${hour12}:${minutes} ${ampm}`;
 }
 
-export function SchedulePageClient({ initialSessions, programs }: SchedulePageClientProps) {
+export function SchedulePageClient({ initialSessions, programs, coaches = [] }: SchedulePageClientProps) {
   const router = useRouter();
   const [weekOffset, setWeekOffset] = useState(0);
   const [sessions, setSessions] = useState(initialSessions);
@@ -339,6 +340,7 @@ export function SchedulePageClient({ initialSessions, programs }: SchedulePageCl
 
       {/* Template Form Dialog */}
       <ScheduleTemplateFormDialog
+        coaches={coaches}
         open={templateFormOpen}
         onOpenChange={handleTemplateFormClose}
         programs={programs.map((p: any) => ({ id: p.id, name: `${p.school?.name} — ${p.name}` }))}

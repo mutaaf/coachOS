@@ -116,7 +116,7 @@ coachOS/
 ## Key Files Reference
 
 ### Database Types (`apps/web/src/types/database.ts`)
-All 18 table types + joined types (StudentWithParents, EnrollmentWithDetails, etc.). This is the single source of truth for data shapes — update here when schema changes.
+All table types + joined types (StudentWithParents, EnrollmentWithDetails, etc.). This is the single source of truth for data shapes — update here when schema changes.
 
 ### Server Actions (`apps/web/src/lib/actions/`)
 Pattern: `"use server"` → accept FormData → validate → Supabase insert/update → revalidatePath → return `{ data }` or `{ error }`. Key modules: `schools.ts`, `students.ts`, `payments.ts`, `stripe.ts`, `messages.ts`, `bulk-import.ts`.

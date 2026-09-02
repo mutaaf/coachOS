@@ -24,6 +24,8 @@ interface ScheduleTemplateFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   programs: { id: string; name: string }[];
+  /** Active coaches, for naming who normally runs this slot. */
+  coaches?: { id: string; first_name: string; last_name: string }[];
   template?: ScheduleTemplate;
 }
 
@@ -33,6 +35,7 @@ export function ScheduleTemplateFormDialog({
   open,
   onOpenChange,
   programs,
+  coaches = [],
   template,
 }: ScheduleTemplateFormDialogProps) {
   const router = useRouter();
@@ -184,6 +187,29 @@ export function ScheduleTemplateFormDialog({
               />
             </div>
           </div>
+
+          {coaches.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="coach_id">Coach (optional)</Label>
+              <Select
+                id="coach_id"
+                name="coach_id"
+                options={[
+                  { value: "", label: "Not assigned" },
+                  ...coaches.map((c) => ({
+                    value: c.id,
+                    label: `${c.first_name} ${c.last_name}`,
+                  })),
+                ]}
+                defaultValue={(template as { coach_id?: string })?.coach_id ?? ""}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                Who normally runs this slot. Each session can be changed
+                individually when someone covers.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="location">Location (optional)</Label>

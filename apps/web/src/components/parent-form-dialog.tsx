@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createParent, updateParent } from "@/lib/actions/students";
-import { toast } from "sonner";
+import { useAction } from "@/lib/use-action";
 import type { Parent } from "@/types/database";
 
 interface ParentFormDialogProps {
@@ -18,27 +18,26 @@ interface ParentFormDialogProps {
 }
 
 export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialogProps) {
-  const [loading, setLoading] = useState(false);
+  const { run, pending } = useAction();
   const [paymentMethod, setPaymentMethod] = useState<string>(parent?.preferred_payment || "cash");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const formData = new FormData(e.currentTarget);
-      if (parent) {
-        await updateParent(parent.id, formData);
-        toast.success("Parent updated");
-      } else {
-        await createParent(formData);
-        toast.success("Parent added");
-      }
-      onOpenChange(false);
-    } catch {
-      toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    const formData = new FormData(e.currentTarget);
+
+    // These report failure by returning an error, so the old try/catch never
+    // fired and a parent that failed to save still said "Parent added".
+    const ok = parent
+      ? await run(() => updateParent(parent.id, formData), {
+          success: "Parent updated",
+          error: "The parent wasn't updated",
+        })
+      : await run(() => createParent(formData), {
+          success: "Parent added",
+          error: "The parent wasn't added",
+        });
+
+    if (ok) onOpenChange(false);
   }
 
   return (
@@ -99,7 +98,7 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving..." : parent ? "Update" : "Add Parent"}</Button>
+            <Button type="submit" disabled={pending}>{pending ? "Saving..." : parent ? "Update" : "Add Parent"}</Button>
           </div>
         </form>
       </DialogContent>

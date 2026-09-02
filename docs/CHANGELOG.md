@@ -4,6 +4,15 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Added
+- Coaches — the table existed since the capacity migration but had no interface
+  at all, and the `coach_id` columns on sessions and schedule templates were
+  unused. There is now a Coaches page with contact details, pay rate, how they
+  were found, and the work attached to each: sessions run, sessions upcoming,
+  weekly slots, and what they are owed
+- A coach can be named on a weekly schedule slot, and overridden per session,
+  because covering for each other is normal and the session is what gets paid
+
 ### Security
 - **Closed public write access to the marketing CMS.** `programs`,
   `partnerships`, and `testimonials` each carried a policy named for

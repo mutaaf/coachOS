@@ -26,6 +26,7 @@ export async function createScheduleTemplate(formData: FormData) {
   const start_time = formData.get("start_time") as string;
   const end_time = formData.get("end_time") as string;
   const location = formData.get("location") as string | null;
+  const coach_id = ((formData.get("coach_id") as string) || "").trim() || null;
 
   if (!program_id || isNaN(day_of_week) || !start_time || !end_time) {
     return { error: "Program, day of week, start time, and end time are required." };
@@ -43,6 +44,7 @@ export async function createScheduleTemplate(formData: FormData) {
       start_time,
       end_time,
       location: location?.trim() || null,
+      coach_id,
     })
     .select()
     .single();
@@ -65,6 +67,7 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
   const start_time = formData.get("start_time") as string;
   const end_time = formData.get("end_time") as string;
   const location = formData.get("location") as string | null;
+  const coach_id = ((formData.get("coach_id") as string) || "").trim() || null;
 
   if (!program_id || isNaN(day_of_week) || !start_time || !end_time) {
     return { error: "Program, day of week, start time, and end time are required." };
@@ -78,6 +81,7 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
       start_time,
       end_time,
       location: location?.trim() || null,
+      coach_id,
     })
     .eq("id", id)
     .select()

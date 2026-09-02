@@ -11,6 +11,7 @@ test.afterEach(truncateAll);
 const PROTECTED = [
   "/dashboard",
   "/registrations",
+  "/coaches",
   "/students",
   "/schools",
   "/payments",
