@@ -17,3 +17,4 @@ dist/
 # Test artifacts
 test-results/
 playwright-report/
+tests/screenshots/

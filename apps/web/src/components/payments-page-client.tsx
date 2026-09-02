@@ -229,7 +229,7 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
               <p className="text-muted-foreground">Generate invoices to start tracking payments.</p>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="rounded-2xl border bg-card overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -261,7 +261,7 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           {inv.stripe_hosted_invoice_url && (inv.status === "pending" || inv.status === "overdue") && (
                             <Button
@@ -360,7 +360,7 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
               <h3 className="text-lg font-medium mb-2">No payments recorded</h3>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="rounded-2xl border bg-card overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -384,7 +384,7 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
                       </td>
                       <td className="p-4 font-medium text-green-600">{formatCurrency(p.amount)}</td>
                       <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{p.reference || "—"}</td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             size="sm"

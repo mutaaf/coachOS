@@ -110,6 +110,25 @@ the week than today, and invoices were marked overdue on their own due date.
 These pin the boundary directly, because the bug only reproduces at certain times
 of day — the run-book test found it by passing at 18:56 and failing at 19:01.
 
+### It fits on a phone — `tests/e2e/mobile.spec.ts`
+
+Almost nobody uses this on a desktop: parents register from a WhatsApp link,
+coaches take the register standing in a gym, the owner works from a tablet. Every
+page is loaded at 375, 390, and 768px with real rows in the tables, and must not
+scroll sideways or clip anything out of reach. The register's tap targets are
+checked against the 44px floor.
+
+Two things this taught, both now encoded in the check. Seed real data first — an
+empty table cannot overflow, so an unseeded test passes while proving nothing.
+And when deciding whether wide content is reachable, stop at the *first* ancestor
+that establishes an overflow context: an earlier version kept walking past a
+clipping ancestor to find a scrollable one further up, and so missed a 729px
+table sitting inside a 390px `overflow-hidden` wrapper with its Status and
+Actions columns simply gone.
+
+`CAPTURE=1 npx playwright test tests/e2e/screenshots.spec.ts` writes phone-sized
+screenshots to `tests/screenshots/` when you want to look rather than measure.
+
 ### The run-book — `tests/e2e/runbook.spec.ts`
 
 The whole documented weekly workflow, executed in order through the real

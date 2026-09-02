@@ -233,3 +233,34 @@ export async function ensureTestUser() {
   if (error) throw error;
   return data.user!.id;
 }
+
+/**
+ * Issue an attendance link without going through the server action.
+ *
+ * Playwright cannot import `"use server"` modules — they pull in Next internals
+ * and read env the Playwright process does not have. This does the same thing
+ * against the database directly.
+ */
+export async function issueAttendanceLink(sessionId: string, hoursValid = 12) {
+  const token = `test-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  const passcode = String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
+
+  const publicAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false },
+  });
+
+  const { data: hash, error: hashError } = await publicAdmin.rpc("hash_passcode", {
+    p_passcode: passcode,
+  });
+  if (hashError) throw hashError;
+
+  const { error } = await admin.from("attendance_links").insert({
+    session_id: sessionId,
+    token,
+    passcode_hash: hash,
+    expires_at: new Date(Date.now() + hoursValid * 3_600_000).toISOString(),
+  });
+  if (error) throw error;
+
+  return { token, passcode };
+}

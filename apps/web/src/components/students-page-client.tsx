@@ -106,7 +106,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
               </Button>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="rounded-2xl border bg-card overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -161,7 +161,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                           {student.status}
                         </Badge>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -219,7 +219,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
               </Button>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="rounded-2xl border bg-card overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -263,7 +263,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                       <td className="p-4">
                         <Badge variant="outline">{parent.preferred_payment}</Badge>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
                         <Button
                           variant="ghost"
                           size="sm"

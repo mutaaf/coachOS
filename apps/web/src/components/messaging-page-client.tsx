@@ -282,7 +282,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs }
               <h3 className="text-lg font-medium mb-2">No messages sent yet</h3>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="rounded-2xl border bg-card overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">

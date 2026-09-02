@@ -517,7 +517,7 @@ export function SchoolDetailClient({
               </Button>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+            <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/30">
@@ -733,7 +733,7 @@ export function SchoolDetailClient({
                   <h2 className="text-lg font-semibold mb-4">
                     Upcoming Sessions
                   </h2>
-                  <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+                  <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b bg-muted/30">
@@ -854,7 +854,7 @@ export function SchoolDetailClient({
               </div>
 
               {/* Invoice Table */}
-              <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+              <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b bg-muted/30">
