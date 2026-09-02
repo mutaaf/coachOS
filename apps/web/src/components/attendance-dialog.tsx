@@ -7,6 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/schedule";
 import { createClient } from "@/lib/supabase/client";
 import { useAction } from "@/lib/use-action";
+import { createAttendanceLink } from "@/lib/actions/attendance-links";
+import { toast } from "sonner";
+import { Link2, Copy } from "lucide-react";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
 
 type AttendanceStatus = "present" | "absent" | "late" | "excused";
@@ -33,6 +36,9 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
   const [cancelReason, setCancelReason] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const { run, pending } = useAction();
+  // Shown once, right after issuing — the passcode is hashed and cannot be
+  // read back, so this is the only chance to copy it.
+  const [coachLink, setCoachLink] = useState<{ url: string; passcode: string } | null>(null);
 
   useEffect(() => {
     if (open && session) {
@@ -93,6 +99,26 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
     if (ok) onOpenChange(false);
   }
 
+  async function issueCoachLink() {
+    const result = await createAttendanceLink(session.id);
+    if (result.error) {
+      toast.error("Couldn't create the link", { description: result.error });
+      return;
+    }
+    setCoachLink({
+      url: `${window.location.origin}/s/${result.token}`,
+      passcode: result.passcode!,
+    });
+  }
+
+  function copyCoachLink() {
+    if (!coachLink) return;
+    navigator.clipboard.writeText(
+      `Register for today's session:\n${coachLink.url}\nPasscode: ${coachLink.passcode}`
+    );
+    toast.success("Link and passcode copied");
+  }
+
   async function handleComplete() {
     const ok = await run(() => completeSession(session.id), {
       success: "Session marked complete",
@@ -133,6 +159,24 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
         {/* Attendance List */}
         {session.status === "scheduled" && (
           <>
+            {coachLink && (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-3 space-y-2">
+                <p className="text-sm font-medium text-green-900">
+                  Send this to the coach
+                </p>
+                <p className="break-all font-mono text-xs text-green-900">{coachLink.url}</p>
+                <p className="font-mono text-lg font-semibold tracking-[0.2em] text-green-900">
+                  {coachLink.passcode}
+                </p>
+                <p className="text-xs text-green-800">
+                  Valid for 12 hours. The passcode isn&apos;t shown again — copy it now.
+                </p>
+                <Button size="sm" variant="outline" onClick={copyCoachLink} className="w-full">
+                  <Copy className="h-3.5 w-3.5 mr-1" /> Copy link and passcode
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {rosterLoading ? (
                 <div className="space-y-2" aria-busy="true">
@@ -170,6 +214,15 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
               </Button>
               <Button variant="outline" size="sm" onClick={handleComplete}>
                 Mark Complete
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={issueCoachLink}
+                disabled={pending}
+              >
+                <Link2 className="h-3.5 w-3.5 mr-1" />
+                Coach link
               </Button>
               <Button size="sm" onClick={handleSave} disabled={pending} className="ml-auto">
                 {pending ? "Saving..." : "Save Attendance"}

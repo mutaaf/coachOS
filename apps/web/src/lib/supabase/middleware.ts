@@ -35,7 +35,10 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api") &&
     // The registration page is deliberately public — parents sign up without an
     // account. It reads and writes only through server actions.
-    !request.nextUrl.pathname.startsWith("/join")
+    !request.nextUrl.pathname.startsWith("/join") &&
+    // Attendance sheets are opened by coaches, who have no account — the
+    // passcode on the sheet itself is what guards them.
+    !request.nextUrl.pathname.startsWith("/s/")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

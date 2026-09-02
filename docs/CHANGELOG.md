@@ -5,6 +5,14 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- Passcode-protected attendance sheets. A session can be given a link and a
+  six-digit passcode to send a coach over WhatsApp; they open it on a phone, tap
+  each child, and save. No account, no roles model — the link reaches exactly one
+  session's register, expires after twelve hours, and can be revoked
+- `attendance_links`, with bcrypt-hashed passcodes, a five-attempt lockout, and
+  the two public functions that are the only doors into it
+
+### Added
 - Coaches — the table existed since the capacity migration but had no interface
   at all, and the `coach_id` columns on sessions and schedule templates were
   unused. There is now a Coaches page with contact details, pay rate, how they

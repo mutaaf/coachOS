@@ -220,6 +220,8 @@ something new bites — that is the point of it.**
 | Server actions return `{ error }`, they do not throw | So `try/catch` around them catches nothing. Call them through `useAction()`, which checks the result, catches the few that do throw, and holds the pending state through the refresh. |
 | Supabase clients pass `fetch: no-store` | Next caches fetch responses by URL and `force-dynamic` does not disable it. Without this a page serves its first render forever — seat counts freeze and a parent is offered a place in a full program. |
 | Commit author email must match the Vercel account | Vercel blocks deployments it cannot attribute to a team member (`COMMIT_AUTHOR_REQUIRED`), showing only a bare "BLOCKED". Commits must author as `mutaaf.aziz@gmail.com`. |
+| Auth failures in passcode functions return, never `RAISE` | `RAISE` rolls the transaction back, which would undo the failed-attempt counter and leave the lockout permanently disarmed — a six-digit passcode with no lockout can simply be walked. Caught by a test. |
+| `REVOKE ... FROM public` does not revoke from `anon` | Supabase's default privileges grant EXECUTE on new `public` functions directly to `anon`, so the role has to be named explicitly. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---
