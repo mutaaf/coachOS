@@ -6,7 +6,7 @@ import { Select } from "@/components/ui/select";
 import type { SelectGroup } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { enrollStudent } from "@/lib/actions/students";
-import { toast } from "sonner";
+import { useAction } from "@/lib/use-action";
 import type { EnrollableProgram } from "@/lib/queries/programs";
 
 export type { EnrollableProgram };
@@ -30,7 +30,7 @@ export function EnrollStudentDialog({
   studentEnrolledProgramIds,
   schoolId,
 }: EnrollStudentDialogProps) {
-  const [loading, setLoading] = useState(false);
+  const { run, pending } = useAction();
   const [selectedProgram, setSelectedProgram] = useState("");
 
   const programGroups = useMemo(() => {
@@ -69,16 +69,13 @@ export function EnrollStudentDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedProgram) return;
-    setLoading(true);
-    try {
-      await enrollStudent(studentId, selectedProgram);
-      toast.success(`${studentName} enrolled successfully`);
-      onOpenChange(false);
-    } catch {
-      toast.error("Failed to enroll student. They may already be enrolled.");
-    } finally {
-      setLoading(false);
-    }
+    // A full program or an existing enrollment comes back as a returned error,
+    // not a thrown one, so this used to report success either way.
+    const ok = await run(() => enrollStudent(studentId, selectedProgram), {
+      success: `${studentName} enrolled`,
+      error: `${studentName} wasn't enrolled`,
+    });
+    if (ok) onOpenChange(false);
   }
 
   return (
@@ -98,8 +95,8 @@ export function EnrollStudentDialog({
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || !selectedProgram}>
-              {loading ? "Enrolling..." : "Enroll"}
+            <Button type="submit" disabled={pending || !selectedProgram}>
+              {pending ? "Enrolling..." : "Enroll"}
             </Button>
           </div>
         </form>

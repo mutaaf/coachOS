@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/schedule";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
+import { useAction } from "@/lib/use-action";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
 
 type AttendanceStatus = "present" | "absent" | "late" | "excused";
@@ -27,12 +27,16 @@ const statusStyles: Record<AttendanceStatus, { bg: string; text: string; icon: a
 export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDialogProps) {
   const [students, setStudents] = useState<any[]>([]);
   const [records, setRecords] = useState<Record<string, AttendanceStatus>>({});
-  const [loading, setLoading] = useState(false);
+  // The roster arrives after the dialog opens; without this the list flashes
+  // from empty to full and it looks like nobody is enrolled.
+  const [rosterLoading, setRosterLoading] = useState(true);
   const [cancelReason, setCancelReason] = useState("");
   const [showCancel, setShowCancel] = useState(false);
+  const { run, pending } = useAction();
 
   useEffect(() => {
     if (open && session) {
+      setRosterLoading(true);
       const supabase = createClient();
       // Get enrolled students for this program
       supabase
@@ -43,6 +47,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
         .then(({ data }) => {
           const enrolled = (data || []).map((e: any) => e.students).filter(Boolean);
           setStudents(enrolled);
+          setRosterLoading(false);
         });
       // Get existing attendance
       supabase
@@ -64,41 +69,36 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
     setRecords({ ...records, [studentId]: next });
   }
 
+  // Each of these only closes the dialog if the write actually succeeded.
+  // They used to close either way, so a failed save looked identical to a
+  // successful one and the register was quietly wrong.
   async function handleSave() {
-    setLoading(true);
-    try {
-      const attendanceRecords = students.map((s) => ({
-        studentId: s.id,
-        status: records[s.id] || ("present" as AttendanceStatus),
-      }));
-      await recordAttendance(session.id, attendanceRecords);
-      toast.success("Attendance saved");
-      onOpenChange(false);
-    } catch {
-      toast.error("Failed to save attendance");
-    } finally {
-      setLoading(false);
-    }
+    const attendanceRecords = students.map((s) => ({
+      studentId: s.id,
+      status: records[s.id] || ("present" as AttendanceStatus),
+    }));
+
+    const ok = await run(() => recordAttendance(session.id, attendanceRecords), {
+      success: "Attendance saved",
+      error: "Attendance wasn't saved",
+    });
+    if (ok) onOpenChange(false);
   }
 
   async function handleCancel() {
-    try {
-      await cancelSession(session.id, cancelReason);
-      toast.success("Session cancelled");
-      onOpenChange(false);
-    } catch {
-      toast.error("Failed to cancel session");
-    }
+    const ok = await run(() => cancelSession(session.id, cancelReason), {
+      success: "Session cancelled",
+      error: "The session wasn't cancelled",
+    });
+    if (ok) onOpenChange(false);
   }
 
   async function handleComplete() {
-    try {
-      await completeSession(session.id);
-      toast.success("Session marked complete");
-      onOpenChange(false);
-    } catch {
-      toast.error("Failed to complete session");
-    }
+    const ok = await run(() => completeSession(session.id), {
+      success: "Session marked complete",
+      error: "The session wasn't marked complete",
+    });
+    if (ok) onOpenChange(false);
   }
 
   const program = session?.programs;
@@ -134,7 +134,13 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
         {session.status === "scheduled" && (
           <>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {students.length === 0 ? (
+              {rosterLoading ? (
+                <div className="space-y-2" aria-busy="true">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-12 rounded-xl border bg-muted/40 animate-pulse" />
+                  ))}
+                </div>
+              ) : students.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No students enrolled in this program.</p>
               ) : (
                 students.map((student) => {
@@ -165,8 +171,8 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
               <Button variant="outline" size="sm" onClick={handleComplete}>
                 Mark Complete
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={loading} className="ml-auto">
-                {loading ? "Saving..." : "Save Attendance"}
+              <Button size="sm" onClick={handleSave} disabled={pending} className="ml-auto">
+                {pending ? "Saving..." : "Save Attendance"}
               </Button>
             </div>
 

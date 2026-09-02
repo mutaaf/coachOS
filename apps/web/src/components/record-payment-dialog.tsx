@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { recordPayment, updatePayment, fetchPendingInvoices, fetchInvoiceDetail } from "@/lib/actions/payments";
 import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
+import { useAction } from "@/lib/use-action";
 import { useRouter } from "next/navigation";
 
 interface RecordPaymentDialogProps {
@@ -22,7 +22,7 @@ interface RecordPaymentDialogProps {
 export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: RecordPaymentDialogProps) {
   const router = useRouter();
   const isEditing = !!payment;
-  const [loading, setLoading] = useState(false);
+  const { run, pending } = useAction();
   const [method, setMethod] = useState(payment?.method || "cash");
   const [invoices, setInvoices] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState(invoiceId || "");
@@ -51,28 +51,25 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const formData = new FormData(e.currentTarget);
-      if (isEditing) {
-        const result = await updatePayment(payment.id, formData);
-        if ("error" in result) {
-          toast.error(result.error);
-          return;
-        }
-        toast.success("Payment updated");
-        router.refresh();
-      } else {
-        formData.set("invoice_id", selectedInvoice);
-        await recordPayment(formData);
-        toast.success("Payment recorded");
-      }
-      onOpenChange(false);
-    } catch {
-      toast.error(isEditing ? "Failed to update payment" : "Failed to record payment");
-    } finally {
-      setLoading(false);
-    }
+    const formData = new FormData(e.currentTarget);
+
+    // Recording a payment used to ignore what the action returned, so a payment
+    // that failed to save still said "Payment recorded" and closed the dialog —
+    // money marked as received that the books never saw.
+    const ok = isEditing
+      ? await run(() => updatePayment(payment.id, formData), {
+          success: "Payment updated",
+          error: "The payment wasn't updated",
+        })
+      : await run(
+          () => {
+            formData.set("invoice_id", selectedInvoice);
+            return recordPayment(formData);
+          },
+          { success: "Payment recorded", error: "The payment wasn't recorded" }
+        );
+
+    if (ok) onOpenChange(false);
   }
 
   const placeholders: Record<string, string> = {
@@ -149,8 +146,8 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || (!isEditing && !selectedInvoice)}>
-              {loading ? (isEditing ? "Saving..." : "Recording...") : (isEditing ? "Save Changes" : "Record Payment")}
+            <Button type="submit" disabled={pending || (!isEditing && !selectedInvoice)}>
+              {pending ? (isEditing ? "Saving..." : "Recording...") : (isEditing ? "Save Changes" : "Record Payment")}
             </Button>
           </div>
         </form>

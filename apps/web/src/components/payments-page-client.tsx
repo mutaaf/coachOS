@@ -14,6 +14,7 @@ import { waiveInvoice, deleteInvoice, deletePayment } from "@/lib/actions/paymen
 import { DollarSign, AlertTriangle, CheckCircle, Clock, Plus, FileText, ExternalLink, Send, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAction } from "@/lib/use-action";
 
 interface PaymentSummary {
   totalRevenue: number;
@@ -41,6 +42,7 @@ const statusBadge = (status: string) => {
 
 export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPageClientProps) {
   const router = useRouter();
+  const { run } = useAction();
   const [statusFilter, setStatusFilter] = useState("all");
   const [showRecordPayment, setShowRecordPayment] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
@@ -289,9 +291,10 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
                                 className="text-muted-foreground"
                                 onClick={async () => {
                                   if (!window.confirm("Waive this invoice?")) return;
-                                  await waiveInvoice(inv.id);
-                                  toast.success("Invoice waived");
-                                  router.refresh();
+                                  await run(() => waiveInvoice(inv.id), {
+                                    success: "Invoice waived",
+                                    error: "The invoice wasn't waived",
+                                  });
                                 }}
                               >
                                 Waive
