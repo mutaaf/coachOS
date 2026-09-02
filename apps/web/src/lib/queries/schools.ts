@@ -1,4 +1,5 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { businessToday } from "@/lib/dates";
 import type { School, Program, Student, Enrollment, ScheduleTemplate, Session, Invoice } from "@/types/database";
 
 export async function getSchools(): Promise<
@@ -234,7 +235,7 @@ export async function getSchoolSessions(schoolId: string): Promise<{
     .order("start_time");
 
   // Fetch upcoming sessions (next 20)
-  const today = new Date().toISOString().split("T")[0];
+  const today = businessToday();
   const { data: sessions } = await supabase
     .from("sessions")
     .select("*")

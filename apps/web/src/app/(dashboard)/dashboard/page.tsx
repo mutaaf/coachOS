@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { businessToday } from "@/lib/dates";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -63,7 +64,7 @@ export default async function DashboardPage() {
   const supabase = createServerSupabase();
 
   // Fetch all dashboard data in parallel
-  const today = new Date().toISOString().split("T")[0];
+  const today = businessToday();
 
   const [
     schoolsResult,

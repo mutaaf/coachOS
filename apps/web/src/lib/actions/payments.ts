@@ -1,12 +1,12 @@
 "use server";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { businessMonth, isPastDue } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
 
 export async function generateMonthlyInvoices(month?: string) {
   const supabase = createAdminSupabase();
-  const now = new Date();
-  const targetMonth = month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const targetMonth = month || businessMonth();
   const dueDate = `${targetMonth}-01`;
 
   const { data: enrollments } = await supabase
@@ -134,17 +134,6 @@ export async function fetchInvoiceDetail(id: string) {
     .single();
   if (error) throw error;
   return data;
-}
-
-/**
- * An invoice is overdue only once its due date has passed — not during it.
- * Comparing the date to a timestamp marked everything due today as overdue from
- * midnight, which put families who had just paid onto the overdue list.
- */
-function isPastDue(dueDate: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new Date(`${dueDate}T00:00:00`) < today;
 }
 
 async function recalculateInvoiceStatus(supabase: any, invoiceId: string) {

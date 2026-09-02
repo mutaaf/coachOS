@@ -1,4 +1,5 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { businessToday } from "@/lib/dates";
 import type {
   Session,
   ScheduleTemplate,
@@ -147,7 +148,7 @@ export async function getSession(
 export async function getUpcomingSessions(
   limit: number = 5
 ): Promise<SessionWithProgram[]> {
-  const today = new Date().toISOString().split("T")[0];
+  const today = businessToday();
 
   const supabase = createAdminSupabase();
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { businessDaysAgo, businessToday } from "@/lib/dates";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { renderTemplate } from "shared";
 
@@ -90,15 +91,13 @@ export async function GET(request: NextRequest) {
   const paymentEnabled = await getConfigValue("payment_reminders_enabled");
   if (paymentEnabled === "true") {
     const daysAfterDue = Number(await getConfigValue("payment_reminder_days_after_due")) || 3;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - daysAfterDue);
-    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const cutoffStr = businessDaysAgo(daysAfterDue);
 
     await supabase
       .from("invoices")
       .update({ status: "overdue" })
       .eq("status", "pending")
-      .lt("due_date", new Date().toISOString().split("T")[0]);
+      .lt("due_date", businessToday());
 
     const { data: overdueInvoices } = await supabase
       .from("invoices")

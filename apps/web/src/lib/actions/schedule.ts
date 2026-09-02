@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { businessToday, toISODate } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
 import { getScheduleTemplates } from "@/lib/queries/schedule";
 import { getSessions } from "@/lib/queries/schedule";
@@ -132,8 +133,9 @@ export async function generateSessions(programId: string | null, weeksAhead: num
     return { error: "No schedule templates found. Create templates first." };
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Anchored to the business's calendar day so a run at 7pm in Dallas and the
+  // same run on a UTC server agree on what "today" is.
+  const today = new Date(`${businessToday()}T00:00:00`);
 
   let sessionsCreated = 0;
 
@@ -157,7 +159,7 @@ export async function generateSessions(programId: string | null, weeksAhead: num
       // Don't create sessions in the past
       if (sessionDate < today) continue;
 
-      const dateStr = sessionDate.toISOString().split("T")[0];
+      const dateStr = toISODate(sessionDate);
 
       // Don't create sessions outside program date range
       if (program?.start_date && dateStr < program.start_date) continue;

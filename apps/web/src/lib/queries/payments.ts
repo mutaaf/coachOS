@@ -1,4 +1,5 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { businessToday } from "@/lib/dates";
 
 export async function getInvoices(filters?: {
   status?: string;
@@ -79,7 +80,7 @@ export async function getPaymentSummary() {
 
 export async function getOverdueInvoices() {
   const supabase = createAdminSupabase();
-  const today = new Date().toISOString().split("T")[0];
+  const today = businessToday();
 
   await supabase
     .from("invoices")
