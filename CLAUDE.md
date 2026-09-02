@@ -222,6 +222,7 @@ something new bites — that is the point of it.**
 | Commit author email must match the Vercel account | Vercel blocks deployments it cannot attribute to a team member (`COMMIT_AUTHOR_REQUIRED`), showing only a bare "BLOCKED". Commits must author as `mutaaf.aziz@gmail.com`. |
 | Auth failures in passcode functions return, never `RAISE` | `RAISE` rolls the transaction back, which would undo the failed-attempt counter and leave the lockout permanently disarmed — a six-digit passcode with no lockout can simply be walked. Caught by a test. |
 | `REVOKE ... FROM public` does not revoke from `anon` | Supabase's default privileges grant EXECUTE on new `public` functions directly to `anon`, so the role has to be named explicitly. |
+| `supabase stop` misses orphaned stacks | It only stops this project's containers. A stack started from another directory, or orphaned by a `start` over a half-dead one, keeps running and holds the VM open — 20 containers were once left up this way. `npm run down` now sweeps any `supabase_*` container. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---
