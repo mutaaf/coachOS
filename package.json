@@ -6,6 +6,8 @@
     "packages/*"
   ],
   "scripts": {
+    "up": "bash scripts/dev.sh",
+    "down": "bash scripts/down.sh",
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",

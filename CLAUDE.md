@@ -198,6 +198,32 @@ npm run test:all     # Everything, from cold
 
 ---
 
+## Environment nuances
+
+`npm run up` brings everything up from cold and is safe to re-run; `npm run down`
+stops it. The script enforces each item below, so prefer fixing it there over
+fixing it by hand.
+
+**Every one of these cost real time to diagnose. Add to this list whenever
+something new bites — that is the point of it.**
+
+| Nuance | Why it matters |
+|---|---|
+| Node 22+ | supabase-js opens a realtime WebSocket and needs a native one. Node 20 fails at client construction with "native WebSocket not found" — it broke CI while passing locally on 25. |
+| Colima, not Docker Desktop | No licence, runs headless. `brew install colima docker`. |
+| `credsStore` in `~/.docker/config.json` | A leftover Docker Desktop install leaves `"credsStore": "desktop"`. Without that binary **every** pull fails with an opaque credentials error. |
+| `[analytics] enabled = false` | That container mounts `/var/run/docker.sock`, which Colima does not provide. The whole stack fails to start with it on. |
+| `ops` in `[api] schemas` | PostgREST will not serve the operational tables otherwise; every query returns `Invalid schema: ops`. Mirrors the production setting. |
+| Tests refuse a non-local database | `tests/helpers/db.ts` and both Playwright configs read `supabase status` and throw unless the API URL is localhost. Never weaken this — it is what stops a test run writing into the live rosters. |
+| Playwright cannot import `"use server"` modules | They pull in Next internals. Drive the UI, or use the admin client directly; the action's own logic belongs in `tests/integration`. |
+| Dates go through `lib/dates.ts` | `toISOString()` converts to UTC first, so from 7pm in Dallas it reports tomorrow. That marked invoices overdue a day early and showed tomorrow's sessions as today's. Never take a date from `new Date().toISOString()`. |
+| Server actions return `{ error }`, they do not throw | So `try/catch` around them catches nothing. Call them through `useAction()`, which checks the result, catches the few that do throw, and holds the pending state through the refresh. |
+| Supabase clients pass `fetch: no-store` | Next caches fetch responses by URL and `force-dynamic` does not disable it. Without this a page serves its first render forever — seat counts freeze and a parent is offered a place in a full program. |
+| Commit author email must match the Vercel account | Vercel blocks deployments it cannot attribute to a team member (`COMMIT_AUTHOR_REQUIRED`), showing only a bare "BLOCKED". Commits must author as `mutaaf.aziz@gmail.com`. |
+| Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
+
+---
+
 ## Deployment
 
 ### Web (Vercel)
