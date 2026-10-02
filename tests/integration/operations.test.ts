@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { admin, seedProgram, truncateAll } from "../helpers/db";
 import { generateSessions, recordAttendance } from "@/lib/actions/schedule";
 import { generateMonthlyInvoices, recordPayment } from "@/lib/actions/payments";
+import { businessMonth } from "@/lib/dates";
 
 /**
  * The three things the business runs on every week: sessions on the calendar,
@@ -76,13 +77,14 @@ describe("generating sessions from a weekly schedule", () => {
         expect(new Date(`${s.date}T12:00:00`).getDay()).toBe(dayOfWeek);
       }
 
-      // ...and be exactly seven days apart, with no duplicates.
+      // ...and be exactly seven days apart, with no duplicates. Measured in UTC:
+      // in local time a week that crosses the clocks changing is 7.04 days long.
       const dates = sessions!.map((s) => s.date);
       expect(new Set(dates).size).toBe(6);
       for (let i = 1; i < dates.length; i++) {
         const gap =
-          (new Date(`${dates[i]}T12:00:00`).getTime() -
-            new Date(`${dates[i - 1]}T12:00:00`).getTime()) /
+          (new Date(`${dates[i]}T12:00:00Z`).getTime() -
+            new Date(`${dates[i - 1]}T12:00:00Z`).getTime()) /
           86_400_000;
         expect(gap).toBe(7);
       }
@@ -224,11 +226,18 @@ describe("monthly invoicing", () => {
   });
 });
 
+function monthAfter(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
 describe("recording a payment", () => {
   async function invoiceFor(fee: number) {
     const { programId } = await seedProgram({ monthlyFee: fee });
     await enrolledChild(programId, "Amina", [{ firstName: "Sara", phone: "+12145550001" }]);
-    await generateMonthlyInvoices("2026-09");
+    // Next month, so the invoice is never already past due. A fixed month
+    // passed this test until the day it ended.
+    await generateMonthlyInvoices(monthAfter(businessMonth()));
     const { data } = await admin.from("invoices").select("id, parent_id").single();
     return data!;
   }
