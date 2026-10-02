@@ -1,7 +1,8 @@
 "use server";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { businessMonth, isPastDue } from "@/lib/dates";
+import { businessMonth } from "@/lib/dates";
+import { recalculateInvoiceStatus } from "@/lib/invoice-status";
 import { revalidatePath } from "next/cache";
 
 export async function generateMonthlyInvoices(month?: string) {
@@ -134,36 +135,6 @@ export async function fetchInvoiceDetail(id: string) {
     .single();
   if (error) throw error;
   return data;
-}
-
-async function recalculateInvoiceStatus(supabase: any, invoiceId: string) {
-  const { data: invoice } = await supabase
-    .from("invoices")
-    .select("amount, status, due_date")
-    .eq("id", invoiceId)
-    .single();
-
-  if (!invoice || invoice.status === "waived") return;
-
-  const { data: payments } = await supabase
-    .from("payments")
-    .select("amount")
-    .eq("invoice_id", invoiceId);
-
-  const totalPaid = (payments || []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-
-  let newStatus: string;
-  if (totalPaid >= Number(invoice.amount)) {
-    newStatus = "paid";
-  } else if (isPastDue(invoice.due_date)) {
-    newStatus = "overdue";
-  } else {
-    newStatus = "pending";
-  }
-
-  if (newStatus !== invoice.status) {
-    await supabase.from("invoices").update({ status: newStatus }).eq("id", invoiceId);
-  }
 }
 
 export async function waiveInvoice(invoiceId: string) {

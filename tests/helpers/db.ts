@@ -178,13 +178,19 @@ export async function availability(programId: string) {
  * every operational table, since the local database exists only for tests.
  */
 export async function truncateAll() {
+  // Keyed by name rather than id, so the generic delete below would skip it.
+  const { error: sendersError } = await admin.from("zelle_senders").delete().neq("sender_key", "");
+  if (sendersError) throw new Error(`Failed clearing zelle_senders: ${sendersError.message}`);
+
   for (const table of [
     "attendance",
+    "message_queue",
     "registrations",
     "enrollments",
     "student_parents",
     "invoices",
     "payments",
+    "zelle_receipts",
     "sessions",
     "schedule_templates",
     "students",

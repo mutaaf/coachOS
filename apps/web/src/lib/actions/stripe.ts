@@ -1,24 +1,9 @@
 "use server";
 
-import Stripe from "stripe";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-async function getStripeClient(): Promise<Stripe | null> {
-  const supabase = createAdminSupabase();
-  const { data } = await supabase
-    .from("config")
-    .select("key, value")
-    .in("key", ["stripe_enabled", "stripe_secret_key"]);
-
-  const config = Object.fromEntries((data || []).map((c) => [c.key, c.value]));
-
-  if (config.stripe_enabled !== "true" || !config.stripe_secret_key) {
-    return null;
-  }
-
-  return new Stripe(config.stripe_secret_key, { apiVersion: "2026-01-28.clover" });
-}
+import { getStripeClient } from "@/lib/stripe-client";
+import { autopayPayersByStudent } from "@/lib/autopay";
 
 export async function getOrCreateStripeCustomer(parentId: string) {
   const stripe = await getStripeClient();
@@ -116,15 +101,20 @@ export async function createStripeInvoicesForMonth(month: string) {
 
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("id")
+    .select("id, student_id")
     .eq("month", month)
     .eq("status", "pending")
     .is("stripe_invoice_id", null);
 
   if (!invoices || invoices.length === 0) return { created: 0 };
 
+  // Autopay families are charged directly. A payable invoice beside that would
+  // let them pay the same month twice.
+  const autopay = await autopayPayersByStudent(supabase);
+
   let created = 0;
   for (const inv of invoices) {
+    if (autopay.has(inv.student_id)) continue;
     const result = await createStripeInvoice(inv.id);
     if (!("error" in result)) created++;
   }

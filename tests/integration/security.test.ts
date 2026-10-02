@@ -37,6 +37,8 @@ describe("anon cannot reach operational data", () => {
     "invoices",
     "payments",
     "attendance",
+    "zelle_receipts",
+    "zelle_senders",
   ]) {
     it(`refuses anon reads of ops.${table}`, async () => {
       const { data, error } = await anonOps.from(table).select("*");

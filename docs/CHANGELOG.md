@@ -5,6 +5,37 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- **Autopay.** Each parent has a private payment page, `/pay/{token}`, linked
+  from WhatsApp. They can save a bank account (no fee) or a card (with the
+  `card_fee_percent` setting added, shown before they choose) through Stripe,
+  and each invoice is then charged on its due date by the daily cron. Turning
+  it off is one tap on the same page. A failed charge puts the invoice back to
+  owed and messages the parent once with their link; it is not retried until
+  they save a new payment method
+- **Zelle matching.** A Google Apps Script in the owner's Gmail posts the bank's
+  "you received money" emails to `/api/inbound/zelle`. A payment is recorded
+  without asking only when the sender resolves to exactly one family and the
+  amount exactly covers that family's oldest open invoices. Everything else
+  lands in a Zelle inbox on the Payments page with the best guess filled in;
+  confirming it teaches the app that sender's name. Matches can be undone
+- Parents can tell the app whose Zelle account they pay from, on their page
+- "Send payment links" on the Payments page messages every enrolled family
+  not yet on autopay their own link, replacing the monthly group post
+- Invoice status `processing`, for a bank debit that has started and not
+  settled. The overdue sweep only moves `pending`, so a family who paid on the
+  1st is no longer chased while their money is on its way
+- The daily cron now generates the month's invoices on the 1st when
+  **Auto-Generate Invoices** is on. The setting existed before but did nothing
+- The payment reminder template carries `{{pay_link}}` (updated only where it
+  was still the shipped wording)
+
+### Fixed
+- The Stripe webhook recorded a payment again on every redelivery. Payments now
+  carry Stripe's id in a unique `external_id`
+- Two tests that depended on the calendar: session gaps measured across the
+  clocks changing, and a payment test that hardcoded a month that has now passed
+
+### Added
 - Passcode-protected attendance sheets. A session can be given a link and a
   six-digit passcode to send a coach over WhatsApp; they open it on a phone, tap
   each child, and save. No account, no roles model — the link reaches exactly one

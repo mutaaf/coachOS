@@ -104,6 +104,23 @@ them. It found three: families with both parents on file were invoiced twice,
 session generation silently lost a week whenever the session day fell earlier in
 the week than today, and invoices were marked overdue on their own due date.
 
+### Getting paid — `tests/integration/autopay.test.ts`, `tests/integration/zelle.test.ts`, `tests/e2e/pay.spec.ts`
+
+Autopay charges real cards, so its tests are about never charging twice (a
+second run, two runs overlapping, a webhook redelivered), never charging the
+wrong family, and never chasing a family whose bank debit is still settling.
+Stripe is replaced by a fake that records what it was asked for; what the app
+does with Stripe's answers is what is under test. A declined card is not retried
+daily, only after the parent saves a new one.
+
+Zelle matching is mostly tested for what it must *not* do: guess at an amount
+that doesn't fit, pick between two parents with the same name, or pay an
+invoice whose bank debit is already on its way. Bank wordings from Bank of
+America, Chase, Wells Fargo and Capital One are pinned; the parent's page cannot
+claim a name that belongs to another family.
+
+Each safeguard was checked by removing it and watching its test fail.
+
 ### Dates — `tests/integration/dates.test.ts`
 
 `toISOString()` converts to UTC first, so from 7pm in Dallas it reports tomorrow.

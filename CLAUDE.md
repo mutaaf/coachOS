@@ -57,7 +57,8 @@ CoachOS is a full-stack management platform for youth sports program owners. It 
 4. **Client components for interactivity** — `*-page-client.tsx` pattern: server page fetches data, passes to client component
 5. **Shared template engine** — `packages/shared` exports `renderTemplate()` for mustache-style message templating, used by both web cron and bot
 6. **WhatsApp over email** — primary communication channel is WhatsApp via whatsapp-web.js headless browser
-7. **Stripe is optional** — enabled via config table (`stripe_enabled`, `stripe_secret_key`). When enabled, invoice generation auto-creates Stripe invoices and payment links can be sent via WhatsApp
+7. **Getting paid without asking** — families save a bank account or card on their private `/pay/{token}` page and the daily cron charges each invoice on its due date (`lib/autopay.ts`); Zelle payments are recorded from the bank's emails, which a Gmail Apps Script posts to `/api/inbound/zelle` (`lib/zelle.ts`). See ADR-010
+8. **Stripe is optional** — enabled via config table (`stripe_enabled`, `stripe_secret_key`). When enabled, invoice generation auto-creates Stripe invoices and payment links can be sent via WhatsApp
 
 ---
 
@@ -223,6 +224,8 @@ something new bites — that is the point of it.**
 | Auth failures in passcode functions return, never `RAISE` | `RAISE` rolls the transaction back, which would undo the failed-attempt counter and leave the lockout permanently disarmed — a six-digit passcode with no lockout can simply be walked. Caught by a test. |
 | `REVOKE ... FROM public` does not revoke from `anon` | Supabase's default privileges grant EXECUTE on new `public` functions directly to `anon`, so the role has to be named explicitly. |
 | `supabase stop` misses orphaned stacks | It only stops this project's containers. A stack started from another directory, or orphaned by a `start` over a half-dead one, keeps running and holds the VM open — 20 containers were once left up this way. `npm run down` now sweeps any `supabase_*` container. |
+| Autopay and Zelle logic is not `"use server"` | Every export of a `"use server"` module is a public endpoint, callable from any page — including the signed-out `/pay` and `/join` pages. `lib/autopay.ts` charges cards, so it is a plain module reached only from the cron, the webhook, and token-checked actions. |
+| Bank debits sit in `processing` for days | The overdue sweeps only move `pending`. Anything new that marks invoices overdue must leave `processing` alone, or families are chased for money already on its way. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---

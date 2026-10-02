@@ -11,10 +11,11 @@ import { InvoiceFormDialog } from "@/components/invoice-form-dialog";
 import { formatCurrency } from "@/lib/utils";
 import { sendStripePaymentLink } from "@/lib/actions/stripe";
 import { waiveInvoice, deleteInvoice, deletePayment } from "@/lib/actions/payments";
-import { DollarSign, AlertTriangle, CheckCircle, Clock, Plus, FileText, ExternalLink, Send, Pencil, Trash2 } from "lucide-react";
+import { DollarSign, AlertTriangle, CheckCircle, Clock, Plus, FileText, ExternalLink, Send, Pencil, Trash2, Link2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAction } from "@/lib/use-action";
+import { PaymentsCollectPanel, type CollectPanelProps } from "@/components/payments-collect-panel";
 
 interface PaymentSummary {
   totalRevenue: number;
@@ -28,6 +29,7 @@ interface PaymentsPageClientProps {
   summary: PaymentSummary;
   invoices: any[];
   payments: any[];
+  collect: CollectPanelProps;
 }
 
 const statusBadge = (status: string) => {
@@ -36,11 +38,12 @@ const statusBadge = (status: string) => {
     pending: "warning",
     overdue: "destructive",
     waived: "secondary",
+    processing: "secondary",
   };
   return <Badge variant={map[status] || "secondary"}>{status}</Badge>;
 };
 
-export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPageClientProps) {
+export function PaymentsPageClient({ summary, invoices, payments, collect }: PaymentsPageClientProps) {
   const router = useRouter();
   const { run } = useAction();
   const [statusFilter, setStatusFilter] = useState("all");
@@ -136,6 +139,8 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
         </div>
       </div>
 
+      <PaymentsCollectPanel {...collect} />
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="rounded-2xl border bg-card p-4">
@@ -185,7 +190,7 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
         <TabsContent value="invoices">
           {/* Status Filter Bar */}
           <div className="flex gap-2 mb-4 flex-wrap">
-            {["all", "pending", "overdue", "paid", "waived"].map((s) => (
+            {["all", "pending", "processing", "overdue", "paid", "waived"].map((s) => (
               <Button
                 key={s}
                 variant={statusFilter === s ? "default" : "outline"}
@@ -239,7 +244,7 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Month</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Link</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Pay link</th>
                     <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
@@ -253,13 +258,28 @@ export function PaymentsPageClient({ summary, invoices, payments }: PaymentsPage
                       <td className="p-4 font-medium">{formatCurrency(inv.amount)}</td>
                       <td className="p-4">{statusBadge(inv.status)}</td>
                       <td className="p-4 hidden lg:table-cell">
-                        {inv.stripe_hosted_invoice_url ? (
-                          <a href={inv.stripe_hosted_invoice_url} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4 text-blue-500" />
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {inv.parents?.pay_token && (
+                            <button
+                              type="button"
+                              title="Copy this family's payment page link"
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(
+                                  `${window.location.origin}/pay/${inv.parents.pay_token}`
+                                );
+                                toast.success(`Copied ${inv.parents.first_name}'s payment link`);
+                              }}
+                            >
+                              <Link2 className="h-4 w-4 text-blue-500" />
+                              <span className="sr-only">Copy payment link</span>
+                            </button>
+                          )}
+                          {inv.stripe_hosted_invoice_url && (
+                            <a href={inv.stripe_hosted_invoice_url} target="_blank" rel="noopener noreferrer" title="Stripe invoice">
+                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                            </a>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">

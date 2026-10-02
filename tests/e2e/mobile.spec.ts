@@ -153,6 +153,25 @@ async function seedRealisticData() {
     });
   }
 
+  // Both halves of the Zelle inbox: one waiting on the owner, with a long
+  // sender name and memo, and one already recorded.
+  await admin.from("zelle_receipts").insert([
+    {
+      message_id: "mobile-unmatched",
+      sender_name: "MUHAMMAD ABDULRAHMAN AL-QAHTANI-SIDDIQUI",
+      amount: 150,
+      memo: "For Khadijah and Bilal — October and part of November, thank you!",
+      status: "unmatched",
+      note: "No parent on file is called MUHAMMAD ABDULRAHMAN AL-QAHTANI-SIDDIQUI — it may be a spouse or another account.",
+    },
+    {
+      message_id: "mobile-matched",
+      sender_name: "Bilal Yusuf",
+      amount: 150,
+      status: "matched",
+    },
+  ]);
+
   await admin.from("coaches").insert({
     first_name: "Abdulrahman",
     last_name: "Al-Muhammadi",
@@ -178,6 +197,54 @@ async function seedRealisticData() {
     end_time: "17:00",
     status: "scheduled",
   });
+}
+
+/**
+ * Turn on what the payment page offers: Stripe (a fake key is enough to render
+ * the page; nothing calls Stripe until a parent taps through) and a Zelle
+ * number. Put back afterwards, since every other test assumes they are off.
+ */
+async function withPaymentSettings(fn: () => Promise<void>) {
+  const keys = ["stripe_enabled", "stripe_secret_key", "zelle_recipient"];
+  const { data: before } = await admin.from("config").select("key, value").in("key", keys);
+  await admin.from("config").update({ value: "true" }).eq("key", "stripe_enabled");
+  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_secret_key");
+  await admin.from("config").update({ value: "972-900-0292" }).eq("key", "zelle_recipient");
+  try {
+    await fn();
+  } finally {
+    for (const row of before || []) {
+      await admin.from("config").update({ value: row.value }).eq("key", row.key);
+    }
+  }
+}
+
+/** A parent with two children on the program and an invoice each; returns their page token. */
+async function payingFamily(programId: string) {
+  const { data: parent } = await admin
+    .from("parents")
+    .insert({ first_name: "Khadijah", last_name: "Abdurrahman-Siddiqui", phone: "+12145550777" })
+    .select("id, pay_token")
+    .single();
+  for (const first of ["Abdulrahman", "Muhammad-Yusuf"]) {
+    const { data: student } = await admin
+      .from("students")
+      .insert({ first_name: first, last_name: "Abdurrahman-Siddiqui" })
+      .select("id")
+      .single();
+    await admin.from("student_parents").insert({ student_id: student!.id, parent_id: parent!.id });
+    await admin.from("enrollments").insert({ student_id: student!.id, program_id: programId, status: "active" });
+    await admin.from("invoices").insert({
+      parent_id: parent!.id,
+      student_id: student!.id,
+      program_id: programId,
+      amount: 1150,
+      month: today().slice(0, 7),
+      due_date: `${today().slice(0, 7)}-01`,
+      status: "overdue",
+    });
+  }
+  return parent!.pay_token as string;
 }
 
 async function signIn(page: Page) {
@@ -256,6 +323,23 @@ for (const viewport of VIEWPORTS) {
       const sheet = await horizontalOverflow(page);
       expect(sheet.offenders, `/s overflows: ${sheet.offenders.join(" | ")}`).toEqual([]);
       expect(sheet.scrollWidth).toBeLessThanOrEqual(sheet.clientWidth + TOLERANCE);
+
+      // A family's payment page, as a parent opens it from WhatsApp — with
+      // autopay and Zelle both offered, so every section is on screen.
+      await withPaymentSettings(async () => {
+        const token = await payingFamily(programId);
+        await page.goto(`/pay/${token}`);
+        await expect(page.getByRole("heading", { name: /^Hi / })).toBeVisible();
+
+        const pay = await horizontalOverflow(page);
+        expect(pay.offenders, `/pay overflows: ${pay.offenders.join(" | ")}`).toEqual([]);
+        expect(pay.scrollWidth).toBeLessThanOrEqual(pay.clientWidth + TOLERANCE);
+
+        for (const name of [/bank account/i, /^card/i, /copy/i, /^save$/i]) {
+          const box = await page.getByRole("button", { name }).first().boundingBox();
+          expect(box!.height, `${name} is too small to tap`).toBeGreaterThanOrEqual(44);
+        }
+      });
     });
 
     test("the register's tap targets are big enough to hit", async ({ page }) => {

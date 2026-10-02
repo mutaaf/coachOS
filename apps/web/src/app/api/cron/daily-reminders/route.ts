@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { businessDaysAgo, businessToday } from "@/lib/dates";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { renderTemplate } from "shared";
+import { generateMonthlyInvoices } from "@/lib/actions/payments";
+import { chargeDueAutopay } from "@/lib/autopay";
+import { payLink } from "@/lib/app-url";
+import { getStripeClient } from "@/lib/stripe-client";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -10,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminSupabase();
-  const results = { practiceReminders: 0, paymentReminders: 0 };
+  const results: Record<string, unknown> = { practiceReminders: 0, paymentReminders: 0 };
 
   async function getConfigValue(key: string): Promise<string> {
     const { data } = await supabase
@@ -29,6 +33,23 @@ export async function GET(request: NextRequest) {
       .eq("is_active", true)
       .single();
     return data?.body || "";
+  }
+
+  // The month's invoices, on the 1st — the date they fall due. Autopay can only
+  // charge an invoice that exists, so without this every family on autopay
+  // would wait until someone remembered to press Generate. Only on the 1st: run
+  // daily, it would bill a child who joined on the 20th for the whole month.
+  const today = businessToday();
+  if (today.endsWith("-01") && (await getConfigValue("auto_generate_invoices")) === "true") {
+    results.invoicesGenerated = (await generateMonthlyInvoices(today.slice(0, 7))).created;
+  }
+
+  // Autopay before any reminder, so no family is chased for money being taken
+  // today. A bank debit started here moves its invoice to 'processing', which
+  // the overdue sweep below leaves alone while it settles.
+  const stripe = await getStripeClient();
+  if (stripe) {
+    results.autopay = await chargeDueAutopay(supabase, stripe, today);
   }
 
   // Practice reminders for tomorrow's sessions
@@ -81,7 +102,7 @@ export async function GET(request: NextRequest) {
             max_attempts: 3,
           });
 
-          results.practiceReminders++;
+          results.practiceReminders = (results.practiceReminders as number) + 1;
         }
       }
     }
@@ -121,6 +142,7 @@ export async function GET(request: NextRequest) {
         month: invoice.month,
         amount: `$${invoice.amount}`,
         payment_method: parent.preferred_payment || "cash",
+        pay_link: parent.pay_token ? payLink(parent.pay_token) : "",
       });
 
       await supabase.from("message_queue").insert({
@@ -132,7 +154,7 @@ export async function GET(request: NextRequest) {
         max_attempts: 3,
       });
 
-      results.paymentReminders++;
+      results.paymentReminders = (results.paymentReminders as number) + 1;
     }
   }
 

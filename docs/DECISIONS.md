@@ -294,3 +294,58 @@ Add full edit and delete capabilities for both invoices and payments, with autom
 - Invoice status is derived from payment totals — manual status overrides (e.g., setting to "paid" without full payment) are possible but may be recalculated on next payment change
 - Deleting a payment may change an invoice from "paid" back to "pending" or "overdue"
 - Filter dropdowns only appear when there are 2+ unique values (avoids clutter for small datasets)
+
+---
+
+## ADR-010: Autopay through Stripe, Zelle matched from bank emails
+
+### Status
+Accepted
+
+### Context
+Every month the owner posted a payment reminder in each session's WhatsApp group,
+then read the replies — "sent via zelle", "can I get an invoice?" — and recorded
+each payment by hand. Most families pay by Zelle; a few want a card.
+
+### Decision
+Two paths, both ending in the same invoices and payments tables:
+1. **Autopay** — a parent saves a bank account or card once, through Stripe
+   Checkout in setup mode, from a private page at `/pay/{token}`. The daily cron
+   charges each invoice on its due date with an off-session PaymentIntent.
+2. **Zelle matching** — the bank's notification emails are posted to
+   `/api/inbound/zelle` by a Google Apps Script running in the owner's Gmail, and
+   matched to families by sender name and amount.
+
+### Rationale
+1. Zelle has no API. The bank email is the only machine-readable record, and an
+   Apps Script needs no DNS, mail provider, or forwarding verification — it runs
+   inside the account that already receives the emails
+2. A bank debit costs about 0.8% against about 3% for a card, so it is offered
+   first and free; the card fee is a setting, disclosed before the parent picks
+3. Autopay keeps Stripe's own invoices out of it: one PaymentIntent per invoice,
+   idempotency-keyed on the invoice and the saved payment method, so a retry or
+   an overlapping run cannot charge twice
+4. Automatic Zelle matching is deliberately narrow — one family, exact amount,
+   oldest invoices first. A payment on the wrong child is worse than one waiting
+   a day for a tap
+
+### Implementation
+- `lib/autopay.ts`, `lib/zelle.ts`, `lib/invoice-status.ts` are plain server
+  modules, **not** `"use server"`: every export of an actions module is a public
+  endpoint, and these charge cards
+- `lib/actions/pay-page.ts` holds the parent's three actions, each scoped by the
+  page token
+- `invoices.status = 'processing'` while a bank debit settles; the claim that
+  moves an invoice there is also what stops two cron runs charging it
+- `payments.external_id` (unique) and `zelle_receipts.message_id` (unique) make
+  webhook redelivery and the script's re-sending harmless
+
+### Consequences
+- The Stripe webhook must subscribe to `checkout.session.completed`,
+  `setup_intent.succeeded`, `payment_intent.succeeded` and
+  `payment_intent.payment_failed` in addition to the invoice events
+- A family's page shows children's first names and amounts to anyone with the
+  link. The token is 144 random bits; no last names, contacts or notes are shown
+- Parsing depends on banks' email wording. Unreadable emails are kept and shown
+  rather than dropped, so a format change is visible, not silent
+

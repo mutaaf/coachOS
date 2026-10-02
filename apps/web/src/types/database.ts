@@ -54,6 +54,14 @@ export type Parent = {
   venmo_handle: string | null;
   zelle_identifier: string | null;
   stripe_customer_id: string | null;
+  /** Secret part of the parent's payment page URL, /pay/{pay_token}. */
+  pay_token: string;
+  autopay_status: "off" | "pending" | "active";
+  autopay_method: "us_bank_account" | "card" | null;
+  autopay_payment_method_id: string | null;
+  autopay_label: string | null;
+  autopay_verify_url: string | null;
+  autopay_enabled_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -116,9 +124,14 @@ export type Invoice = {
   amount: number;
   month: string; // YYYY-MM
   due_date: string;
-  status: "pending" | "paid" | "overdue" | "waived";
+  /** 'processing' is a bank debit started and not yet settled. */
+  status: "pending" | "processing" | "paid" | "overdue" | "waived";
   stripe_invoice_id: string | null;
   stripe_hosted_invoice_url: string | null;
+  autopay_payment_intent_id: string | null;
+  autopay_status: "processing" | "succeeded" | "failed" | null;
+  autopay_error: string | null;
+  autopay_attempted_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -132,6 +145,34 @@ export type Payment = {
   reference: string | null;
   received_at: string;
   notes: string | null;
+  /** Stripe's id for the charge; unique, so a redelivered webhook records nothing. */
+  external_id: string | null;
+  zelle_receipt_id: string | null;
+  /** Card fee collected on top of `amount`. */
+  fee: number;
+  created_at: string;
+};
+
+/** A bank's "you received money with Zelle" email, and what became of it. */
+export type ZelleReceipt = {
+  id: string;
+  message_id: string;
+  sender_name: string | null;
+  amount: number | null;
+  memo: string | null;
+  received_at: string;
+  status: "matched" | "unmatched" | "unreadable" | "ignored";
+  parent_id: string | null;
+  note: string | null;
+  subject: string | null;
+  body: string | null;
+  created_at: string;
+};
+
+/** A Zelle sender name the owner has tied to a family. */
+export type ZelleSender = {
+  sender_key: string;
+  parent_id: string;
   created_at: string;
 };
 

@@ -1,0 +1,357 @@
+import { describe, it, expect, afterEach } from "vitest";
+import { admin, seedProgram, truncateAll } from "../helpers/db";
+import { generateMonthlyInvoices } from "@/lib/actions/payments";
+import { matchZelleReceipt, undoZelleMatch } from "@/lib/actions/zelle";
+import { rememberZelleName } from "@/lib/actions/pay-page";
+import { ingestZelleEmail, parseZelleEmail, senderKey } from "@/lib/zelle";
+import { POST as inbound } from "@/app/api/inbound/zelle/route";
+import { businessMonth } from "@/lib/dates";
+import type { OpsClient } from "@/lib/supabase/types";
+
+/**
+ * Zelle payments recorded from the bank's emails.
+ *
+ * The thing being protected is the books: a payment recorded against the wrong
+ * child, or recorded twice, is worse than one that waits for the owner. So most
+ * of these are about what must NOT be matched automatically.
+ */
+
+const db = admin as unknown as OpsClient;
+
+afterEach(truncateAll);
+
+let msg = 0;
+const email = (subject: string, text = "") => ({ messageId: `m-${Date.now()}-${++msg}`, subject, text });
+
+function monthAfter(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
+/** A parent with children on a $100/month program, and this month's invoices. */
+async function family(
+  parent: { first: string; last: string },
+  children: string[] = ["Mia"],
+  months: string[] = [businessMonth()]
+) {
+  const { programId } = await seedProgram({ monthlyFee: 100 });
+  const { data: p } = await admin
+    .from("parents")
+    .insert({
+      first_name: parent.first,
+      last_name: parent.last,
+      phone: `+1214555${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`,
+    })
+    .select("id, pay_token")
+    .single();
+
+  for (const child of children) {
+    const { data: s } = await admin
+      .from("students")
+      .insert({ first_name: child, last_name: parent.last })
+      .select("id")
+      .single();
+    await admin.from("student_parents").insert({ student_id: s!.id, parent_id: p!.id });
+    await admin.from("enrollments").insert({ student_id: s!.id, program_id: programId, status: "active" });
+  }
+  for (const month of months) await generateMonthlyInvoices(month);
+
+  return { parentId: p!.id as string, payToken: p!.pay_token as string, programId };
+}
+
+async function invoices(parentId: string) {
+  const { data } = await admin
+    .from("invoices")
+    .select("id, month, status, payments(amount, method, zelle_receipt_id)")
+    .eq("parent_id", parentId)
+    .order("month");
+  return data!;
+}
+
+async function receipt(id: string) {
+  const { data } = await admin.from("zelle_receipts").select("*").eq("id", id).single();
+  return data!;
+}
+
+describe("reading bank emails", () => {
+  it.each([
+    ["Bank of America", "Raquel Garcia sent you $100.00", "", "Raquel Garcia", 100],
+    [
+      "Chase",
+      "You received money with Zelle®",
+      "Raquel Garcia sent you money\n\nAmount: $100.00\nMemo: Mia October",
+      "Raquel Garcia",
+      100,
+    ],
+    ["Wells Fargo", "You received $1,250.00 from RAQUEL M. GARCIA", "", "RAQUEL M. GARCIA", 1250],
+    ["Capital One", "You've received $100.00 via Zelle from Raquel Garcia.", "", "Raquel Garcia", 100],
+    [
+      "a greeting before the name",
+      "Zelle payment",
+      "Hi Anum, Raquel Garcia sent you $100.00. It's in your account.",
+      "Raquel Garcia",
+      100,
+    ],
+  ])("reads %s", (_bank, subject, body, name, amount) => {
+    const parsed = parseZelleEmail(subject, body);
+    expect(parsed).toMatchObject({ kind: "incoming", senderName: name, amount });
+  });
+
+  it("keeps the memo", () => {
+    const parsed = parseZelleEmail("Raquel Garcia sent you $100.00", "Memo: Mia - Oct");
+    expect(parsed).toMatchObject({ memo: "Mia - Oct" });
+  });
+
+  it.each([
+    ["money she sent", "You sent $40.00 to Coach Store"],
+    ["a request she made", "Your request for $100.00 was sent to Raquel Garcia"],
+  ])("ignores %s", (_what, subject) => {
+    expect(parseZelleEmail(subject, "")).toEqual({ kind: "outgoing" });
+  });
+
+  it("says when it can't read one, rather than guessing", () => {
+    expect(parseZelleEmail("Zelle® update", "Your Zelle activity summary")).toEqual({
+      kind: "unreadable",
+    });
+  });
+
+  it("treats spacing, case and middle initials as the same sender", () => {
+    expect(senderKey("RAQUEL M. GARCIA")).toBe(senderKey("Raquel  Garcia"));
+  });
+});
+
+describe("matching a payment to a family", () => {
+  it("records it when the name and amount both line up", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+
+    const result = await ingestZelleEmail(db, email("RAQUEL M GARCIA sent you $100.00"));
+
+    expect(result.outcome).toBe("matched");
+    const [inv] = await invoices(parentId);
+    expect(inv.status).toBe("paid");
+    expect(inv.payments).toHaveLength(1);
+    expect(inv.payments[0].method).toBe("zelle");
+  });
+
+  it("records an email once, however many times the script sends it", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+    const e = email("Raquel Garcia sent you $100.00");
+
+    await ingestZelleEmail(db, e);
+    const again = await ingestZelleEmail(db, e);
+
+    expect(again.outcome).toBe("duplicate");
+    const [inv] = await invoices(parentId);
+    expect(inv.payments).toHaveLength(1);
+  });
+
+  it("pays two children's invoices from one payment covering both", async () => {
+    const { parentId } = await family({ first: "Star", last: "Okafor" }, ["Ada", "Obi"]);
+
+    await ingestZelleEmail(db, email("Star Okafor sent you $200.00"));
+
+    const all = await invoices(parentId);
+    expect(all.map((i) => i.status)).toEqual(["paid", "paid"]);
+  });
+
+  it("pays the oldest month first", async () => {
+    const thisMonth = businessMonth();
+    const { parentId } = await family({ first: "Yoomi", last: "Park" }, ["Jin"], [
+      thisMonth,
+      monthAfter(thisMonth),
+    ]);
+
+    await ingestZelleEmail(db, email("Yoomi Park sent you $100.00"));
+
+    const [older, newer] = await invoices(parentId);
+    expect(older.status).toBe("paid");
+    expect(newer.status).not.toBe("paid");
+  });
+
+  it("asks rather than guesses when the amount doesn't fit what's owed", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+
+    const result = await ingestZelleEmail(db, email("Raquel Garcia sent you $150.00"));
+
+    expect(result.outcome).toBe("unmatched");
+    const r = await receipt((result as any).receiptId);
+    // The best guess is kept so the owner only has to confirm it.
+    expect(r.parent_id).toBe(parentId);
+    expect(r.note).toMatch(/\$150\.00 doesn't match/);
+    const [inv] = await invoices(parentId);
+    expect(inv.payments).toHaveLength(0);
+  });
+
+  it("asks when it doesn't know the sender", async () => {
+    await family({ first: "Raquel", last: "Garcia" });
+
+    const result = await ingestZelleEmail(db, email("Miguel Garcia sent you $100.00"));
+
+    expect(result.outcome).toBe("unmatched");
+    expect((await receipt((result as any).receiptId)).note).toMatch(/No parent on file/);
+  });
+
+  it("asks when two parents share the sender's name", async () => {
+    await family({ first: "Maria", last: "Lopez" });
+    await family({ first: "Maria", last: "Lopez" });
+
+    const result = await ingestZelleEmail(db, email("Maria Lopez sent you $100.00"));
+
+    expect(result.outcome).toBe("unmatched");
+  });
+
+  it("does not offer a payment an invoice whose bank debit is already on its way", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+    const [inv] = await invoices(parentId);
+    await admin
+      .from("invoices")
+      .update({ status: "processing", autopay_status: "processing" })
+      .eq("id", inv.id);
+
+    const result = await ingestZelleEmail(db, email("Raquel Garcia sent you $100.00"));
+
+    expect(result.outcome).toBe("unmatched");
+    expect((await invoices(parentId))[0].payments).toHaveLength(0);
+  });
+
+  it("leaves her own outgoing payments out of the inbox entirely", async () => {
+    const result = await ingestZelleEmail(db, email("You sent $40.00 to Coach Store"));
+
+    expect(result.outcome).toBe("skipped");
+    const { count } = await admin.from("zelle_receipts").select("id", { count: "exact", head: true });
+    expect(count).toBe(0);
+  });
+
+  it("keeps an email it couldn't read, so a real payment isn't silently lost", async () => {
+    const result = await ingestZelleEmail(db, email("Zelle® notice", "Something changed with Zelle"));
+
+    expect(result.outcome).toBe("unreadable");
+  });
+});
+
+describe("the owner confirming who paid", () => {
+  it("records it and remembers the sender for next time", async () => {
+    const thisMonth = businessMonth();
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" }, ["Mia"], [
+      thisMonth,
+      monthAfter(thisMonth),
+    ]);
+
+    // Her husband's account.
+    const first = await ingestZelleEmail(db, email("Miguel Garcia sent you $100.00"));
+    expect(first.outcome).toBe("unmatched");
+
+    const confirmed = await matchZelleReceipt((first as any).receiptId, parentId);
+    expect(confirmed).toMatchObject({ success: true });
+
+    // Next month, nobody has to do anything.
+    const second = await ingestZelleEmail(db, email("MIGUEL GARCIA sent you $100.00"));
+    expect(second.outcome).toBe("matched");
+
+    expect((await invoices(parentId)).map((i) => i.status)).toEqual(["paid", "paid"]);
+  });
+
+  it("says when more came in than was owed, rather than losing track of it", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+    const r = await ingestZelleEmail(db, email("Raquel Garcia sent you $130.00"));
+
+    await matchZelleReceipt((r as any).receiptId, parentId);
+
+    expect((await receipt((r as any).receiptId)).note).toMatch(/\$30\.00 more than was owed/);
+    expect((await invoices(parentId))[0].status).toBe("paid");
+  });
+
+  it("can undo a wrong match, and forgets the name so it doesn't repeat", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+    const r = await ingestZelleEmail(db, email("Miguel Garcia sent you $100.00"));
+    await matchZelleReceipt((r as any).receiptId, parentId);
+
+    const undone = await undoZelleMatch((r as any).receiptId);
+
+    expect(undone).toMatchObject({ success: true });
+    const [inv] = await invoices(parentId);
+    expect(inv.payments).toHaveLength(0);
+    expect(inv.status).toBe("pending");
+    const { data: alias } = await admin
+      .from("zelle_senders")
+      .select("*")
+      .eq("sender_key", senderKey("Miguel Garcia"));
+    expect(alias).toHaveLength(0);
+  });
+});
+
+describe("a parent naming the account they pay from", () => {
+  it("makes that account's payments match their family", async () => {
+    const { parentId, payToken } = await family({ first: "Raquel", last: "Garcia" });
+
+    expect(await rememberZelleName(payToken, "Miguel A. Garcia")).toMatchObject({ success: true });
+    const result = await ingestZelleEmail(db, email("Miguel Garcia sent you $100.00"));
+
+    expect(result.outcome).toBe("matched");
+    expect((await invoices(parentId))[0].status).toBe("paid");
+  });
+
+  it("cannot claim another family's name", async () => {
+    // Otherwise anyone with a link could have someone else's payments credited
+    // to their own account.
+    await family({ first: "Raquel", last: "Garcia" });
+    const intruder = await family({ first: "Eve", last: "Smith" });
+
+    const result = await rememberZelleName(intruder.payToken, "Raquel Garcia");
+
+    expect(result).toHaveProperty("error");
+  });
+
+  it("does nothing for a token that isn't real", async () => {
+    expect(await rememberZelleName("not-a-real-token-at-all-xx", "Some Body")).toHaveProperty("error");
+  });
+});
+
+describe("the endpoint the Gmail script posts to", () => {
+  async function secret() {
+    const { data } = await admin
+      .from("config")
+      .select("value")
+      .eq("key", "zelle_inbound_secret")
+      .single();
+    return data!.value as string;
+  }
+
+  function post(body: unknown, key?: string) {
+    return inbound(
+      new Request("http://localhost/api/inbound/zelle", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(key ? { authorization: `Bearer ${key}` } : {}),
+        },
+        body: JSON.stringify(body),
+      }) as any
+    );
+  }
+
+  it("turns away anyone without the key", async () => {
+    const res = await post({ messages: [] });
+    expect(res.status).toBe(401);
+    const wrong = await post({ messages: [] }, "nope");
+    expect(wrong.status).toBe(401);
+  });
+
+  it("records a batch, and a repeat of it is harmless", async () => {
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" });
+    const key = await secret();
+    const batch = {
+      messages: [
+        { id: "gm-1", subject: "Raquel Garcia sent you $100.00", text: "", receivedAt: new Date().toISOString() },
+        { id: "gm-2", subject: "You sent $20.00 to Pizza Place", text: "" },
+      ],
+    };
+
+    const first = await (await post(batch, key)).json();
+    const second = await (await post(batch, key)).json();
+
+    expect(first).toMatchObject({ matched: 1, skipped: 1 });
+    expect(second).toMatchObject({ duplicate: 1, skipped: 1 });
+    expect((await invoices(parentId))[0].payments).toHaveLength(1);
+  });
+});

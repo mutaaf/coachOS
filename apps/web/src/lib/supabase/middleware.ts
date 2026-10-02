@@ -38,7 +38,10 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/join") &&
     // Attendance sheets are opened by coaches, who have no account — the
     // passcode on the sheet itself is what guards them.
-    !request.nextUrl.pathname.startsWith("/s/")
+    !request.nextUrl.pathname.startsWith("/s/") &&
+    // A family's payment page. Parents have no account; the long random token
+    // in the URL is what scopes it to them.
+    !request.nextUrl.pathname.startsWith("/pay/")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

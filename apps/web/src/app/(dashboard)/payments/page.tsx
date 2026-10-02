@@ -1,4 +1,13 @@
-import { getInvoices, getPayments, getPaymentSummary, getOverdueInvoices } from "@/lib/queries/payments";
+import {
+  getInvoices,
+  getPayments,
+  getPaymentSummary,
+  getOverdueInvoices,
+  getZelleInbox,
+  getParentsForMatching,
+  getAutopaySummary,
+} from "@/lib/queries/payments";
+import { countFamiliesToInvite } from "@/lib/actions/autopay";
 import { PaymentsPageClient } from "@/components/payments-page-client";
 
 // Every dashboard page reads live business data behind a login, so it must be
@@ -10,11 +19,22 @@ export default async function PaymentsPage() {
   // Update overdue status first
   await getOverdueInvoices();
 
-  const [summary, invoices, payments] = await Promise.all([
+  const [summary, invoices, payments, zelle, parents, autopay, inviteCount] = await Promise.all([
     getPaymentSummary(),
     getInvoices(),
     getPayments(),
+    getZelleInbox(),
+    getParentsForMatching(),
+    getAutopaySummary(),
+    countFamiliesToInvite(),
   ]);
 
-  return <PaymentsPageClient summary={summary} invoices={invoices} payments={payments} />;
+  return (
+    <PaymentsPageClient
+      summary={summary}
+      invoices={invoices}
+      payments={payments}
+      collect={{ zelle, parents, autopay, inviteCount }}
+    />
+  );
 }
