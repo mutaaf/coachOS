@@ -91,7 +91,8 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: "latest" asks GitHub's API anonymously and gets rate-limited.
+          version: 2.119.0
 
       - name: Start the local Supabase stack
         # The same throwaway database the tests use locally: every migration

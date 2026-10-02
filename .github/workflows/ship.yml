@@ -70,15 +70,19 @@ jobs:
           cache: npm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: "latest" asks GitHub's API anonymously and gets rate-limited.
+          version: 2.119.0
 
       - name: Migrate production
         if: env.SUPABASE_ACCESS_TOKEN != ''
         run: |
-          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          # With only the access token the CLI signs in with a temporary role;
+          # the database password is used when it's set.
+          pw=(); [ -n "$SUPABASE_DB_PASSWORD" ] && pw=(--password "$SUPABASE_DB_PASSWORD")
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" "${pw[@]}"
           # The CLI was once linked to a different project; never push without checking.
           test "$(cat supabase/.temp/project-ref)" = "$SUPABASE_PROJECT_REF"
-          supabase db push --yes --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --yes "${pw[@]}"
 
       - name: Deploy to production
         id: deploy
