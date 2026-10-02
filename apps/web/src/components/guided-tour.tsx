@@ -189,6 +189,19 @@ function buildSteps(ctx: TourContext | null): Step[] {
     body: "Every address, number and key lives here — your Zelle details, the Gmail that reads Zelle alerts, where replies to receipts go, the business name parents see, the card fee and the switch for real card payments. Each has a Copy button, and a change takes effect as soon as you save.",
   },
   {
+    id: "help",
+    path: "/help",
+    target: '[data-tour="help-tabs"]',
+    title: "Help, whenever you need it",
+    body: (
+      <>
+        Step-by-step guides for everything you do, each with <strong>Show me</strong> to walk you there;{" "}
+        <strong>Practise</strong> for trying things safely in test mode; and the <strong>Test plan</strong> — every check,
+        with your results saved as you go.
+      </>
+    ),
+  },
+  {
     id: "routine",
     path: "/dashboard",
     target: null,

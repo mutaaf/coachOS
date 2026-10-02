@@ -210,6 +210,9 @@ export async function truncateAll() {
       throw new Error(`Failed clearing ${table}: ${error.message}`);
     }
   }
+  // Keyed by test case id, not a uuid.
+  const { error } = await admin.from("acceptance_results").delete().neq("case_id", "");
+  if (error) throw new Error(`Failed clearing acceptance_results: ${error.message}`);
 }
 
 export const TEST_USER = {

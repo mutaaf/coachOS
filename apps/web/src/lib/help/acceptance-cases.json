@@ -1,0 +1,2219 @@
+[
+ {
+  "id": "ROS-01",
+  "area": "Roster import",
+  "title": "Import a session from a WhatsApp group member-list screenshot",
+  "risk": "Children end up enrolled under the wrong names, or the AI makes up children, so families are billed and messaged wrongly.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss on a computer.",
+   "You have a test school to import into, with an obvious name such as “AUDIT TEST – delete me”. Agree with the owner beforehand how the test families will be removed, because every child on a session is invoiced automatically on the 1st.",
+   "You have a screenshot of a WhatsApp group’s participant list (Group info → Participants) with 4–6 members. Some should be saved by name and some should show only as a phone number. The owner’s own entry (“You”) should also be visible. Use test or colleague numbers, not real parents."
+  ],
+  "steps": [
+   "Go to Schools and press “Import a roster”.",
+   "Under School, choose “+ New school” and type the test school name. Under Session, choose “+ New session”, type “Audit WhatsApp” and leave the monthly fee at 100. Press “Next”.",
+   "Press “Add screenshots or a CSV” and choose the WhatsApp screenshot. Check that its file name appears in the list, then press “Read roster”. Note how long it takes (the screen says screenshots take about half a minute).",
+   "On the review screen, read the summary line (“N children found. N need a fix before they can be added.”) and compare every row with the screenshot.",
+   "Check that the owner’s own entry (“You” or admin) does not appear as a row.",
+   "For each row, type the child’s first and last name, then click out of the field.",
+   "Press “Import N children”."
+  ],
+  "expected": [
+   "There is one row per parent in the screenshot. Each parent’s name (where shown) and phone number are copied exactly, digit for digit.",
+   "The child first name is blank on every row. Each row is outlined in amber with “Child's first name is missing”, which shows the AI does not make up children’s names.",
+   "Where the AI filled in the child’s last name from the parent’s surname, that field is highlighted in amber.",
+   "Members shown only as a number have a blank parent name. Once the child’s names are filled in, those rows are still held back with “Parent's name is missing” until you type a parent name.",
+   "After all required names are filled in, each row shows a green “Ready” and the number on the Import button goes up to match.",
+   "The done screen says “N children added to AUDIT TEST… · Audit WhatsApp.” and “N new families”.",
+   "If a red message says “Reading screenshots isn't switched on yet…” instead, the AI reader is not turned on in the live app. Record this as a blocking exception for ROS-01 and ROS-02."
+  ],
+  "evidence": "The original screenshot, the review screen before and after filling in child names (with the amber rows visible), and the done screen.",
+  "phone": false
+ },
+ {
+  "id": "ROS-02",
+  "area": "Roster import",
+  "title": "Import from a spreadsheet screenshot and check that uncertain fields are flagged",
+  "risk": "A misread digit in a phone number is accepted without anyone noticing, so that family never gets reminders or payment links.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss on a computer.",
+   "You have two screenshots of a spreadsheet with the columns Child, Parent, Phone and Grade, with 8–12 rows in total. In one of them, make one phone number blurry or partly cut off at the bottom edge on purpose.",
+   "You have a third image that is not a roster, such as a photo of a car."
+  ],
+  "steps": [
+   "Go to Schools → “Import a roster”, choose the test school, create a “+ New session” named “Audit Sheet” and press “Next”.",
+   "Add both spreadsheet screenshots at once and press “Read roster”.",
+   "On the review screen, check whether an amber notes box appears above the rows (for example, saying part of the image was cut off).",
+   "Find the blurry or cut-off phone number and check that its box is highlighted in amber.",
+   "Correct that phone number and click out of the field. Check that the amber highlight on that field goes away.",
+   "Compare every other row with the original spreadsheet, field by field.",
+   "Press “Back”, remove the screenshots with the X, add only the non-roster photo and press “Read roster”.",
+   "Press “Back” again, add 11 screenshots at once and press “Read roster”."
+  ],
+  "expected": [
+   "Rows from both screenshots appear in one list. Where the screenshots overlap, no row is repeated. If one is, note it; it can be removed with the bin icon.",
+   "Header rows are not imported as children.",
+   "Fields the reader was unsure about have an amber box, and the highlight goes away once you edit that field.",
+   "Any part of the image that was cut off is mentioned in the amber notes box.",
+   "The non-roster photo gives “No names found in that. Is it the right screenshot?” and nothing moves on to review.",
+   "11 screenshots give “Up to 10 screenshots at a time, please.”"
+  ],
+  "evidence": "Both original screenshots, the review screen showing the amber field(s) and the notes box, and the two error messages.",
+  "phone": false
+ },
+ {
+  "id": "ROS-03",
+  "area": "Roster import",
+  "title": "Import from a CSV file and from pasted text, including phone numbers typed different ways",
+  "risk": "A spreadsheet export is misread, or one family is saved as two, causing duplicate payment links and double messages.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You have a CSV file (in Excel or Google Sheets: File → Download → CSV) with the header row “Child Name,Parent Name,Phone” and these rows: “Mia Test,Raquel Test,(214) 555-0101”, “Leo Test,Raquel Test,214.555.0101”, “Ada Audit,Star Audit,” (no phone).",
+   "You have the same spreadsheet saved as .xlsx, and any PDF."
+  ],
+  "steps": [
+   "Go to Schools → “Import a roster”, choose the test school, create a “+ New session” named “Audit CSV” and press “Next”.",
+   "Add the .xlsx file and press “Read roster”. Note the message.",
+   "Remove it, add the PDF and press “Read roster”. Note the message.",
+   "Remove it, add the CSV and press “Read roster”.",
+   "On the review screen, type 214-555-0102 as Ada’s phone and click out of the field. Press “Import 3 children”.",
+   "Press “Import another session”, keep the same school, create a session named “Audit Paste” and press “Next”.",
+   "In the spreadsheet, select the header row and two data rows and copy them. Paste them into the “Or paste it” box and press “Read roster”.",
+   "Repeat with plain lines that have no header, for example “Sam Paste, Jo Paste, 214-555-0103”."
+  ],
+  "expected": [
+   "The .xlsx and the PDF are both refused with “Can't read <file name>. Use a screenshot (PNG or JPG) or a CSV — in Excel or Google Sheets, File → Download → CSV.”",
+   "The CSV is read instantly into 3 rows. The summary says “1 needs a fix before they can be added”, and Ada shows “Parent's phone number is missing or incomplete”.",
+   "After the fix, the done screen says “3 children added…” and “2 new families”. Raquel’s number, typed two different ways, counts as one family.",
+   "On the Students page, Raquel Test appears once, linked to both Mia and Leo.",
+   "Pasted text with headers is read straight away. Plain lines with no headers are sent to the AI reader, which takes longer. If the reader is off, the “isn't switched on yet” message appears instead."
+  ],
+  "evidence": "The CSV file, both refusal messages, the review screen with the held-back row, the done screen, and the Students page showing one Raquel with two children.",
+  "phone": false
+ },
+ {
+  "id": "ROS-04",
+  "area": "Roster import",
+  "title": "Confirm nothing is saved until “Import” is pressed",
+  "risk": "Abandoned or half-reviewed imports create schools, sessions or families the owner never approved.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You have noted the current number of schools on the Schools page and of students on the Students page (screenshot both).",
+   "You have any roster CSV or screenshot."
+  ],
+  "steps": [
+   "Go to Schools → “Import a roster”. Leave School as “+ New school” with the name blank and press “Next”. Note the message. Type the name “AUDIT NOSAVE”, leave the session name blank and press “Next”. Note the message. Name the session, clear the monthly fee and press “Next”. Note the message.",
+   "Enter a fee of 100, press “Next”, add the file and press “Read roster”.",
+   "On the review screen, edit a few fields, then close the dialog with the X. Do not press Import.",
+   "Refresh the Schools and Students pages.",
+   "Open “Import a roster” again and check whether your earlier file and edits are still there."
+  ],
+  "expected": [
+   "The messages appear in this order: “Type the school's name.”, “Name the session — e.g. “Lil Dribblers, Tue 4pm”.”, “Enter the monthly fee.”",
+   "After closing without importing, there is no “AUDIT NOSAVE” school or session, and the student count has not changed.",
+   "The dialog reopens empty at the first step, so nothing was kept."
+  ],
+  "evidence": "Before-and-after screenshots of the Schools and Students counts, and the three validation messages.",
+  "phone": false
+ },
+ {
+  "id": "ROS-05",
+  "area": "Roster import",
+  "title": "Re-import the same list and confirm no duplicates are created",
+  "risk": "Duplicate parents or children cause double invoices, double payment links and double reminders.",
+  "severity": "critical",
+  "preconditions": [
+   "ROS-03 is complete, so the “Audit CSV” session has Mia, Leo and Ada on it.",
+   "You have screenshotted the student count on the Students page and the number of students on the Audit CSV session."
+  ],
+  "steps": [
+   "Go to Schools → “Import a roster”, choose the test school, and pick the existing session “Audit CSV” from the Session list (not “+ New session”).",
+   "Add the same CSV and press “Read roster”.",
+   "Read the status line under each child on the review screen.",
+   "Fix Ada’s missing phone with the same number as before (214-555-0102) and press Import.",
+   "Check the Students page and the session’s roster."
+  ],
+  "expected": [
+   "Each row says “Already in this session” in green.",
+   "The done screen says “0 children added to …” with “0 new families · 3 were already on the roster”.",
+   "The student count, the parent count and the session roster are exactly as before. There is no second Mia, Leo, Ada or Raquel.",
+   "No new invoices for these children appear on the Payments page."
+  ],
+  "evidence": "The review screen showing “Already in this session”, the done screen, and the before-and-after counts.",
+  "phone": false
+ },
+ {
+  "id": "ROS-06",
+  "area": "Roster import",
+  "title": "A child or sibling in another session is linked to the existing family",
+  "risk": "A family with children in two sessions is created twice, so it gets two payment links and two charges instead of one.",
+  "severity": "critical",
+  "preconditions": [
+   "ROS-03 is complete: Raquel Test (214-555-0101) is on file, with Mia and Leo on “Audit CSV”.",
+   "You have a CSV with the header “Child Name,Parent Name,Phone” and these rows: “Mia Test,Raquel Test,+1 214 555 0101” (the same child, with the phone typed differently), “Zoe Test,Raquel Test,2145550101” (a new sibling), and “Mía Test,Raquel Test,214-555-0101” (an existing child’s name with an accent added)."
+  ],
+  "steps": [
+   "Go to Schools → “Import a roster”, choose the test school, create a “+ New session” named “Audit Second Session” and press “Next”.",
+   "Add the CSV and press “Read roster”.",
+   "Read each row’s status line.",
+   "Press Import.",
+   "Open the Students page and find Raquel Test, Mia, Zoe and any “Mía”."
+  ],
+  "expected": [
+   "All three rows show “Parent on file: Raquel Test”.",
+   "The done screen shows “0 new families”.",
+   "Mia is the same child (one record), now on two sessions. Zoe is a new child linked to Raquel.",
+   "'Mía' (accented) is recognised as the existing child Mia under the same parent: no new child is created. Names are compared ignoring accents and case."
+  ],
+  "evidence": "The review screen showing “Parent on file”, the done screen, and the Students page showing Raquel’s linked children.",
+  "phone": false
+ },
+ {
+  "id": "ROS-07",
+  "area": "Roster import",
+  "title": "Rows missing a phone or name are held back with a reason",
+  "risk": "Incomplete families are dropped or saved without anyone noticing, so children are missing from the roster or can’t be reached.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You have a CSV with the header “Child First,Child Last,Parent First,Parent Last,Phone” and these rows: one complete row; one with phone “555-0104” (only 7 digits); one with no child last name; one with no child first name; and one with a new phone number but no parent first name."
+  ],
+  "steps": [
+   "Go to Schools → “Import a roster”, choose the test school, create a “+ New session” named “Audit Held Back” and press “Next”.",
+   "Add the CSV and press “Read roster”.",
+   "Write down the reason shown on each amber row, and the number on the Import button.",
+   "Press “Add a child” to add a blank row and check its status.",
+   "Delete the blank row with the bin icon. Without fixing anything else, press “Import 1 child”.",
+   "Repeat with a file where every row has a problem."
+  ],
+  "expected": [
+   "The reasons shown are “Parent's phone number is missing or incomplete”, “Child's last name is missing”, “Child's first name is missing” and “Parent's name is missing”.",
+   "The summary says “4 need a fix before they can be added.” and the button reads “Import 1 child”.",
+   "The done screen says “1 child added…” and shows an amber box “4 not added:”, listing each child (or “Row N”) with the same reason.",
+   "When every row has a problem, the Import button reads “Import 0 children” and cannot be pressed."
+  ],
+  "evidence": "The review screen with all the reasons visible, and the done screen’s “not added” list.",
+  "phone": false
+ },
+ {
+  "id": "ROS-08",
+  "area": "Roster import",
+  "title": "Check seat counts and capacity after an import",
+  "risk": "The public sign-up page offers places in a session that is already full, or shows a full session as open.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You know how to find a session’s public registration link (Schools → school → session → share its registration link)."
+  ],
+  "steps": [
+   "Import 5 children into a new test session named “Audit Seats”.",
+   "Open the school and the session. Note the capacity and the number enrolled.",
+   "Open the session’s registration link in a private or incognito window.",
+   "Import a second list of 10 new children into the same existing session.",
+   "Refresh the session page and the registration page."
+  ],
+  "expected": [
+   "A session created by an import gets a capacity of 12, or of the number of children imported if that is more than 12.",
+   "After the first import, the public page shows “7 of 12 left”.",
+   "After the second import (15 children in a 12-seat session), the public page shows “Full” and the button reads “Join the waitlist”.",
+   "Exception check: importing into an existing session does not stop at capacity. Record whether the dashboard warns that the session is over capacity. If it does not, report it."
+  ],
+  "evidence": "The session page and the public page after each import, showing the seats left or “Full”.",
+  "phone": true
+ },
+ {
+  "id": "ONB-01",
+  "area": "Onboarding",
+  "title": "The first-login tour starts once, can be skipped, can be replayed from the menu, and doesn’t restart on another device",
+  "risk": "The tour keeps coming back and gets in the way of daily work, or can’t be found again when it’s needed.",
+  "severity": "medium",
+  "preconditions": [
+   "You have a Boss login that has never finished or skipped the tour (ask the developer to provide one or reset it).",
+   "You have a computer and a phone, both signed out."
+  ],
+  "steps": [
+   "Sign in on the computer. Note what appears on the dashboard.",
+   "Read the first card (“Welcome to CoachOS 👋”, “1 of 16”). Press “Next” twice, then press “Skip tour”.",
+   "Refresh the page, sign out, and sign back in.",
+   "On the phone, sign in with the same account for the first time.",
+   "On the computer, open the menu and press “Take the tour”. Move through it with “Next” and “Back” and with the keyboard arrow keys. Check that each step goes to the right page (Schools, Students, Registrations, Schedule, Payments, Messaging → Outbox, Settings).",
+   "On a later step, press the Escape key. Then restart the tour and press the X (“Close the tour”).",
+   "Restart the tour and go through all 16 steps to “Your routine from here”, then press “Done”."
+  ],
+  "expected": [
+   "The tour starts by itself only on the first sign-in.",
+   "After “Skip tour”, it does not start again on refresh, after signing in again, or on the phone.",
+   "“Take the tour” in the menu always starts it again at step 1.",
+   "Escape and the X close the tour the same way Skip does.",
+   "Each step shows the counter “N of 16” and highlights part of the page. The Welcome text uses the business name from Settings.",
+   "The last step has no “Skip tour” link, and its button reads “Done”."
+  ],
+  "evidence": "A screen recording of the first sign-in, and screenshots of the phone after sign-in showing no tour.",
+  "phone": true
+ },
+ {
+  "id": "ONB-02",
+  "area": "Onboarding",
+  "title": "The tour is readable on a phone and the card never covers what it explains",
+  "risk": "The owner, who mostly works on her phone, can’t read the tour or can’t see what it points at.",
+  "severity": "medium",
+  "preconditions": [
+   "You are signed in as the Boss on a phone. Test at least one iPhone and, if available, one Android phone."
+  ],
+  "steps": [
+   "Open the menu (top left) and press “Take the tour”.",
+   "At every step, check that the card sits along the bottom of the screen, that the highlighted (bright, outlined) area is fully visible above it, that the text fits without scrolling sideways, and that “Back”, “Next” and “Skip tour” are big enough to tap.",
+   "On two of the steps, turn the phone to landscape and back.",
+   "Scroll the page while a step is showing and check whether the highlight follows the item it points at."
+  ],
+  "expected": [
+   "The card is always at the bottom and never covers the highlighted area.",
+   "The darkened background doesn’t make anything unreadable, and no step shows a highlight in the wrong place.",
+   "On a step whose page is empty (nothing to point at), the card still explains the step, just without a highlight.",
+   "Turning the phone and scrolling keep the highlight on the right item."
+  ],
+  "evidence": "A screenshot of every step on the phone (16 images), or a screen recording.",
+  "phone": true
+ },
+ {
+  "id": "ONB-03",
+  "area": "Onboarding",
+  "title": "The Getting started list ticks items off only when they have really happened",
+  "risk": "The checklist shows setup as complete when Zelle, payment links or live payments aren’t actually working.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss on an account where the list is not yet complete.",
+   "You have arranged the Zelle and live-payment items with the person testing payments."
+  ],
+  "steps": [
+   "On the Dashboard, read the “Getting started” box: it should have six items and say “N of 6 done · Next: …”.",
+   "For one unfinished item, press “Show me” and check that the tour opens at the matching step.",
+   "Open “Import a roster”, read a list and close the dialog without importing. Go back to the dashboard.",
+   "Import one child, then go back to the dashboard.",
+   "In Settings → Payments, fill in two of these three: “Zelle Number or Email”, “Replies Go To”, “Zelle Alerts Gmail”. Save and go back to the dashboard. Then fill in the third and check again.",
+   "On the Payments page, prepare payment links but don’t send any, then go back to the dashboard. Then send one from Messaging → Outbox with the WhatsApp button and go back again.",
+   "Skip the tour and go back to the dashboard.",
+   "When all six are done, look for “Hide this”."
+  ],
+  "expected": [
+   "“Import your first session's roster” ticks only after a child has actually been imported, not after a cancelled import.",
+   "“Check your Zelle details and email addresses” ticks only when all three settings are filled in.",
+   "“Send families their payment links” ticks only after a message has been marked as sent from the Outbox, not when links are just prepared.",
+   "“Connect Zelle emails” ticks only after a real Zelle alert has been recorded. “Turn on real card and bank payments” ticks only when Stripe is switched on with a live key.",
+   "Note: skipping the tour ticks “Take the 3-minute tour”. Record whether that is acceptable.",
+   "“Hide this” appears only when all 6 are done, and the box then reads “All set — everything runs on its own from here.”"
+  ],
+  "evidence": "A screenshot of the dashboard after each action, showing the done count.",
+  "phone": false
+ },
+ {
+  "id": "SET-01",
+  "area": "Settings",
+  "title": "Secret keys stay hidden until “Show” is pressed, and the Copy and Open buttons work",
+  "risk": "A payment key shows on screen or in a screenshot, or a copied address is wrong and Zelle setup fails.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss on a computer, then on a phone.",
+   "You have a text editor or notes app to paste into."
+  ],
+  "steps": [
+   "Go to the Settings → Payments tab and find Stripe Secret Key, Webhook Secret and Zelle Email Key.",
+   "Without pressing the eye button, press Copy next to Zelle Email Key and paste the result into your notes.",
+   "Press the eye (“Show”) button and compare the key with what you pasted. Press it again to hide the key.",
+   "Switch to another tab and back, and check that the key is hidden again.",
+   "For “Replies Go To”, press Copy and then the “Email” button. For “Coach Phone” (General tab), press the “WhatsApp” button.",
+   "In “Zelle email setup”, press “Copy address”, “Open Gmail”, “Open Apps Script” and “Copy the script”, and open “For whoever sets this up”.",
+   "Repeat the Show and Copy checks on the phone."
+  ],
+  "expected": [
+   "Secret keys show as dots until “Show” is pressed, and go back to dots when hidden.",
+   "Copy copies the full key while it stays hidden, and the pasted value matches what “Show” displays.",
+   "The Email button opens a new message to that address, and the WhatsApp button opens a chat with that number. On the phone these buttons show as icons only.",
+   "“Open Gmail” and “Open Apps Script” open Google signed in as the Zelle Alerts Gmail. The copied script contains the key, but the key shown on screen under “For whoever sets this up” stays as dots."
+  ],
+  "evidence": "Screenshots of the hidden and shown states (black out the shown key before filing them), and a note of what each button did.",
+  "phone": true
+ },
+ {
+  "id": "SET-02",
+  "area": "Settings",
+  "title": "A changed address or business name shows up everywhere straight away, with no deploy",
+  "risk": "Parents see an old business name, or send Zelle to an old address, after the owner has updated it.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You have a test family’s payment page link (on the Payments page, the link icon on an invoice row copies it).",
+   "You have recorded the current values of Business Name, Zelle Alerts Gmail and Bank Alerts Arrive At so you can put them back."
+  ],
+  "steps": [
+   "In Settings → General, change Business Name to “Audit Academy”. Note that a “Save Changes” button appears (on a phone, an “Unsaved changes” bar with a “Save” button). Save.",
+   "In Settings → Payments, change Zelle Alerts Gmail and Bank Alerts Arrive At to test addresses. Save.",
+   "Without doing anything else, open the Getting started list on the dashboard, the tour’s Welcome and Zelle steps (“Take the tour”), the Zelle email setup steps, the family’s payment page, and any parent email sent by your payments colleague.",
+   "Also open a session’s public /join page and a coach attendance link.",
+   "Put the original values back and save."
+  ],
+  "expected": [
+   "A message “Saved — in effect now” appears.",
+   "Straight away, the tour’s Welcome says “Audit Academy's…”, the Zelle steps and the checklist show the new addresses, the payment page header shows “Audit Academy”, and new parent emails use the new name.",
+   "The public /join page header and its browser tab title also use the business name. The coach attendance sheet's tab title is fixed text — record if that matters.",
+   "After you put the values back, the original values show everywhere again."
+  ],
+  "evidence": "Screenshots of each place before and after the change, with the times.",
+  "phone": false
+ },
+ {
+  "id": "SET-03",
+  "area": "Settings",
+  "title": "Invalid entries and unsaved changes in Settings",
+  "risk": "A typo in an email address or phone number is saved without warning, so Zelle alerts or parent replies go nowhere and nobody notices.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You have recorded the current values so you can put them back afterwards."
+  ],
+  "steps": [
+   "In “Replies Go To”, type “owner-at-gmail” (no @). Note whether the “Email” button disappears. Save.",
+   "In “Coach Phone”, type “555-12”. Note whether the “WhatsApp” button disappears. Save.",
+   "In “Card Fee (%)”, type a negative number, then a very large number. Save each time.",
+   "Type a value with spaces before and after it. Save and reload the page.",
+   "Clear one of the three Zelle and email addresses completely and save. Check the Getting started list.",
+   "Change a value, then click to another page without saving, and come back.",
+   "Put all the original values back."
+  ],
+  "expected": [
+   "Invalid values are refused with a clear message and nothing is saved: an email without '@' ('… isn't an email address'), a phone with fewer than 10 digits, a link not starting https://, a negative number, a card fee above 10%, and a Zelle entry that is neither a phone number nor an email.",
+   "Spaces before and after a value are removed when it is saved.",
+   "Clearing one of the three addresses un-ticks “Check your Zelle details and email addresses”.",
+   "Leaving the page without saving throws the change away. Record whether you were warned."
+  ],
+  "evidence": "A screenshot after each save showing whether it was accepted, and the value shown after reloading.",
+  "phone": false
+ },
+ {
+  "id": "SET-04",
+  "area": "Settings",
+  "title": "The Stripe Test/Live switch requires sign-in and confirmation, and shows which mode is on",
+  "risk": "Real cards are charged during testing, or the owner thinks payments are live when they are only in test mode.",
+  "severity": "critical",
+  "preconditions": [
+   "The new “Stripe mode” switch in Settings → Payments has been released (check with the developer).",
+   "You are signed in as the Boss. How payments themselves behave is covered by the payments test pack."
+  ],
+  "steps": [
+   "In Settings → Payments, note how the current mode (Test or Live) is shown, and whether it is also shown anywhere else (for example the dashboard, the Payments page or the payment pages).",
+   "Flip the switch to the other mode. Note whether you are asked to confirm and what the message says. Choose cancel.",
+   "Flip it again and confirm. Press “Check connection”.",
+   "Open Settings in a second tab, sign out in the first tab, then try to flip the switch in the second tab.",
+   "Set the switch back to the agreed mode."
+  ],
+  "expected": [
+   "The current mode is labelled in words (Test or Live), not just by the position of the switch.",
+   "Switching asks you to confirm, and cancelling leaves the mode as it was.",
+   "“Check connection” reports success, or a problem in plain language, for the selected mode.",
+   "After signing out, the switch cannot be changed. The attempt either shows “Your session has ended. Sign in again and retry.” or sends you to the login page."
+  ],
+  "evidence": "Screenshots of each mode’s label, the confirmation message, the Check connection result and the refusal after signing out.",
+  "phone": true
+ },
+ {
+  "id": "SEC-01",
+  "area": "Access & security",
+  "title": "Every dashboard page sends a signed-out visitor to the login page",
+  "risk": "Children’s names, parents’ phone numbers, medical notes or payment keys can be seen by anyone who has the web address.",
+  "severity": "critical",
+  "preconditions": [
+   "You are in a private or incognito browser window and signed out, on a computer and on a phone.",
+   "While signed in earlier, you copied the web address of one school’s detail page."
+  ],
+  "steps": [
+   "Type each address in directly: /dashboard, /schools, the school detail address, /students, /registrations, /coaches, /schedule, /payments, /messaging, /messaging?tab=outbox, /marketing, /settings, and the site’s home address.",
+   "For each one, note where you end up and whether any data flashes up first.",
+   "Sign in. Then go to /login while signed in."
+  ],
+  "expected": [
+   "Every address lands on the login page. No names, numbers or amounts are shown, even for a moment.",
+   "After signing in you land on the Dashboard, and going to /login while signed in sends you to the Dashboard."
+  ],
+  "evidence": "A screen recording of going through the addresses in the private window, or one screenshot per address showing the login page and the address bar.",
+  "phone": true
+ },
+ {
+  "id": "SEC-02",
+  "area": "Access & security",
+  "title": "Signing out ends access, including in other open tabs",
+  "risk": "A shared or lost device keeps access to families’ data, or an old tab can still change settings or import families.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss in two tabs of the same browser: Tab A on Settings, and Tab B on Schools with “Import a roster” open on the review screen."
+  ],
+  "steps": [
+   "In a third tab, open the menu and press “Sign Out”.",
+   "Press the browser’s Back button.",
+   "In Tab A, change a setting and press “Save Changes”.",
+   "In Tab B, press “Import N children”.",
+   "Refresh Tab A and Tab B.",
+   "On the phone, sign out from the menu, then try Back and refresh the same way."
+  ],
+  "expected": [
+   "Sign Out goes to the login page.",
+   "Back does not show any usable data, and refreshing lands on the login page.",
+   "Tab A shows “Settings weren't saved” with “Your session has ended. Sign in again and retry.”, and when you sign back in the setting has not changed.",
+   "Tab B shows the same session-ended message, and no children are added.",
+   "Both tabs go to the login page when refreshed."
+  ],
+  "evidence": "Screenshots of the two refusal messages, and a check after signing back in that nothing changed.",
+  "phone": true
+ },
+ {
+  "id": "SEC-03",
+  "area": "Access & security",
+  "title": "Public pages work signed out, show nothing private, and handle old or altered links",
+  "risk": "A forwarded payment link shows another family’s details, or a mistyped link opens someone else’s page.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed out, in a private window, on a phone.",
+   "You have one test family’s payment page link (/pay/…) and one session’s registration link (/join/…), both copied while signed in.",
+   "Ideally, one test invoice has already been paid, so you have an old (“stale”) link to try."
+  ],
+  "steps": [
+   "Open the /join link and list every piece of information it shows.",
+   "Open the /pay link and list every piece of information it shows.",
+   "Forward the /pay link by WhatsApp to a second phone and open it there.",
+   "Change one character of the code at the end of the /pay link and open it. Then delete half of the code and open it.",
+   "Change the /join address to a made-up name.",
+   "Open the /pay link for the family whose invoice has been paid."
+  ],
+  "expected": [
+   "/join shows only the session name, school, location, dates, monthly cost and seat counts. It shows no names of children or parents.",
+   "/pay shows only first names, session names, months and amounts, the Zelle recipient, and a partly hidden email such as “r•••@gmail.com”. It shows no last names, phone numbers, medical notes or other families.",
+   "The forwarded link shows the same family to whoever opens it. This is by design, because the link itself is the key. Record it for risk acceptance, along with whether there is any way to cancel a link that has been shared too widely.",
+   "Altered, shortened or made-up links show a “not found” page, never another family’s or session’s page.",
+   "A paid family’s link shows the current balance (nothing owed), not the old amount."
+  ],
+  "evidence": "Screenshots of each page and of each “not found” result, with the address bar visible.",
+  "phone": true
+ },
+ {
+  "id": "REG-01",
+  "area": "Registration",
+  "title": "Public registration respects capacity and fills a waitlist when the session is full",
+  "risk": "More children are confirmed than there are places, or parents are turned away while seats are still free.",
+  "severity": "critical",
+  "preconditions": [
+   "You have a test session with registration open and only 2 seats left (ask the owner or developer to set the capacity).",
+   "You have its /join link open, signed out, on two phones."
+  ],
+  "steps": [
+   "Open the link. Note the “Spots” box (for example “2 of 12 left”) and the orange “Only 2 spots left.” banner.",
+   "Register a child with a test phone number and note the result.",
+   "Refresh, then register a second child from the second phone.",
+   "Refresh and read the Spots box and the button text.",
+   "Register a third child.",
+   "Sign in on the computer and open Registrations.",
+   "Optional race test: set up a session with 1 seat and press “Register” on both phones at the same moment."
+  ],
+  "expected": [
+   "The first two registrations show “You're in.” and mention the monthly fee. After each refresh, the seats go down by one.",
+   "When the session is full, Spots says “Full”, an amber notice says the program is full, and the button reads “Join the waitlist”.",
+   "The third registration shows “You're on the waitlist.” and “You're number 1 in line”. Spots then reads “Full · 1 on the waitlist”.",
+   "Registrations in the dashboard lists two confirmed and one waitlisted.",
+   "In the race test, only one phone is confirmed and the other is waitlisted."
+  ],
+  "evidence": "Phone screenshots of the page before and after each registration, and the Registrations list in the dashboard.",
+  "phone": true
+ },
+ {
+  "id": "REG-02",
+  "area": "Registration",
+  "title": "The registration form rejects incomplete and duplicate sign-ups",
+  "risk": "The same child is registered twice, taking two seats and creating two families.",
+  "severity": "high",
+  "preconditions": [
+   "You have a test session with registration open and free seats, opened signed out on a phone."
+  ],
+  "steps": [
+   "Press “Register” with every field empty.",
+   "Fill in only the child’s names and press “Register”.",
+   "Complete the form with the phone number “(214) 555-0150” and register.",
+   "Reload the page and submit the same child and phone number again.",
+   "Submit the same child again with the phone typed as “2145550150”.",
+   "Open a session that has registration closed (if there is one) and a made-up /join address."
+  ],
+  "expected": [
+   "Empty required fields are blocked by the form, and nothing is sent.",
+   "Repeating with exactly the same phone number gives “We already have a registration for this child in this program. Message us if you think that's wrong.”",
+   "The repeat with the phone typed differently ('2145550150' vs '(214) 555-0150') is also refused with the 'already have a registration' message: phones are compared by their digits, and names ignoring accents.",
+   "A closed session shows “Registration isn't open yet”, and a made-up address shows “not found”."
+  ],
+  "evidence": "Screenshots of each message, and of the Registrations list in the dashboard afterwards.",
+  "phone": true
+ },
+ {
+  "id": "PAY-01",
+  "area": "Autopay & Stripe",
+  "title": "Set up card autopay and confirm the first charge, card fee included, is exact",
+  "risk": "Families are charged the wrong amount, or the card fee is not what the payment page showed, which leads to disputes and refunds and damages trust.",
+  "severity": "critical",
+  "preconditions": [
+   "Stripe is in Test mode (Settings → Payments shows Test, and the Stripe dashboard has 'Test mode' / sandbox switched on).",
+   "Settings → Payments: 'Enable Stripe' is on and 'Card Fee (%)' is set to a known value (default 3). Write the value down.",
+   "A test family (Parent A) with one child actively enrolled, an invoice for the current month showing 'pending' or 'overdue' on Payments → Invoices, a phone number, and an email address you can read.",
+   "Parent A's autopay is off."
+  ],
+  "steps": [
+   "As Boss, go to Payments → Invoices. Find Parent A's invoice and write down the Amount. Click the link icon in the 'Pay link' column ('Copy this family's payment page link').",
+   "Open the link on your phone.",
+   "Check the top of the page: 'Hi <first name>', 'Payments for <child first name>.', and under 'To pay' a total equal to the invoice amount.",
+   "Under 'Pay automatically', read the two buttons. 'Bank account' should say 'No fee'. 'Card' should say '<your %>% card fee'. Read the small print: 'Your current balance of $X will be paid within a day.'",
+   "Tap 'Card'. On the Stripe page, enter card 4242 4242 4242 4242, any future expiry, any CVC and any ZIP, then save.",
+   "When you are sent back, check the page.",
+   "Wait for the next daily run (about 1 pm Central; noon after the clocks change in November), or ask Mutaaf to trigger it.",
+   "Reopen the payment page. Then, as Boss, check Payments → Invoices and Payments → Payment History.",
+   "In the Stripe dashboard (Test mode), open Payments, find the newest payment and open it.",
+   "Check the email inbox for Parent A."
+  ],
+  "expected": [
+   "Before choosing, the page shows the card fee percentage and the bank 'No fee' label.",
+   "After returning from Stripe: a green box 'You're all set.' and 'Autopay is on — Paid from Visa ••••4242 on each due date, plus a <x>% card fee.'",
+   "The 'Prefer Zelle?' section is no longer shown.",
+   "After the daily run, the invoice status is 'paid' and the payment page says 'You're all paid up'.",
+   "Payment History has one new row: Method 'stripe', Amount equal to the invoice balance (the fee is NOT in this column), Reference 'Visa ••••4242'. Opening the row's edit (pencil) shows Notes 'Autopay (card fee $F)'.",
+   "The Stripe charge amount equals balance + fee, where fee = balance × fee% rounded to the nearest cent. The description reads '<Month> — <child first name>'.",
+   "Parent A gets one email, 'Receipt: $<total> received — <business name>', listing the child line, 'Card processing fee $F' and a 'Total' equal to the Stripe amount."
+  ],
+  "evidence": "Phone screenshots of the fee labels before choosing and of 'Autopay is on'. Screenshot of the Stripe payment detail showing the amount. Screenshots of the Payment History row and its Notes. The receipt email. A short calculation note: balance × % = fee.",
+  "phone": true
+ },
+ {
+  "id": "PAY-02",
+  "area": "Autopay & Stripe",
+  "title": "Set up bank autopay with Test Institution and confirm no fee is charged",
+  "risk": "Bank-paying families are charged a card fee, or a bank debit is never collected or booked.",
+  "severity": "critical",
+  "preconditions": [
+   "Stripe is in Test mode.",
+   "Test family Parent B with one open invoice and autopay off; Parent B's email is readable."
+  ],
+  "steps": [
+   "Copy Parent B's pay link from Payments → Invoices and open it on your phone.",
+   "Tap 'Bank account' ('No fee').",
+   "In Stripe's bank picker, choose 'Test Institution', then pick the successful test account and finish.",
+   "Check the page you return to.",
+   "Wait for the next daily run (about 1 pm Central), or ask Mutaaf to trigger it.",
+   "Immediately after the run, reload Parent B's payment page and look at Payments → Invoices.",
+   "In the Stripe dashboard (Test mode), look at the payment for Parent B. Test-mode bank debits can settle within minutes, so check soon.",
+   "After Stripe shows the payment 'Succeeded', recheck Payments → Invoices, Payment History and Parent B's email."
+  ],
+  "expected": [
+   "After setup: 'Autopay is on — Paid from <Bank name> ••••<last4> on each due date. You'll never need to send anything.' No card-fee wording.",
+   "While the debit is in flight, the invoice shows 'processing' and the payment page lists the line with 'Bank payment on its way'. It is not under 'To pay'.",
+   "The Stripe amount equals the invoice balance exactly, with no fee added.",
+   "Once settled: the invoice is 'paid', Payment History has one 'stripe' row whose Amount equals the balance, and the Notes say 'Autopay' with no fee.",
+   "One receipt email with no 'Card processing fee' line."
+  ],
+  "evidence": "Phone screenshots of the 'Bank payment on its way' state and of 'Autopay is on'. The Stripe payment timeline showing Processing then Succeeded. The Payment History row. The receipt email.",
+  "phone": true
+ },
+ {
+  "id": "PAY-03",
+  "area": "Autopay & Stripe",
+  "title": "Check that siblings are charged once per family, in one charge",
+  "risk": "A parent with two children sees two charges and gets two failure messages, or is double-charged.",
+  "severity": "critical",
+  "preconditions": [
+   "Stripe is in Test mode.",
+   "Test Parent C is linked to two children (e.g. Ava and Ben), each with an open invoice for this month.",
+   "Card Fee (%) is known."
+  ],
+  "steps": [
+   "Open Parent C's pay link. Confirm 'Payments for Ava and Ben.' and that the 'To pay' total equals both invoices added together.",
+   "Tap 'Card' and save 4242 4242 4242 4242.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "In Stripe (Test mode), go to Payments and filter or search for Parent C's customer.",
+   "Check Payments → Payment History, Payments → Invoices and Parent C's email."
+  ],
+  "expected": [
+   "Stripe shows exactly ONE payment for Parent C. Its description is '<Month> — Ava and Ben'.",
+   "Stripe amount = (Ava balance + Ava fee) + (Ben balance + Ben fee). The fee is worked out per invoice and rounded to the cent, so it can differ by 1 cent from the total × %. Record both figures.",
+   "Payment History shows TWO rows, one per child, each for that child's balance, both with the same Reference (card label).",
+   "Both invoices are 'paid'.",
+   "Exactly ONE receipt email lists both children, the card fee and a Total equal to the Stripe amount."
+  ],
+  "evidence": "Stripe customer page showing a single payment. Payment History filtered to the two children. The receipt email. Your reconciliation arithmetic.",
+  "phone": false
+ },
+ {
+  "id": "PAY-04",
+  "area": "Autopay & Stripe",
+  "title": "Check that an earlier unpaid month is rolled into the same charge, and a partial payment is respected",
+  "risk": "A family is charged for a month already partly paid, or an older debt is never collected.",
+  "severity": "high",
+  "preconditions": [
+   "Stripe is in Test mode.",
+   "Test Parent D has an unpaid invoice from LAST month (status 'overdue') and an invoice for THIS month.",
+   "Use Payments → 'Record Payment' to record a partial cash payment (e.g. $20) against last month's invoice. Note the remaining balance.",
+   "Parent D's autopay is off."
+  ],
+  "steps": [
+   "Open Parent D's pay link. Check that both months are listed under 'To pay'. Last month should show 'Was due <date>' in red, and the total should equal (last month remaining + this month).",
+   "Set up card autopay with 4242 4242 4242 4242.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Check Stripe, Payment History, Invoices and the receipt."
+  ],
+  "expected": [
+   "One Stripe charge. Its description names both months (e.g. 'September and October — <child>').",
+   "The charge covers the REMAINING balance of last month (not the full original amount) plus this month, plus the card fee on each.",
+   "Payment History has two new 'stripe' rows (one per invoice) alongside the earlier $20 cash row.",
+   "Both invoices are 'paid'. One receipt email."
+  ],
+  "evidence": "Pay page screenshot before setup. The Stripe charge. Payment History showing the cash row and the two stripe rows. Arithmetic.",
+  "phone": true
+ },
+ {
+  "id": "PAY-05",
+  "area": "Autopay & Stripe",
+  "title": "Check that a bank debit in 'processing' gets no overdue reminder",
+  "risk": "A family whose money is already on its way receives a payment-chasing WhatsApp and email, which looks unprofessional and causes complaints.",
+  "severity": "high",
+  "preconditions": [
+   "Settings: payment reminders are enabled. Note 'payment reminder days after due' (default 3).",
+   "Test Parent E has an invoice that is overdue by MORE than that many days and has not been reminded yet (ask Mutaaf to prepare one if needed).",
+   "Parent E has a phone number and an email."
+  ],
+  "steps": [
+   "Before the run, open Messaging → Outbox and note whether anything is waiting for Parent E.",
+   "Open Parent E's pay link and set up 'Bank account' with Test Institution (success account).",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Straight afterwards, check Payments → Invoices for Parent E's invoice status.",
+   "Check Messaging → Outbox and Parent E's email inbox for a payment reminder.",
+   "After Stripe shows the debit settled, check again."
+  ],
+  "expected": [
+   "The invoice moves to 'processing' (or straight to 'paid' if test mode settled instantly), never to 'overdue' in that run.",
+   "No payment reminder appears in the Outbox, and no reminder email arrives for Parent E.",
+   "Once settled, the invoice is 'paid' and only a receipt email arrives."
+  ],
+  "evidence": "Invoices list screenshot showing 'processing'. Outbox screenshot with no reminder for Parent E. The inbox showing only a receipt.",
+  "phone": false
+ },
+ {
+  "id": "PAY-06",
+  "area": "Autopay & Stripe",
+  "title": "Check that a declined card means one message, one email, the invoice owed again, and no daily retry",
+  "risk": "Failures go unnoticed, the parent is spammed, or the same declined card is retried daily and collects decline fees.",
+  "severity": "critical",
+  "preconditions": [
+   "Stripe is in Test mode.",
+   "Test Parent F has one or two children with open invoices, a phone and an email, and autopay is off.",
+   "Messaging → Outbox is clear of Parent F messages."
+  ],
+  "steps": [
+   "Open Parent F's pay link and tap 'Card'. Enter 4000 0000 0000 0341. Saving it should succeed.",
+   "Confirm the page says 'Autopay is on' with 'Visa ••••0341'.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Check Payments → Invoices, Messaging → Outbox, and Parent F's email.",
+   "Reload Parent F's payment page.",
+   "Wait for the FOLLOWING day's run (or ask Mutaaf to trigger it again). Check Stripe, the Outbox and email again."
+  ],
+  "expected": [
+   "Stripe shows one failed payment attempt (declined).",
+   "The invoice goes back to 'pending' or 'overdue' (owed), not 'paid' or 'processing'. No Payment History row is added.",
+   "Exactly ONE WhatsApp message for the family (even with two children) is in the Outbox: 'Hi <name>, the automatic payment of $<owed> for <children>'s <program> didn't go through (your card was declined…). You can update your payment details or pay another way here: <link>'. The $ amount is the balance owed (no card fee); note this.",
+   "Exactly ONE email: 'Your automatic payment didn't go through — <business name>'.",
+   "The payment page lists the invoice under 'To pay' again and, under 'Autopay is on', shows a red notice 'Your last automatic payment didn't go through' with the bank's reason, plus buttons to use a different card or switch to bank. The Zelle option reappears.",
+   "On the next day's run: NO new Stripe attempt, no second WhatsApp, no second email."
+  ],
+  "evidence": "The Stripe failed payment. The Outbox message text. The failure email. Invoices status. A screenshot from the following day showing no new attempt in Stripe.",
+  "phone": true
+ },
+ {
+  "id": "PAY-07",
+  "area": "Autopay & Stripe",
+  "title": "Check that a declined family is retried after saving a new card",
+  "risk": "A family who fixes their card is never charged, and the debt quietly sits unpaid.",
+  "severity": "high",
+  "preconditions": [
+   "PAY-06 completed: Parent F's invoice is owed after a decline and was not retried."
+  ],
+  "steps": [
+   "Open the link from the failure WhatsApp/email on your phone, and confirm it is the same page.",
+   "Tap 'Change payment method'. On Stripe, enter 4242 4242 4242 4242 and save.",
+   "Confirm the page now shows 'Visa ••••4242'.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Check Stripe, Invoices, Payment History and email."
+  ],
+  "expected": [
+   "One new successful Stripe charge for the owed balance plus the card fee.",
+   "The invoice is 'paid'. Payment History has the new row(s) with Reference 'Visa ••••4242'.",
+   "One receipt email. No new failure message."
+  ],
+  "evidence": "Pay page after the change. The Stripe successful payment. The Payment History row. The receipt.",
+  "phone": true
+ },
+ {
+  "id": "PAY-08",
+  "area": "Autopay & Stripe",
+  "title": "Check how cards that require authentication (3-D Secure) are handled",
+  "risk": "A charge sits half-finished and could later complete alongside another payment (double collection), or fails silently.",
+  "severity": "high",
+  "preconditions": [
+   "Stripe is in Test mode.",
+   "Two test families with open invoices and autopay off: Parent G1 and Parent G2."
+  ],
+  "steps": [
+   "Parent G1: open the pay link, tap 'Card', enter 4000 0025 0000 3155. Complete the authentication pop-up Stripe shows ('Complete').",
+   "Parent G2: open the pay link, tap 'Card', enter 4000 0027 6000 3184 (authentication on EVERY payment). Complete the authentication when saving.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Check Stripe, Invoices, the Outbox and email for both families."
+  ],
+  "expected": [
+   "G1 (3155): this card was authenticated for later use when saved, so the off-session charge should SUCCEED, giving a 'paid' invoice and a receipt. If it fails instead, record the exact message.",
+   "G2 (3184): the charge does NOT complete. In Stripe it is failed, cancelled or incomplete, never 'Succeeded', and it cannot be completed later.",
+   "G2's invoice is owed again. One WhatsApp in the Outbox and one failure email, with a reason about the bank asking to confirm or authentication.",
+   "G2 is not retried the next day unless a new payment method is saved."
+  ],
+  "evidence": "Stripe payment detail for both families showing the final status. G2's Outbox message and failure email.",
+  "phone": true
+ },
+ {
+  "id": "PAY-09",
+  "area": "Autopay & Stripe",
+  "title": "Turn autopay off from the parent page and confirm charges really stop",
+  "risk": "A parent who cancelled is still charged, a consumer-protection and chargeback exposure.",
+  "severity": "critical",
+  "preconditions": [
+   "Test Parent H has autopay on (card 4242) and an open invoice not yet charged (e.g. set up after today's run, or a newly generated invoice)."
+  ],
+  "steps": [
+   "Open Parent H's pay link on your phone. Tap 'Turn off'.",
+   "Check that a confirmation appears with 'Yes, turn off autopay' and 'Keep it on'. Tap 'Keep it on' first and confirm nothing changed.",
+   "Tap 'Turn off' again, then 'Yes, turn off autopay'.",
+   "Check the page.",
+   "In Stripe (Test mode), open Customers → Parent H → Payment methods.",
+   "As Boss, check Payments: the 'Autopay' panel count of families who pay automatically.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it. Check Stripe and the invoice."
+  ],
+  "expected": [
+   "Turning off takes two taps with no message to anyone. The page returns to 'Pay automatically' with the Bank/Card buttons, and the Zelle section reappears.",
+   "The card no longer appears on the Stripe customer (it was detached).",
+   "The Autopay panel count drops by one.",
+   "The daily run creates NO charge for Parent H, and the invoice stays owed."
+  ],
+  "evidence": "Phone screenshots of the confirm step and the after state. The Stripe customer with no payment method. The Autopay panel count before and after. Stripe payments the next day showing no charge.",
+  "phone": true
+ },
+ {
+  "id": "PAY-10",
+  "area": "Autopay & Stripe",
+  "title": "Change the payment method, and switch between card and bank",
+  "risk": "The old card is charged after the parent changed it, or a parent cannot move from card (fee) to bank (no fee).",
+  "severity": "medium",
+  "preconditions": [
+   "Test Parent I has card autopay on (Visa ••••4242) and an open invoice."
+  ],
+  "steps": [
+   "On Parent I's payment page, tap 'Change payment method'. Note which Stripe page opens: card form or bank picker.",
+   "Save a different test card (e.g. 5555 5555 5555 4444, a Mastercard).",
+   "Confirm the page now shows 'Mastercard ••••4444'.",
+   "Now try to switch to a bank account: look for any way to choose 'Bank account' while autopay is on. If there is none, tap 'Turn off' → 'Yes, turn off autopay', then tap 'Bank account' and complete Test Institution.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it. Check Stripe."
+  ],
+  "expected": [
+   "With autopay on, the page offers both 'Use a different card' (or bank account) and 'Switch to bank (no fee)' / 'Switch to card'. Each opens the matching Stripe form.",
+   "After changing, only the new method is shown, and the next charge uses it (Stripe shows the new last 4).",
+   "After switching to bank, the charge has no card fee."
+  ],
+  "evidence": "Screenshots of the page before and after each change. The Stripe charge showing which payment method was used.",
+  "phone": true
+ },
+ {
+  "id": "PAY-11",
+  "area": "Autopay & Stripe",
+  "title": "Charge the paying parent when the invoice is billed to the other parent",
+  "risk": "The wrong parent is charged or chased, or the family is never collected because the invoice names someone else.",
+  "severity": "high",
+  "preconditions": [
+   "One child linked to two parents: Mother (the parent named on the invoice in Payments → Invoices 'Parent' column) and Father.",
+   "Both have their own pay link and email. Autopay is off for both."
+  ],
+  "steps": [
+   "Open FATHER's pay link (copy it from his parent record or ask Mutaaf). Check it shows the child's open invoice under 'To pay'.",
+   "Set up card autopay on Father's page with 4242 4242 4242 4242.",
+   "Open MOTHER's page and check what it shows.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Check Stripe (which customer was charged), Payment History, and both parents' emails.",
+   "Extra (double-charge check): set up autopay on Mother's page too, generate or obtain a new open invoice for the child, and run again."
+  ],
+  "expected": [
+   "Father's page shows the child's invoice even though it is billed to Mother.",
+   "Mother's page shows the same balance and does not show Father's card details.",
+   "Father's Stripe customer is charged once, and the invoice becomes 'paid'. The receipt goes to Father.",
+   "With both parents on autopay, the child's invoice is charged ONCE in total, never once per parent."
+  ],
+  "evidence": "Both pay pages. The Invoices row showing the billed parent. The Stripe customer charged. A Stripe list showing a single charge in the both-on case.",
+  "phone": false
+ },
+ {
+  "id": "PAY-12",
+  "area": "Autopay & Stripe",
+  "title": "Check that invalid, altered and forwarded pay links behave safely",
+  "risk": "A guessed or tampered link reveals another family's page, or lets someone change another family's payment set-up.",
+  "severity": "critical",
+  "preconditions": [
+   "Two test families (Parent J and Parent K) with working pay links."
+  ],
+  "steps": [
+   "Open Parent J's link, then change one character in the last part of the URL and load it.",
+   "Delete half of the code after /pay/ and load it.",
+   "Load https://app.risingstars.training/pay/ followed by random text.",
+   "Forward Parent J's link to a different phone (or open it in a private window, not logged in) and confirm the page loads without a login. Note what someone holding the link could do: turn off autopay, change the receipt email, save a Zelle name.",
+   "Set up card autopay for Parent J. When Stripe returns you, copy the whole address bar (it ends in '?setup=cs_…'). Then open Parent K's link and add the same '?setup=cs_…' ending. Load it.",
+   "Search Google for the business name plus 'pay' and check no family pages are listed."
+  ],
+  "expected": [
+   "Altered, truncated or random links show a 'not found' page. They never show another family and never show an error with technical details.",
+   "A forwarded link works for anyone holding it (by design; record this as an accepted control: the link is the key). Saved email is shown only masked (e.g. 'r•••@gmail.com').",
+   "Parent K's page is unchanged by Parent J's setup code: autopay stays off, and no Parent J card appears.",
+   "No pay pages appear in search results."
+  ],
+  "evidence": "Screenshots of each not-found result. Parent K's page after the cross-family attempt. Notes on what a link holder can change.",
+  "phone": true
+ },
+ {
+  "id": "PAY-13",
+  "area": "Autopay & Stripe",
+  "title": "Audit the payment page for data exposure",
+  "risk": "A forwarded or screenshotted link leaks children's last names, phone numbers, full bank details or other families' data.",
+  "severity": "critical",
+  "preconditions": [
+   "A test family with two children, a saved email, a saved card or bank, and at least one Zelle name saved via 'Sending from an account in someone else's name?'."
+  ],
+  "steps": [
+   "Open the family's pay link on your phone and read every section top to bottom: header, 'To pay', autopay, Zelle, 'Receipts by email'.",
+   "Write down every piece of personal data visible.",
+   "Repeat with autopay off (Zelle section visible) and with autopay on.",
+   "Try entering another real family's full name in the Zelle 'Name on the account' box and tap 'Save'.",
+   "Tap 'Card' and on Stripe's page check what is pre-filled (email, name)."
+  ],
+  "expected": [
+   "Shown: the parent's FIRST name, children's FIRST names, program names, months, due dates, amounts, the business name, the Zelle recipient, the masked email, and the card/bank label with last 4 only.",
+   "NOT shown: any last name of the parent or child, phone numbers, addresses, medical notes, school, other families, full card or bank numbers.",
+   "Saved Zelle sender names show as first name and initial only ('We'll recognise: Miguel G.'), never in full.",
+   "Saving another family's name is refused: 'That name is already linked to another family. Message us and we'll sort it out.'",
+   "Stripe's page shows only what Stripe needs. No other family's data is pre-filled."
+  ],
+  "evidence": "Full-page phone screenshots in both states, with a data inventory list annotated as allowed or not allowed. A screenshot of the refused Zelle name.",
+  "phone": true
+ },
+ {
+  "id": "PAY-14",
+  "area": "Autopay & Stripe",
+  "title": "Check that a Stripe-hosted invoice is voided when autopay charges the same month",
+  "risk": "A family pays the same month twice: once by the emailed Stripe invoice link and once by autopay.",
+  "severity": "high",
+  "preconditions": [
+   "Stripe enabled so that generating invoices also creates Stripe invoices (an external-link icon 'Stripe invoice' appears in the 'Pay link' column).",
+   "Test Parent L has an open invoice with a Stripe invoice link, and has just set up card autopay."
+  ],
+  "steps": [
+   "On Payments → Invoices, click Parent L's 'Stripe invoice' icon and note that the Stripe page is payable.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it.",
+   "Click the same Stripe invoice link again (keep the copied URL), and check the 'Pay link' column.",
+   "In Stripe → Invoices, find that invoice."
+  ],
+  "expected": [
+   "After the run, the Stripe invoice is 'Void' and cannot be paid.",
+   "The 'Stripe invoice' icon no longer shows for that row.",
+   "The family is charged once, by autopay only."
+  ],
+  "evidence": "Stripe invoice before (Open) and after (Void). The autopay charge in Stripe. The Invoices row.",
+  "phone": false
+ },
+ {
+  "id": "PAY-15",
+  "area": "Autopay & Stripe",
+  "title": "Bank account verified by micro-deposits ('One last step')",
+  "risk": "An unverified bank account is debited, or a family thinks autopay is on when it is not.",
+  "severity": "medium",
+  "preconditions": [
+   "Test family Parent M with an open invoice, autopay off."
+  ],
+  "steps": [
+   "Open the pay link, tap 'Bank account'. In Stripe choose to enter details manually: routing 110000000, account 000123456789.",
+   "Return to the page.",
+   "As Boss, wait for or trigger the daily run, and check Stripe for any charge.",
+   "On the pay page tap 'Confirm my bank account' and verify using Stripe's test values (amounts 32 and 45, or code SM11AA).",
+   "Reload the pay page, then wait for or trigger the next run."
+  ],
+  "expected": [
+   "Before verification the page shows 'One last step — Your bank will show a small deposit from Stripe in 1–2 business days…' with a 'Confirm my bank account' button. It does NOT say 'Autopay is on'.",
+   "No charge is made while it is pending, and the family is not counted in the Autopay panel.",
+   "After verification the page shows 'Autopay is on'. The next run charges with no fee."
+  ],
+  "evidence": "Screenshot of 'One last step'. Stripe showing no charge while pending. The page after verification. The charge.",
+  "phone": true
+ },
+ {
+  "id": "PAY-16",
+  "area": "Autopay & Stripe",
+  "title": "Check that redelivered Stripe webhooks do not double-book payments or receipts",
+  "risk": "Stripe resends an event, and the books show a payment twice or the parent gets duplicate receipts, misstating revenue.",
+  "severity": "high",
+  "preconditions": [
+   "A successful autopay charge exists from PAY-01, PAY-02 or PAY-03.",
+   "Access to the Stripe dashboard (Test mode) → Developers → Webhooks (or Workbench → Webhooks)."
+  ],
+  "steps": [
+   "In Stripe, open the CoachOS webhook endpoint and find the 'payment_intent.succeeded' event for that charge.",
+   "Note the Payment History rows for that charge and the number of receipt emails.",
+   "Click 'Resend' on the event. Confirm the delivery shows a 200 response.",
+   "Refresh Payments → Payment History and check email.",
+   "Repeat for a 'payment_intent.payment_failed' event from PAY-06."
+  ],
+  "expected": [
+   "Resending returns success (200).",
+   "No new Payment History row, and totals unchanged ('Total Revenue', 'Paid This Month').",
+   "No second receipt email, and no second failure WhatsApp or email."
+  ],
+  "evidence": "Stripe webhook delivery log showing the resend and 200. Payment History before and after. The inbox showing a single receipt.",
+  "phone": false
+ },
+ {
+  "id": "PAY-17",
+  "area": "Autopay & Stripe",
+  "title": "Reconcile Stripe against CoachOS Payment History and receipts for a period",
+  "risk": "Revenue reported in CoachOS does not match money collected in Stripe, so fees are mis-accounted and errors go undetected.",
+  "severity": "critical",
+  "preconditions": [
+   "Several test autopay charges completed (card single, card siblings, bank, at least one failure)."
+  ],
+  "steps": [
+   "In Stripe (Test mode) → Payments, filter to the test period and export or list every succeeded charge: amount, Stripe fee and net, description, customer.",
+   "In CoachOS Payments → Payment History, filter Method 'stripe' and list each row: date, student, amount, reference. Open each row's edit to read Notes for 'card fee $X'.",
+   "For each Stripe charge, match the CoachOS rows (one per child/invoice) and the receipt email.",
+   "Compute: Stripe gross = sum of CoachOS amounts + sum of card fees in Notes = receipt 'Total'.",
+   "Check that failed Stripe charges have NO CoachOS payment row.",
+   "Compare the CoachOS 'Paid This Month' card with your sum."
+  ],
+  "expected": [
+   "Every succeeded Stripe charge maps to one or more CoachOS rows and exactly one receipt. Nothing is unmatched in either direction.",
+   "Gross ties out to the cent, including card-fee rounding per invoice.",
+   "Note for the report: the CoachOS Amount column EXCLUDES the card fee, which is recorded only in Notes (and as a separate fee field). Stripe's own processing fee (Stripe's fee and net) is not recorded in CoachOS at all. Flag this if the business needs net revenue.",
+   "No payment rows exist for failed or cancelled charges."
+  ],
+  "evidence": "A reconciliation worksheet (Stripe charge ID ↔ CoachOS rows ↔ receipt). Screenshots of any exception.",
+  "phone": false
+ },
+ {
+  "id": "PAY-18",
+  "area": "Autopay & Stripe",
+  "title": "Stripe mode switch: check the connection, switch Test → Live with confirmation, and review the effect on test-set-up families",
+  "risk": "Live mode is switched on with the wrong keys or account, or families keep 'autopay on' pointing at cards that don't exist in Live and silently fail every month.",
+  "severity": "critical",
+  "preconditions": [
+   "The new Settings → Payments 'Stripe mode' switch is deployed. Separate test and live keys are entered (Mutaaf to provide live keys or do the live part with you).",
+   "At least two test families have autopay on (set up in Test mode).",
+   "Agree with Mutaaf a window when no daily run will happen, and do NOT leave Live on through a daily run."
+  ],
+  "steps": [
+   "Settings → Payments: with mode Test, click 'Check connection'. Note the account name and mode it reports and compare them with the Stripe dashboard account name (top-left) in Test mode.",
+   "Enter a deliberately wrong test key (e.g. delete a character), save, and click 'Check connection'. Then restore the correct key.",
+   "Optional control test: paste a LIVE key into the TEST key field and click 'Check connection'.",
+   "Note the Payments 'Autopay' panel count of families paying automatically.",
+   "Switch the mode to Live. When the confirmation appears, cancel it first and confirm nothing changed. Then switch again and confirm.",
+   "Click 'Check connection' in Live.",
+   "Look at the Autopay panel count and open one of the test families' pay pages.",
+   "Switch back to Test straight away (see PAY-19)."
+  ],
+  "expected": [
+   "'Check connection' names the Stripe account and mode, matching the dashboard.",
+   "A wrong key gives a clear failure message, not a false 'connected'.",
+   "A live key in the test field is rejected or clearly flagged as the wrong mode (if it is accepted silently, record it as an exception).",
+   "Switching needs explicit confirmation, and cancelling leaves the mode unchanged.",
+   "After switching to Live: families set up in Test have autopay turned OFF. Their pay pages show 'Pay automatically' with the Bank/Card buttons again, and the Autopay panel count drops to 0 (or to the live-set-up families only).",
+   "No charge is attempted in Live against any test-mode card."
+  ],
+  "evidence": "Screenshots of Check connection in both modes next to the Stripe dashboard account name. The confirmation dialog. The Autopay panel count before and after. A family pay page after the switch.",
+  "phone": false
+ },
+ {
+  "id": "PAY-19",
+  "area": "Autopay & Stripe",
+  "title": "Stripe mode switch Live → Test: families set up in Live are turned off, and webhooks from both modes are accepted",
+  "risk": "Switching back leaves live-card families pointing at the wrong mode, or webhooks from one mode are rejected so real payments are never booked.",
+  "severity": "high",
+  "preconditions": [
+   "PAY-18 done and the mode is Live.",
+   "Optional, and only with Mutaaf's agreement: one internal family (e.g. Mutaaf's own) set up autopay in Live with a real card. Turn it off before any daily run unless a real charge is intended."
+  ],
+  "steps": [
+   "In Live, if agreed, set up autopay on the internal family's pay page and confirm it shows 'Autopay is on'.",
+   "Switch the mode back to Test and confirm.",
+   "Check the internal family's pay page and the Autopay panel count.",
+   "Click 'Check connection' and confirm it reports Test mode.",
+   "In the Stripe dashboard TEST webhooks, resend a recent event (e.g. checkout.session.completed) and confirm the response is 200.",
+   "If live webhooks are configured, check Stripe LIVE → Webhooks: recent deliveries show 200, not 400 'Invalid signature'.",
+   "Have a test family set up a card again in Test mode (4242) and let the next run charge it."
+  ],
+  "expected": [
+   "After switching to Test, the family set up in Live has autopay turned off and must set up again.",
+   "Test-mode families previously turned off in PAY-18 stay off until they set up again. They are not silently re-enabled with stale cards.",
+   "Webhook deliveries from both Test and Live endpoints are accepted (200).",
+   "A fresh Test setup charges normally (as in PAY-01)."
+  ],
+  "evidence": "Pay page screenshots after the switch back. Stripe webhook delivery logs for both modes. The Check connection result.",
+  "phone": false
+ },
+ {
+  "id": "PAY-20",
+  "area": "Autopay & Stripe",
+  "title": "Check that a family who sets up mid-month is charged the next day, and only once",
+  "risk": "New autopay families wait a month to be charged, or a repeated run charges them twice.",
+  "severity": "medium",
+  "preconditions": [
+   "Test Parent N has an open invoice for this month (due on the 1st, so already due) and autopay off."
+  ],
+  "steps": [
+   "Open Parent N's pay link and read the small print under the buttons: 'Your current balance of $X will be paid within a day. After that, each month's fee is paid on its due date (the 1st).'",
+   "Set up card 4242.",
+   "Wait for the next daily run, or ask Mutaaf to trigger it. Then ask Mutaaf to trigger it a SECOND time the same day.",
+   "Check Stripe and Payment History."
+  ],
+  "expected": [
+   "$X on the page equals the 'To pay' total.",
+   "Exactly one Stripe charge after the first run. The second run adds no charge and no new Payment History row.",
+   "The invoice is 'paid' and one receipt is sent."
+  ],
+  "evidence": "Pay page small print. A Stripe payments list showing a single charge after two runs. Payment History.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-01",
+  "area": "Zelle",
+  "title": "Set up the Gmail script once and confirm it connects",
+  "risk": "If the script is missing, installed in the wrong Gmail, or holds the wrong key, no Zelle payment is recorded automatically and families look unpaid. Nothing in the app warns that payments have stopped arriving.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in to https://app.risingstars.training on a computer, not a phone. Google's script editor does not work on a phone.",
+   "You know the password for the Gmail account that will receive the forwarded alerts.",
+   "In Settings, 'Zelle Number or Email' shows her phone number and her Yahoo address, separated by a comma."
+  ],
+  "steps": [
+   "Go to Settings. Find 'Zelle Alerts Gmail' and enter the Gmail address. Find 'Bank Alerts Arrive At' and enter the Yahoo address. Save.",
+   "Look at 'Zelle Email Key'. It should show dots, not readable text. Do not change it.",
+   "Scroll to the 'Zelle email setup' section. Confirm step 1 reads 'Open Gmail as <the Gmail you entered>' and step 5 reads 'From now on, forward Zelle alerts from <the Yahoo address>'.",
+   "Click 'Open Gmail' and check that the Gmail that opens is the right account, not another Google account you are signed in to.",
+   "Click 'Open Apps Script'. Back in CoachOS, click 'Copy the script'. In Apps Script, delete what is already there, paste, and save.",
+   "At the top of Apps Script, choose 'install' and press Run. When Google warns that it has not verified the app, click Advanced, then 'Go to the project', then Allow.",
+   "Optional cross-check: go to Payments. The Zelle card's button should now read 'Setup' instead of 'Connect Gmail', but only once at least one email containing the word 'zelle' has been posted. Before that, the card keeps saying 'Connect the Gmail your bank emails...'.",
+   "In Apps Script, open Triggers (the clock icon) and confirm there is exactly one trigger, for 'reportZellePayments', set to every 15 minutes."
+  ],
+  "expected": [
+   "Every address in the setup steps matches what you saved in Settings, with nothing typed by hand.",
+   "The key is never shown in readable form on screen. It can only be copied.",
+   "Exactly one 15-minute trigger exists. Running 'install' a second time replaces the trigger rather than adding another.",
+   "After the first Zelle email is processed, the Payments page shows the Zelle card as connected ('Setup' button)."
+  ],
+  "evidence": "Screenshots of the Settings fields (key masked), the setup steps showing the correct addresses, the Apps Script Triggers list showing one trigger, and the Payments Zelle card before and after it connects.",
+  "phone": false
+ },
+ {
+  "id": "ZEL-02",
+  "area": "Zelle",
+  "title": "Record a real $1 Zelle from a known parent automatically",
+  "risk": "If an exact, unambiguous payment is not recorded by itself, the time-saving control fails and families are chased for money they already paid. If it records against the wrong invoice, the ledger is wrong.",
+  "severity": "critical",
+  "preconditions": [
+   "ZEL-01 passed.",
+   "You have a test family whose parent's first and last name exactly match the name on a cooperating sender's bank account (for example 'Sam Rivera'). The parent's email is an inbox you can read.",
+   "That family has exactly one open invoice, edited to $1.00 under Payments → Invoices, with status Pending or Overdue.",
+   "Note the family's invoice status and the Payments → Payment History count before you start."
+  ],
+  "steps": [
+   "Have the sender Zelle exactly $1.00 to her phone number or Yahoo address, with the memo 'TEST ZEL-02'.",
+   "On your phone, open the Yahoo inbox, find the bank's 'sent you $1.00' alert, and forward it unchanged to the Zelle Alerts Gmail. Note the time.",
+   "Wait up to 20 minutes, then open Payments.",
+   "On the Zelle card, expand 'Recently recorded' and find the entry.",
+   "Open Payments → Invoices and find the test family's invoice.",
+   "Open Payments → Payment History and find the new row.",
+   "Check the parent's inbox for a receipt."
+  ],
+  "expected": [
+   "The payment does not appear under 'to check'. It appears under 'Recently recorded' as '<date> · Sam Rivera $1.00'.",
+   "The invoice status changes to Paid.",
+   "Payment History has exactly one new row: Method Zelle, Amount $1.00, Reference 'Zelle from Sam Rivera', for the correct student.",
+   "The date recorded is the day the forwarded alert reached Gmail. Note any difference from the bank's own date.",
+   "Exactly one receipt email arrives from payments@risingstars.training (see EML-01 for the content checks)."
+  ],
+  "evidence": "Screenshots of the bank alert (with timestamp), the forwarded email, the 'Recently recorded' entry, the invoice showing Paid, the Payment History row, and the receipt email. Record the elapsed time from forwarding to recording.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-03",
+  "area": "Zelle",
+  "title": "Match a spouse's payment by hand, then confirm the next one matches by itself",
+  "risk": "Payments from an account in another name could be lost, or recorded against the wrong family. A learned name that does not stick means the same manual work every month.",
+  "severity": "critical",
+  "preconditions": [
+   "There is a test family with two open $1.00 invoices in different months.",
+   "A cooperating sender's bank-account name does not match any parent on file (for example a spouse, 'Jordan Rivera').",
+   "Nobody has registered that name on the family's payment page."
+  ],
+  "steps": [
+   "Have the spouse Zelle $1.00, then forward the alert to the Zelle Alerts Gmail.",
+   "Within 20 minutes, open Payments. On the Zelle card, find the badge 'N to check'.",
+   "Read the entry: the sender name, the amount, the memo, and the amber note.",
+   "In the 'Who sent this?' dropdown, choose the test family (shown as 'Parent Name (Child names)'), then click Record.",
+   "Check Payments → Invoices and Payment History.",
+   "Expand 'Recently recorded' and look at the entry.",
+   "Next, have the same spouse Zelle another $1.00 and forward the alert."
+  ],
+  "expected": [
+   "The first payment is not recorded automatically. The note reads 'No parent on file is called Jordan Rivera — it may be a spouse or another account.'",
+   "The Record button stays disabled until a family is chosen.",
+   "After Record, you see the message 'Payment recorded', the entry leaves the to-check list, and the oldest $1.00 invoice becomes Paid.",
+   "'Recently recorded' shows 'Jordan Rivera $1.00 → <Parent First Last>'.",
+   "The second payment from Jordan Rivera is recorded automatically against the remaining invoice, with no to-check entry, and a receipt goes to the family."
+  ],
+  "evidence": "Screenshots of the to-check entry with its note, the dropdown selection, the 'Payment recorded' message, the Recently recorded entry with the arrow to the family, and the second payment recorded automatically.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-04",
+  "area": "Zelle",
+  "title": "A parent registers a different account name on their payment page, and cannot claim another family's",
+  "risk": "If the alias does not work, parents' payments pile up for manual review. If a parent can claim another family's name, someone else's payments could be credited to the wrong family.",
+  "severity": "critical",
+  "preconditions": [
+   "There are test families A and B. Family A has an open $1.00 invoice and autopay is not active.",
+   "'Zelle Number or Email' is set in Settings.",
+   "You know the full name of family B's parent."
+  ],
+  "steps": [
+   "Go to Payments → Invoices. On family A's row, click the link icon ('Copy this family's payment page link') and open the link on your phone.",
+   "In the 'Pay with Zelle' (or 'Prefer Zelle?') section, confirm both Zelle targets show, each with its own Copy button, separated by 'or'.",
+   "Under 'Sending from an account in someone else's name?', type a single word (for example 'Grandma') and press Save.",
+   "Type the full name on the cooperating sender's account (for example 'Pat Lee') and press Save.",
+   "Type family B's parent's full name and press Save.",
+   "Have Pat Lee Zelle $1.00 and forward the alert."
+  ],
+  "expected": [
+   "The single word is rejected with: 'Please enter the first and last name on the account.'",
+   "The real name saves with 'Saved — thank you.', and the page shows 'We'll recognise: Pat Lee' (or similar).",
+   "Family B's name is rejected with: 'That name is already linked to another family. Message us and we'll sort it out.'",
+   "Family A's page never shows family B's name, children or amounts.",
+   "Pat Lee's $1.00 is recorded automatically against family A, with no manual step."
+  ],
+  "evidence": "Phone screenshots of each message on the payment page, the 'We'll recognise' line, and the automatic recording in 'Recently recorded' (showing '→ Family A parent').",
+  "phone": true
+ },
+ {
+  "id": "ZEL-05",
+  "area": "Zelle",
+  "title": "An amount that does not match what is owed is never recorded automatically",
+  "risk": "If the system guesses which invoice an odd amount pays, money is posted to the wrong month or child and the ledger cannot be trusted. The control is: no guessing.",
+  "severity": "critical",
+  "preconditions": [
+   "There is a known test parent (exact name match) with one open invoice of $2.00.",
+   "A second known test parent has no open invoices."
+  ],
+  "steps": [
+   "Have the first parent Zelle $1.00 (less than the $2.00 owed) and forward the alert.",
+   "Within 20 minutes, open Payments and look at the Zelle card.",
+   "Check that invoice's status and Payment History.",
+   "Have the second parent (who owes nothing) Zelle $1.00 and forward the alert.",
+   "Look at the Zelle card again.",
+   "For the first entry, choose the family in 'Who sent this?' and click Record. Check the invoice afterwards."
+  ],
+  "expected": [
+   "Neither payment is recorded automatically. Payment History has no new rows until you act.",
+   "The first entry shows the note '$1.00 doesn't match what this family owes ($2.00 open).', and the family is already pre-selected in the dropdown as a suggestion.",
+   "The second entry shows 'This family has nothing open to pay.'",
+   "After Record, the $1.00 is applied to the $2.00 invoice and the invoice is not marked Paid. It shows the $1.00 still owing (partial payment).",
+   "If you try Record for the family with nothing open, you see 'That family has nothing open to pay. Generate this month's invoices first, or ignore this one.'"
+  ],
+  "evidence": "Screenshots of both to-check entries with their notes, Payment History before and after, and the invoice balance after the manual record.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-06",
+  "area": "Zelle",
+  "title": "Two parents with the same name are never auto-matched",
+  "risk": "A payment from one 'Maria Lopez' could be credited to the other family with the same name.",
+  "severity": "critical",
+  "preconditions": [
+   "There are two test families whose parents share a first and last name with the cooperating sender's bank-account name (for example two parents called 'Maria Lopez').",
+   "Both families have an open $1.00 invoice.",
+   "Neither family has registered that name on its payment page."
+  ],
+  "steps": [
+   "Have Maria Lopez Zelle $1.00 and forward the alert.",
+   "Within 20 minutes, open Payments → Zelle card.",
+   "Open the 'Who sent this?' dropdown and confirm you can tell the two families apart.",
+   "Choose the correct family and click Record.",
+   "Check both families' invoices."
+  ],
+  "expected": [
+   "The payment waits in the to-check list with the note 'More than one parent is called Maria Lopez.' Nothing is recorded automatically.",
+   "The dropdown shows both families with their children's names in brackets, so they can be told apart.",
+   "Only the chosen family's invoice becomes Paid. The other family's invoice is unchanged.",
+   "Known behaviour to confirm: after Record, the name is remembered for the chosen family, so the next Maria Lopez payment auto-matches to that family. Decide whether that is acceptable when the other Maria Lopez might also pay. If not, log it as an exception."
+  ],
+  "evidence": "Screenshots of the note, the dropdown showing both families, and both invoices after recording. Record what happens with a second payment from the same name.",
+  "phone": false
+ },
+ {
+  "id": "ZEL-07",
+  "area": "Zelle",
+  "title": "One Zelle covering two siblings pays both invoices with one receipt",
+  "risk": "A combined payment for siblings could be left unmatched, or applied to only one child, leaving the other wrongly overdue and chased.",
+  "severity": "high",
+  "preconditions": [
+   "There is a known test parent (exact name) with two children enrolled, each with an open $1.00 invoice for the same month."
+  ],
+  "steps": [
+   "Have the parent Zelle exactly $2.00 and forward the alert.",
+   "Within 20 minutes, check the Zelle card, Payments → Invoices and Payments → Payment History.",
+   "Open the receipt email in the parent's inbox."
+  ],
+  "expected": [
+   "The payment is recorded automatically. Both invoices become Paid.",
+   "Payment History shows two rows of $1.00, one per child, both with Reference 'Zelle from <name>'.",
+   "Exactly one receipt email arrives, listing both children, with a Total of $2.00."
+  ],
+  "evidence": "Screenshots of both invoices showing Paid, the two Payment History rows, and the single receipt.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-08",
+  "area": "Zelle",
+  "title": "A payment for one month pays the oldest month first",
+  "risk": "If the newer month is paid first, the older month goes overdue and the family is chased for a month they consider paid.",
+  "severity": "high",
+  "preconditions": [
+   "There is a known test parent with two open $1.00 invoices for the same child, for two different months (for example August and September)."
+  ],
+  "steps": [
+   "Have the parent Zelle $1.00 and forward the alert.",
+   "Within 20 minutes, open Payments → Invoices and look at both invoices.",
+   "Check the receipt email."
+  ],
+  "expected": [
+   "It is recorded automatically. The older month (August) becomes Paid and the newer month (September) stays open.",
+   "The receipt names the older month."
+  ],
+  "evidence": "Screenshots of both invoices after recording, and the receipt line showing the month.",
+  "phone": false
+ },
+ {
+  "id": "ZEL-09",
+  "area": "Zelle",
+  "title": "An overpayment is noted, not lost",
+  "risk": "Extra money received but not shown anywhere cannot be refunded or carried forward, and the books will not reconcile to the bank.",
+  "severity": "high",
+  "preconditions": [
+   "There is a known test parent with exactly one open $1.00 invoice."
+  ],
+  "steps": [
+   "Have the parent Zelle $2.00 and forward the alert.",
+   "Within 20 minutes, confirm it waits on the Zelle card with a 'doesn't match' note.",
+   "Choose the family in 'Who sent this?' and click Record.",
+   "Look everywhere the extra $1.00 could appear: the confirmation message, the 'Recently recorded' entry, Payments → Invoices, and Payment History.",
+   "Check the receipt email total."
+  ],
+  "expected": [
+   "Nothing is recorded automatically. The note reads '$2.00 doesn't match what this family owes ($1.00 open).'",
+   "After Record, the $1.00 invoice is Paid and Payment History shows $1.00.",
+   "The extra $1.00 must be visible somewhere you can act on (the intended note is '$1.00 more than was owed — not applied to anything.').",
+   "The surplus is visible: the 'Recently recorded' entry shows the note '$1.00 more than was owed — not applied to anything.' in amber, so the extra can be refunded or carried forward.",
+   "The receipt shows $1.00, not $2.00. Note whether the parent is told about the extra $1.00."
+  ],
+  "evidence": "Screenshots of every place checked for the surplus, Payment History, and the receipt. Record the bank amount against the recorded amount.",
+  "phone": false
+ },
+ {
+  "id": "ZEL-10",
+  "area": "Zelle",
+  "title": "Undo a wrong match: payments removed and the name forgotten",
+  "risk": "A wrong match that cannot be reversed leaves one family credited and another chased. A name that is still remembered repeats the error every month.",
+  "severity": "critical",
+  "preconditions": [
+   "There are test families X and Y, each with an open $1.00 invoice.",
+   "A cooperating sender's name is unknown to the system."
+  ],
+  "steps": [
+   "Have the sender Zelle $1.00 and forward the alert. On the Zelle card, deliberately choose the wrong family (X) and click Record.",
+   "Expand 'Recently recorded'. On that entry, click the circular-arrow undo icon at the right. Note that it has no text label.",
+   "Read the confirmation box ('Remove this payment and put it back in the inbox?') and click OK.",
+   "Check family X's invoice and Payment History.",
+   "Look at the to-check list.",
+   "Now record it to the correct family (Y).",
+   "Optional: before recording to Y, have the same sender send another $1.00 and see whether it auto-matches to X.",
+   "Check family X's parent inbox."
+  ],
+  "expected": [
+   "After undo, you see 'Moved back to the inbox'. Family X's invoice reverts to Pending or Overdue, and the Payment History row is gone.",
+   "The entry is back in the to-check list with the note 'Match undone — pick the right family.'",
+   "A further payment from that sender is not auto-matched to X, because the name has been forgotten.",
+   "After recording to Y, only Y's invoice is Paid.",
+   "Control gap to record: family X already received a receipt email for money that was not theirs, and no correction email is sent. Note this as a known exception that needs a manual message to family X.",
+   "Note also: 'Recently recorded' only lists the last 8 matched payments, so an older wrong match cannot be undone from this card."
+  ],
+  "evidence": "Screenshots before and after undo (invoice status, Payment History, to-check entry with note), the wrong receipt in family X's inbox, and the final correct recording.",
+  "phone": false
+ },
+ {
+  "id": "ZEL-11",
+  "area": "Zelle",
+  "title": "'Not a family' removes an unrelated payment without recording anything",
+  "risk": "Personal money (a friend paying back lunch) could be recorded as tuition, or a real payment could be dismissed by mistake with no way back.",
+  "severity": "medium",
+  "preconditions": [
+   "A cooperating sender is unknown to the system and is not a parent."
+  ],
+  "steps": [
+   "Have them Zelle $1.00 with the memo 'lunch' and forward the alert.",
+   "On the Zelle card, find the entry and confirm the memo shows in quotes.",
+   "Click 'Not a family'.",
+   "Check the to-check count, 'Recently recorded', Invoices and Payment History.",
+   "Try to find the dismissed entry anywhere in the app."
+  ],
+  "expected": [
+   "The entry disappears from the to-check list and the count drops by one.",
+   "No payment is created and no invoice changes. No email is sent to anyone.",
+   "Record as an observation: a dismissed entry cannot be seen or restored from the app (there is no confirmation prompt and no 'dismissed' list). A misclick on a real payment would need it recorded by hand using Record Payment."
+  ],
+  "evidence": "Screenshots before and after clicking, and of Payment History showing no new row.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-12",
+  "area": "Zelle",
+  "title": "Her own outgoing Zelle and Zelle requests never appear",
+  "risk": "Money she sent out could be recorded as income from a family, overstating collections.",
+  "severity": "high",
+  "preconditions": [
+   "ZEL-01 passed. You have access to her Zelle so you can send $1.00 out and request $1.00."
+  ],
+  "steps": [
+   "From her bank, Zelle $1.00 to someone (a cooperating person).",
+   "From her bank, request $1.00 from someone.",
+   "Forward both bank emails ('You sent...', 'You requested...') from Yahoo to the Zelle Alerts Gmail.",
+   "Wait 30 minutes (two script runs). Check the Zelle card, 'Recently recorded', and Payment History."
+  ],
+  "expected": [
+   "Neither email appears anywhere: not in the to-check list, not as unreadable, not in 'Recently recorded', and not in Payment History.",
+   "An INCOMING alert whose subject mentions a request (e.g. 'Payment request paid: <name> sent you $1.00') is still recorded as income: incoming wording is checked before outgoing."
+  ],
+  "evidence": "Screenshots of the two forwarded emails in Gmail (with timestamps) and the Zelle card and Payment History 30 minutes later showing nothing new.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-13",
+  "area": "Zelle",
+  "title": "Duplicate control: the same alert is never recorded twice",
+  "risk": "A payment recorded twice understates what a family owes and overstates collections, and the family gets two receipts.",
+  "severity": "critical",
+  "preconditions": [
+   "There is a known test parent with two open $1.00 invoices (so a duplicate would have somewhere to land)."
+  ],
+  "steps": [
+   "Have the parent Zelle $1.00 and forward the alert once.",
+   "Wait at least 45 minutes (three script runs, each of which re-sends the last 3 days of emails). Check Payment History and the parent's inbox.",
+   "Now forward the same original bank alert to the Gmail a second time (a re-forward, as might happen by accident).",
+   "Wait 20 minutes. Check the Zelle card, Invoices, Payment History, and the parent's inbox."
+  ],
+  "expected": [
+   "After the repeated script runs, there is exactly one payment row, one Paid invoice and one receipt.",
+   "After the re-forward, there should be no second payment.",
+   "The re-forward is NOT recorded a second time. It waits in the to-check list with the note 'Looks like a repeat of the $1.00 from <name> on <date>, which is already recorded. Record it only if this is a second payment.' A genuine second payment from the same person within a week also waits here for one tap."
+  ],
+  "evidence": "Payment History screenshots after each stage, the count of receipts in the parent's inbox, and both forwarded emails in Gmail.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-14",
+  "area": "Zelle",
+  "title": "Unreadable or odd emails are kept visible, not dropped",
+  "risk": "A real payment in a format the system cannot read could vanish silently, leaving a family wrongly overdue.",
+  "severity": "high",
+  "preconditions": [
+   "ZEL-01 passed."
+  ],
+  "steps": [
+   "From any email account, send the Zelle Alerts Gmail an email with the subject 'Zelle question' and the body 'Did my Zelle go through?' (no amount, no 'sent you').",
+   "Forward a bank alert after editing it so that the amount is removed. Use the subject 'Fwd: Zelle payment'.",
+   "Wait 20 minutes and open Payments → Zelle card.",
+   "Read each entry, then try the buttons available."
+  ],
+  "expected": [
+   "Each email appears in the to-check list, titled with its subject (or 'An email we couldn't read'), with the note 'Couldn't find a sender and amount in this email. If it's a payment, record it by hand.'",
+   "Unreadable entries offer only 'Dismiss'. There is no family dropdown and no Record button.",
+   "No payment or email to a parent is created.",
+   "Note: the Gmail script only picks up emails containing the word 'zelle' from the last 3 days. An alert that does not mention Zelle, or one forwarded more than 3 days late, will never reach the app. Record this as a limitation."
+  ],
+  "evidence": "Screenshots of the test emails in Gmail and of the unreadable entries on the Zelle card.",
+  "phone": false
+ },
+ {
+  "id": "ZEL-15",
+  "area": "Zelle",
+  "title": "Changing the alert addresses or the Zelle Email Key in Settings takes effect immediately",
+  "risk": "Stale setup instructions send alerts to the wrong inbox. A leaked key that cannot be revoked lets anyone put fake payments in front of the owner.",
+  "severity": "high",
+  "preconditions": [
+   "ZEL-01 passed. Schedule this when no real payments are expected, because it briefly stops automatic recording."
+  ],
+  "steps": [
+   "In Settings, change 'Bank Alerts Arrive At' to a different test address and save. Without refreshing anything else, open Payments → Zelle card → 'Setup' and read step 5. Also read the 'Zelle email setup' section in Settings.",
+   "Change it back and save.",
+   "In Settings, change 'Zelle Email Key' to a new value and save. Do not update the Apps Script.",
+   "Have a known parent Zelle $1.00 and forward the alert. Wait 20 minutes.",
+   "Check the Zelle card and Payment History. In Apps Script, open Executions and look at the latest run.",
+   "Now copy the script again (step 3, 'Copy the script'), paste it over the old one in Apps Script, save, and run 'install'.",
+   "Wait 20 minutes and check again."
+  ],
+  "expected": [
+   "Step 5 and the Settings setup section show the new address straight after saving.",
+   "While the old key is in the script, the $1.00 is not recorded. Apps Script shows a failed or unauthorised request.",
+   "After pasting the new script, the waiting payment is recorded automatically, because the script re-sends the last 3 days, and it is recorded once only.",
+   "The Zelle card shows 'Gmail script checked in N min ago'. If the script stops (e.g. the key no longer matches), within about two hours it changes to an amber warning: 'The Gmail script last checked in … ago — it may have stopped. Open Setup and run install again.'"
+  ],
+  "evidence": "Screenshots of the setup steps before and after the change, the Apps Script execution showing failure and then success, and Payment History showing a single recording.",
+  "phone": false
+ },
+ {
+  "id": "EML-01",
+  "area": "Email",
+  "title": "Receipt content agrees with Payment History and never shows another family",
+  "risk": "A receipt with the wrong amount, child or fee misleads parents and their employers or tax records. A receipt showing another family's data is a privacy breach.",
+  "severity": "critical",
+  "preconditions": [
+   "Settings → 'Email Parents' is on.",
+   "There are test families with email addresses you can read: one paid by Zelle (ZEL-02 or ZEL-07), one paid by card through autopay if Stripe is on, and one paid by cash.",
+   "For the cash payment: go to Payments, click 'Record Payment', choose a test family's invoice, enter Cash and the amount, and save."
+  ],
+  "steps": [
+   "Open each receipt email. Note the sender, the subject, the heading, each line (child · month, program, amount), any 'Card processing fee' line, the Total, 'Paid by ... on ...', and the 'View your payment page' button.",
+   "For each, open Payments → Payment History and filter to that student. Compare the date, the amount per child, and the method.",
+   "Click 'View your payment page' in the receipt and check whose page opens.",
+   "Check that each receipt lists only that family's own children, even when another family paid the same day."
+  ],
+  "expected": [
+   "Sender: payments@risingstars.training (shown as 'Rising Stars'). Subject: 'Receipt: $X.XX received — Rising Stars Youth Academy' (or the current Business Name).",
+   "Each line's amount equals the matching Payment History row. Total = sum of lines + fee.",
+   "A 'Card processing fee' line appears only for card payments, never for Zelle or cash, and it matches the fee charged.",
+   "'Paid by Zelle', 'Paid by cash' or the card/bank label is correct, and the date matches Payment History (Dallas time).",
+   "The payment-page button opens that family's own page only.",
+   "No receipt mentions another family's child, amount or name."
+  ],
+  "evidence": "A side-by-side screenshot of each receipt and its Payment History rows, plus a short reconciliation table: receipt total against recorded total against bank amount.",
+  "phone": true
+ },
+ {
+  "id": "EML-02",
+  "area": "Email",
+  "title": "A failed automatic payment emails the family once",
+  "risk": "If a declined autopay goes unnoticed by the family, the invoice ages into overdue. Duplicate notices erode trust.",
+  "severity": "high",
+  "preconditions": [
+   "Stripe is on.",
+   "There is a test family with two children on autopay, using a card you can lock or that will decline (for example a virtual card set to a $0 limit), and with an email you can read.",
+   "Both children have invoices due."
+  ],
+  "steps": [
+   "Lock the card before the next automatic charge run (the daily run, or the 1st of the month).",
+   "After the run, check the family's inbox and Messaging → Outbox.",
+   "Check Payments → Invoices for both children.",
+   "Wait for the next day's run and check the inbox again."
+  ],
+  "expected": [
+   "One email (not one per child) with the subject 'Your automatic payment didn't go through — <Business Name>'. It names both children, the total amount owed, and a short reason, and has an 'Update payment' button that opens that family's payment page.",
+   "A matching message is waiting in the Outbox to send by WhatsApp.",
+   "No second failed-payment email is sent for the same failure on the following day.",
+   "No receipt is sent."
+  ],
+  "evidence": "A screenshot of the email, the Outbox message, and the invoices. Note the count of emails received after two daily runs.",
+  "phone": true
+ },
+ {
+  "id": "EML-03",
+  "area": "Email",
+  "title": "The overdue reminder goes once (not daily) and once per family",
+  "risk": "Daily or per-child reminders annoy paying families. Missing reminders leave money uncollected.",
+  "severity": "high",
+  "preconditions": [
+   "In Settings, 'Payment Reminders' is on and 'Payment Reminder Delay (days)' is noted (default 3).",
+   "There is a test family with two children, each with an unpaid invoice whose due date is more than the delay ago, plus an email address and a phone number."
+  ],
+  "steps": [
+   "After the next daily automatic run (early afternoon, Dallas time), check the family's inbox and Messaging → Outbox.",
+   "Check the email's subject, lines and total against Payments → Invoices.",
+   "Leave the invoices unpaid. Check the inbox and Outbox again after the next two daily runs."
+  ],
+  "expected": [
+   "Exactly one email with the subject 'Payment reminder: $X.XX — <Business Name>' and the heading 'A friendly payment reminder'. It lists both children with their month and amount still owed (net of any partial payments), has a 'Pay now' button, and the line 'If you've already sent it, thank you — please ignore this.'",
+   "Exactly one Outbox reminder message for the family, covering both children.",
+   "No further reminder email or Outbox message on the following days for the same invoices.",
+   "A family whose invoice is processing (bank debit under way) or paid is not reminded."
+  ],
+  "evidence": "Inbox screenshots showing one reminder over three days, the Outbox entry, and the invoices showing the amounts owed.",
+  "phone": true
+ },
+ {
+  "id": "EML-04",
+  "area": "Email",
+  "title": "Parent replies land in the configured inbox, and changing it takes effect at once",
+  "risk": "Parent questions sent by replying to a receipt go to an unmonitored address and are never answered.",
+  "severity": "high",
+  "preconditions": [
+   "Settings → 'Replies Go To' is set to the address she monitors.",
+   "A test family's email is an inbox you control."
+  ],
+  "steps": [
+   "Trigger a receipt for the test family (for example Record Payment → cash $1.00).",
+   "Open the receipt in the family's inbox and press Reply. Note the 'To' address, then send 'TEST EML-04 reply'.",
+   "Confirm it arrives in the 'Replies Go To' inbox and not at payments@risingstars.training.",
+   "In Settings, change 'Replies Go To' to a second test address and save.",
+   "Immediately trigger another receipt (another $1.00 cash) and reply to it.",
+   "Change 'Replies Go To' back to the correct address."
+  ],
+  "expected": [
+   "Reply 1 is addressed to, and arrives at, the original 'Replies Go To' address.",
+   "Reply 2 (after the change, with no other action) is addressed to the new address.",
+   "Earlier emails keep their original reply address, which is expected.",
+   "Observation: if 'Replies Go To' is blank or not a valid email, replies go to the sender address. Confirm whether anyone reads that mailbox."
+  ],
+  "evidence": "Screenshots of the reply 'To' line for both receipts, both replies arriving in the right inboxes, and the Settings value before and after.",
+  "phone": true
+ },
+ {
+  "id": "EML-05",
+  "area": "Email",
+  "title": "Families without email get nothing by email but still get the Outbox message; the master switch works",
+  "risk": "An error for a family with no email could block their payment being recorded or drop their reminder. A disabled switch that still sends emails breaches the owner's choice.",
+  "severity": "medium",
+  "preconditions": [
+   "There is a test family with a phone number but no email, and an overdue invoice past the reminder delay.",
+   "There is a second test family with an email."
+  ],
+  "steps": [
+   "For the no-email family, record a $1.00 cash payment against a different open invoice, using Payments → Record Payment.",
+   "After the next daily run, check Messaging → Outbox for a reminder to the no-email family.",
+   "Open the no-email family's payment page (link icon on the Invoices row) and check the 'Receipts by email' section.",
+   "In Settings, turn 'Email Parents' off and save. Record a $1.00 cash payment for the family with email. Check their inbox.",
+   "Turn 'Email Parents' back on."
+  ],
+  "expected": [
+   "The no-email family's payment records normally, with no error shown.",
+   "Their reminder appears in the Outbox even though no email can go.",
+   "Their payment page offers 'Receipts by email', with the text 'Get a receipt whenever a payment comes in...', and entering an address saves with 'Saved — receipts will go there.'",
+   "With 'Email Parents' off, no receipt arrives, but the payment is still recorded.",
+   "Note: an email skipped while the switch was off is not sent later when it is turned back on."
+  ],
+  "evidence": "Screenshots of the recorded payment, the Outbox reminder, the payment-page email section, the Settings toggle, and the inbox showing no receipt while it was off.",
+  "phone": true
+ },
+ {
+  "id": "MSG-01",
+  "area": "Messaging",
+  "title": "Open a message in WhatsApp and in Messages (Text) and confirm it reaches the right parent with the full text intact",
+  "risk": "A parent gets a cut-off message, a broken payment link, or a message meant for another family, and money or trust is lost.",
+  "severity": "critical",
+  "preconditions": [
+   "Use a test family only: a test parent whose mobile number is a phone you hold (10-digit US number), linked to a test child enrolled in a test program.",
+   "WhatsApp is installed on your phone and WhatsApp Web or WhatsApp Desktop is signed in on your computer.",
+   "The Outbox has no real parent messages you might open by accident (check Messaging > Outbox first).",
+   "For the Text check: an iPhone with Messages, logged in to the app in Safari (and an Android phone if available)."
+  ],
+  "steps": [
+   "Go to Messaging > Compose. Click By Program and choose the test program. Confirm only the test parent's name appears as a recipient chip.",
+   "In the message box type exactly, on two lines: 'Test 1 — Tom & Jerry's fees: https://app.risingstars.training/pay/test?a=1&b=2' then on a new line 'Thanks & see you Tuesday! 50% off? #3 ⚽'.",
+   "Click 'Send to 1 recipient(s)'. Note the toast.",
+   "Open the Outbox tab. Find the card for the test parent and tap the message text to expand it. Compare the name and phone shown on the card with the parent's record.",
+   "On the computer, click WhatsApp. Before you press send, compare the prefilled text with what you typed, character by character. Then send it.",
+   "Repeat steps 1–5 on your phone (log in to the app in the phone browser), tapping WhatsApp on the card.",
+   "Create the same message again (steps 1–3). On the iPhone, open Messaging > Outbox and tap Text on the card. Before you send, check the recipient and the full body, then send and return to Safari.",
+   "Repeat the Text check on Android if available."
+  ],
+  "expected": [
+   "Toast reads '1 message(s) ready in the Outbox'.",
+   "The Outbox card shows the test parent's name, their number in readable format, and the full two-line message.",
+   "WhatsApp opens a chat with exactly the test parent's number (not a different number, and not a 'number not on WhatsApp' error for a valid number).",
+   "The prefilled text is identical. Nothing is lost after either '&', the link keeps '?a=1&b=2', and the apostrophe, '%', '#', line break and emoji all survive.",
+   "Tapping the link in the received WhatsApp message opens the same address that was typed.",
+   "Text on the iPhone opens Messages addressed to the test parent's number with the complete body pre-filled, including everything after each '&' and the line break.",
+   "Back in the app, the Text card sits under 'Sent or skipped today' marked '· by text'. The WhatsApp one is marked '· on WhatsApp'."
+  ],
+  "evidence": "Screenshot the expanded Outbox card and the WhatsApp compose screen before sending, side by side, on both computer and phone. Screenshot the received message on the test phone. Make a screen recording on the iPhone from tapping Text to returning to the app.",
+  "phone": true
+ },
+ {
+  "id": "MSG-02",
+  "area": "Messaging",
+  "title": "Check that opening a message marks it sent, and that Undo fully reverses it",
+  "risk": "Messages are recorded as sent when they were never sent, or an Undo leaves a false entry in the message history, so the record of who was told what is unreliable.",
+  "severity": "high",
+  "preconditions": [
+   "At least two pending test messages in the Outbox, addressed to test parents.",
+   "Note the counts shown under the Messaging heading ('N sent', 'N pending') and the number on the Outbox tab before starting."
+  ],
+  "steps": [
+   "Click WhatsApp on the first test message, then close WhatsApp WITHOUT pressing send.",
+   "Return to the app. Note where the message now appears and the counts.",
+   "Open the History tab and look for the message.",
+   "Back on Outbox, under 'Sent or skipped today', click Undo next to that message.",
+   "Refresh the page. Check the Outbox list, the counts and the History tab again.",
+   "Click WhatsApp on the same message a second time, send it for real, return, and check History again."
+  ],
+  "expected": [
+   "After step 1 the message moves straight to 'Sent or skipped today' with a tick and '· on WhatsApp', even though nothing was sent. This is by design because the app cannot see whether send was pressed. Record it as a control limitation: 'sent' means 'opened', not 'delivered'.",
+   "History shows one 'sent' entry for that message.",
+   "After Undo and refresh, the message is back in the waiting list, the History entry is gone, and the counts return to their starting values.",
+   "After the second, real send there is exactly one History entry, not two."
+  ],
+  "evidence": "Screenshots of the Outbox and History tab at each of the four stages, with the counts visible.",
+  "phone": false
+ },
+ {
+  "id": "MSG-03",
+  "area": "Messaging",
+  "title": "Skip one message, then Skip all, and confirm nothing is sent or logged",
+  "risk": "Messages queued by mistake are sent, or Skip all wipes real parent messages the owner still needed to send.",
+  "severity": "high",
+  "preconditions": [
+   "IMPORTANT: Skip all skips EVERY waiting message in the Outbox, not just test ones. Run this only when the Outbox holds nothing but test messages, or agree it with the owner first.",
+   "At least three pending test messages (create them through Compose to the test program, sending twice if needed)."
+  ],
+  "steps": [
+   "On Outbox, click Skip on one test message.",
+   "Check where it appears, and whether it appears in the History tab.",
+   "Click Undo on the skipped message and confirm it returns to the waiting list.",
+   "With two or more messages waiting, click Skip all. Read the confirmation box and click Cancel first. Confirm nothing changed.",
+   "Click Skip all again and confirm.",
+   "Refresh the page and check Outbox and History."
+  ],
+  "expected": [
+   "A skipped message appears under 'Sent or skipped today' marked '· skipped' with no tick, and it is NOT in History.",
+   "Undo returns it to the waiting list.",
+   "Skip all is offered only when more than one message is waiting. It asks 'Skip all N messages without sending them?', where N equals the waiting count.",
+   "Cancel leaves everything as it was. Confirming empties the waiting list ('Nothing to send') and adds nothing to History.",
+   "No WhatsApp or text message arrives on any test phone."
+  ],
+  "evidence": "Screenshot of the confirmation box showing N, and of the Outbox and History before and after.",
+  "phone": false
+ },
+ {
+  "id": "MSG-04",
+  "area": "Messaging",
+  "title": "Confirm a family with no usable phone number is flagged, not lost or sent to a wrong number",
+  "risk": "A family never gets payment or practice messages and nobody notices, or a badly typed number sends a child's details to a stranger.",
+  "severity": "high",
+  "preconditions": [
+   "Three test parents linked to children in the test program: one with no phone, one with a 9-digit phone (e.g. 214555010), and one with a phone typed with an extension (e.g. '214-555-0101 x12').",
+   "Make these edits in Students, and only on test parents."
+  ],
+  "steps": [
+   "Go to Messaging > Compose, click By Program, choose the test program and note how many recipients are shown and which names.",
+   "Type a short message and click Send.",
+   "Open Outbox and find the cards for the three test parents.",
+   "For each card, note which buttons are offered and what number is shown."
+  ],
+  "expected": [
+   "Every test parent appears in the Outbox. None is silently dropped.",
+   "The parent with no phone and the parent with a 9-digit phone show 'No usable phone number on file.' with only Skip available (no WhatsApp or Text).",
+   "The number with an extension ('214-555-0101 x12') opens WhatsApp to 214-555-0101: the extension is dropped. It never opens a different, longer number. (Fixed 2 Oct: an extension used to become a stranger's 12-digit number.)",
+   "The owner can see from the cards who could not be reached."
+  ],
+  "evidence": "Screenshot of each of the three cards, and of the WhatsApp screen if the extension case opens one.",
+  "phone": false
+ },
+ {
+  "id": "MSG-05",
+  "area": "Messaging",
+  "title": "Compose one message to everyone in a program and check the recipient list and personalisation",
+  "risk": "A message meant for one session goes to the wrong families, misses some, duplicates others, or arrives reading 'Hi {{parent_name}}'.",
+  "severity": "high",
+  "preconditions": [
+   "A test program with at least three test children: one with two linked parents, two siblings sharing one parent, and one withdrawn (not active) child.",
+   "Write down which parents should receive the message before starting."
+  ],
+  "steps": [
+   "Go to Messaging > Compose. Click By Program and select the test program (programs are listed as 'School — Program').",
+   "Compare the recipient chips and the 'N recipient(s)' count with your expected list.",
+   "From 'Use a template...' choose any template that contains {{parent_name}}, or type 'Hi {{parent_name}}, practice moves to 5pm.' using the variable buttons.",
+   "Click 'Send to N recipient(s)'.",
+   "Open Outbox and read each new card's text in full.",
+   "Repeat using By School for the test school, and note whether each parent of a child at that school appears once."
+  ],
+  "expected": [
+   "Recipients are exactly the parents of active children in the program: both parents of the two-parent child, the siblings' shared parent once, and nobody for the withdrawn child.",
+   "The count on the button equals the number of cards created in the Outbox.",
+   "Each message greets the parent by their own first name. Compose fills in {{parent_name}} only; a message with any other placeholder (e.g. {{student_name}}) is refused with 'A message to a group can only fill in {{parent_name}}…' and nothing goes to the Outbox. No card ever shows a raw {{…}}.",
+   "By School lists each parent once, even if they have children in several programs at that school."
+  ],
+  "evidence": "Your expected recipient list, a screenshot of the recipient chips and count, and screenshots of every resulting Outbox card.",
+  "phone": false
+ },
+ {
+  "id": "MSG-06",
+  "area": "Messaging",
+  "title": "Edit a message template and confirm only future messages change",
+  "risk": "Editing the wording rewrites messages already prepared, or a careless edit or delete silently breaks automatic reminders and payment links.",
+  "severity": "medium",
+  "preconditions": [
+   "One pending test message in the Outbox created from a template (e.g. through Compose using 'Use a template...').",
+   "Screenshot that template's current wording on the Templates tab so it can be restored."
+  ],
+  "steps": [
+   "Go to Messaging > Templates. Click Edit on the template used and change one word in Message Body only (do not change the Name). Click 'Update Template'.",
+   "Open Outbox and read the pending message created before the edit.",
+   "Create a new message to the test program using the same template and read the new card.",
+   "Put the template wording back and click 'Update Template'.",
+   "Observation only, do not complete: click Delete on any template and note whether you are asked to confirm. If it deletes immediately, restore it with Add Template using the same Name, Category and Body, and record an exception."
+  ],
+  "expected": [
+   "Toast 'Template updated'. The Templates card shows the new wording.",
+   "The message already in the Outbox still has the OLD wording.",
+   "The new message uses the NEW wording.",
+   "Deleting a template you added asks 'Delete the \"<name>\" template?'. The templates the app sends on its own (payment_reminder, practice_reminder_day_before, practice_reminder_morning, welcome_message, session_cancelled, payment_received, autopay_invite, autopay_failed) can be reworded but not deleted: trying shows 'This message is sent automatically, so it can be reworded but not deleted.' Changing their Name has no effect."
+  ],
+  "evidence": "Screenshots of the template before and after, the old and new Outbox cards, and what happens when Delete is clicked.",
+  "phone": false
+ },
+ {
+  "id": "INV-01",
+  "area": "Invoicing & books",
+  "title": "Re-run invoice generation for a month and confirm no duplicates are created",
+  "risk": "Families are billed twice for the same month, and autopay could charge them twice.",
+  "severity": "critical",
+  "preconditions": [
+   "The owner has already generated the current month's invoices (check the Invoices tab for this month's entries).",
+   "Agree with the owner first: Generate Invoices bills EVERY active enrolment, not just test ones, so any real child enrolled since the last run will be billed.",
+   "Count this month's invoices on Payments > Invoices (use the Month column) and write the number down."
+  ],
+  "steps": [
+   "On Payments, click Generate Invoices.",
+   "Leave the Month as the current month and click 'Generate Invoices'. Read the toast before it disappears, or record the screen.",
+   "Refresh and count this month's invoices again.",
+   "Click Generate Invoices again for the same month and repeat the count.",
+   "Use the student filter to check that two or three individual children each have exactly one invoice for this month per program."
+  ],
+  "expected": [
+   "Toast says 'All N invoice(s) already exist for this month' (or, if new children joined, how many were created and how many already existed).",
+   "The invoice count does not change on the second run.",
+   "No child has two invoices for the same month and program."
+  ],
+  "evidence": "Screen recording of both runs including the toasts, and the before and after counts.",
+  "phone": false
+ },
+ {
+  "id": "INV-02",
+  "area": "Invoicing & books",
+  "title": "Check a child with two parents is billed once and a child with no parent is reported",
+  "risk": "A family is double-billed, or a child trains for free because nobody noticed they were never invoiced.",
+  "severity": "critical",
+  "preconditions": [
+   "In the test program: Child A linked to two test parents, and Child B with NO parent linked. Both are enrolled and active.",
+   "Same caution as INV-01: generating bills every active enrolment not yet invoiced this month."
+  ],
+  "steps": [
+   "On Payments, click Generate Invoices, keep the current month and click 'Generate Invoices'. Record the screen so you catch every toast.",
+   "Refresh. Filter Invoices by Child A, then by Child B.",
+   "Note which parent Child A's invoice is billed to.",
+   "Click Generate Invoices again and check Child A still has one invoice."
+  ],
+  "expected": [
+   "Child A has exactly one invoice for the month, billed to one of the two parents.",
+   "A warning toast appears: '1 enrollment(s) skipped — no parent linked to student' (the number covers all such children).",
+   "Child B has no invoice. The warning should let the owner identify WHICH child was skipped, but it gives only a count. Record whether the owner could find Child B from what the screen shows.",
+   "Invoices are always due on the 1st of the month, so an invoice created after the 1st becomes overdue as soon as the Payments page reloads. Record whether Child A's new invoice shows Overdue immediately."
+  ],
+  "evidence": "Screen recording with the toasts, and screenshots of the filtered invoice lists for Child A and Child B.",
+  "phone": false
+ },
+ {
+  "id": "INV-03",
+  "area": "Invoicing & books",
+  "title": "Record a partial payment, then the balance, and check the invoice status at each step",
+  "risk": "An invoice shows Paid when money is still owed, or stays owed after it has been paid, and parents are chased wrongly.",
+  "severity": "critical",
+  "preconditions": [
+   "A test invoice for a test child, status Pending or Overdue, with a known amount (e.g. $100.00) and no payments."
+  ],
+  "steps": [
+   "On Payments > Invoices, click Record Payment on the test invoice. Note 'Amount Due' and 'Remaining' in the dialog.",
+   "Change Amount to less than the total (e.g. 40.00), set Method to Zelle and Reference to 'AUDIT-1'. Click Record Payment.",
+   "Check the invoice's Status and the Payment History tab.",
+   "Click Record Payment on the same invoice again. Check that 'Remaining' shows the balance (e.g. $60.00) and that the Amount box defaults to it.",
+   "Exception checks before paying the balance: try Amount 0, then -10, then an amount larger than the balance. Note what is accepted. Delete any payment that should not have been accepted (Payment History > bin icon).",
+   "Record the exact balance with Reference 'AUDIT-2'. Check the Status.",
+   "Click Record Payment at the top of the Payments page (no invoice pre-selected) and check whether the paid invoice is still offered in the Invoice list."
+  ],
+  "expected": [
+   "After the partial payment, the toast reads 'Payment recorded' and the invoice stays Pending (or Overdue if past due), not Paid.",
+   "Payment History shows the $40.00 Zelle payment with reference AUDIT-1 and today's date.",
+   "Remaining shows the correct balance.",
+   "Zero and negative amounts are refused ('Enter an amount greater than $0.'). An amount above the balance is refused with 'That's more than the $X still owed…'. Nothing is recorded in Payment History for any refused attempt.",
+   "After the balance is paid, the invoice shows Paid and the Record Payment and Waive buttons disappear from its row.",
+   "The paid invoice is no longer offered when recording a new payment."
+  ],
+  "evidence": "Screenshots of the dialog showing Remaining at each step, the invoice row after each payment, Payment History, and any invalid amounts that were accepted.",
+  "phone": false
+ },
+ {
+  "id": "INV-04",
+  "area": "Invoicing & books",
+  "title": "Edit and delete payments, and edit an invoice, and check the status follows the money",
+  "risk": "Corrections to the books leave invoices marked Paid with nothing received, or marked owed after full payment.",
+  "severity": "critical",
+  "preconditions": [
+   "The fully paid test invoice from INV-03, with two payments (AUDIT-1 and AUDIT-2)."
+  ],
+  "steps": [
+   "On Payment History, click the pencil on AUDIT-2. Reduce the amount by $10 and click 'Save Changes'. Check the invoice status.",
+   "Edit AUDIT-2 back to the original amount. Check the status.",
+   "Delete AUDIT-2 (bin icon, confirm). Check the status.",
+   "Re-record AUDIT-2 so the invoice is Paid again.",
+   "Control check: on a different, unpaid test invoice, click the pencil (Edit Invoice), change Status to Paid without recording any payment, and click 'Save Changes'.",
+   "Control check: on a partly paid test invoice, lower the Amount until it equals what has been paid. Refresh and check the status."
+  ],
+  "expected": [
+   "Reducing a payment below the total returns the invoice to Pending (or Overdue if the due date has passed), with a 'Payment updated' toast.",
+   "Restoring the amount returns it to Paid.",
+   "Deleting a payment returns it to Pending or Overdue, with a 'Payment deleted' toast, and the payment disappears from Payment History.",
+   "Marking an invoice Paid by hand has no effect: the status is worked out from payments, so it stays Pending or Overdue. Only Waived can be chosen by hand.",
+   "Lowering the invoice amount to equal what was paid makes it Paid straight away (the status is recalculated whenever an invoice is edited)."
+  ],
+  "evidence": "Screenshot of the invoice row status after each of the six steps.",
+  "phone": false
+ },
+ {
+  "id": "INV-05",
+  "area": "Invoicing & books",
+  "title": "Waive an invoice, and try to delete an invoice that still has payments",
+  "risk": "A waived fee keeps being chased, or deleting an invoice erases money already received from the books.",
+  "severity": "critical",
+  "preconditions": [
+   "Two test invoices to waive: one with no payments and one partly paid.",
+   "Two more test invoices to delete: one with at least one payment and one with none.",
+   "Note the Pending, Overdue and Total Revenue cards before starting."
+  ],
+  "steps": [
+   "Click Waive on the unpaid test invoice. Read the confirmation and click Cancel. Confirm nothing changed.",
+   "Click Waive again and confirm.",
+   "Check the row, the Waived filter, and the Pending and Overdue cards.",
+   "Waive the partly paid invoice. Check its payment still appears in Payment History and in Total Revenue.",
+   "Click Record Payment at the top of the page and check whether either waived invoice is offered.",
+   "Click the bin icon on the invoice to delete that has a payment, and confirm 'Delete this invoice?'. Check the message, the invoice list, Payment History and Total Revenue.",
+   "Delete that invoice's payments from Payment History, then delete the invoice. Then delete the test invoice that never had payments."
+  ],
+  "expected": [
+   "The confirmation reads 'Waive this invoice?'. Cancel changes nothing.",
+   "After confirming: toast 'Invoice waived', status badge 'waived', no Record Payment or Waive buttons on the row, and the invoice appears under the Waived filter.",
+   "The Pending or Overdue card drops by the invoice amount.",
+   "The partly paid invoice's payment stays recorded and counted in Total Revenue. Record whether the screen shows how much was waived versus collected. It does not record who waived the invoice or why; note this as an audit-trail gap.",
+   "Waived invoices are not offered for new payments.",
+   "Deleting an invoice that has payments is refused with 'Delete the payments first before deleting this invoice'. The invoice and payment remain and Total Revenue is unchanged.",
+   "Once its payments are gone, the invoice deletes with 'Invoice deleted'. An invoice with no payments deletes directly. Record as an audit-trail observation that deletions leave no visible trail on screen (who, when)."
+  ],
+  "evidence": "Screenshots of the waive confirmation, the rows before and after, the summary cards before and after, and the delete refusal with the invoice still listed.",
+  "phone": false
+ },
+ {
+  "id": "INV-06",
+  "area": "Invoicing & books",
+  "title": "Confirm an invoice becomes overdue only after its due date, including in the evening Central time",
+  "risk": "Parents are told they are late on the day payment is due, or the evening before, which damages trust and triggers wrong reminders.",
+  "severity": "critical",
+  "preconditions": [
+   "Two unpaid test invoices with no payments.",
+   "Part 2 must be done in the evening, after 7pm Central time (after 6pm Central once clocks change on 1 November), when the server's clock has already moved to tomorrow."
+  ],
+  "steps": [
+   "Part 1 (daytime): click the pencil on test invoice 1. Set Due Date to TODAY's date and Status to Pending. Click 'Save Changes'.",
+   "Refresh the Payments page (opening the page is what updates overdue statuses). Note the status.",
+   "Edit test invoice 2: set Due Date to YESTERDAY and Status to Pending, save and refresh. Note the status.",
+   "Part 2 (evening, after 7pm Central): set test invoice 1's Due Date to today's date again and Status to Pending, save, and refresh the page twice. Note the status and the Overdue card count.",
+   "Next morning: refresh Payments and check test invoice 1."
+  ],
+  "expected": [
+   "An invoice due today shows 'pending' in the daytime AND in the evening, and is not counted in the Overdue card.",
+   "An invoice due yesterday shows 'overdue' and is included in the Overdue (N) card.",
+   "The next morning, test invoice 1 (now due yesterday) shows 'overdue'.",
+   "Clock cross-check: write down the exact time and confirm your computer is set to Central time."
+  ],
+  "evidence": "Screenshots with the computer clock visible, showing the invoice due date, status and Overdue card in the daytime, the evening and the next morning.",
+  "phone": false
+ },
+ {
+  "id": "INV-07",
+  "area": "Invoicing & books",
+  "title": "Reconcile the four summary cards to the invoice and payment lists",
+  "risk": "The owner makes decisions and reports income from dashboard totals that do not agree with the underlying records.",
+  "severity": "critical",
+  "preconditions": [
+   "Payments page open, and no one else recording payments while you work.",
+   "A spreadsheet for the figures. Include at least one partly paid invoice in the data (from INV-03 or a fresh test invoice)."
+  ],
+  "steps": [
+   "Record the four cards: Total Revenue, Pending, Overdue (N) and Paid This Month.",
+   "Payment History tab: add up every payment Amount. Separately, add up the payments dated in the current month.",
+   "Invoices tab: click Pending and add up Amount, then click Processing and add up Amount. Click Overdue, count the rows and add up Amount. Note any of these invoices that have part-payments.",
+   "Compare: Total Revenue with all payments; Paid This Month with this month's payments; Pending with the Pending plus Processing invoices; and the Overdue amount and count with the Overdue list.",
+   "Evening check (last day of a month, after 7pm Central): record a $1 test payment, note Paid This Month and the date shown in Payment History, then delete the payment."
+  ],
+  "expected": [
+   "Total Revenue equals the sum of all payments ever recorded (all time, not just this month).",
+   "Paid This Month equals payments received in the current calendar month, Central time.",
+   "Pending equals the total of the Pending and Processing invoices. Overdue equals the total of the Overdue invoices, and N equals the number of rows.",
+   "For partly paid invoices, the Pending and Overdue cards count only what is still OWED (e.g. $100 invoice with $40 paid adds $60). Reconcile the cards to the sum of balances, not invoice amounts.",
+   "Evening check: a payment recorded on the last evening of a month (Central time) counts in that month's 'Paid This Month'."
+  ],
+  "evidence": "The reconciliation spreadsheet with every figure, plus screenshots of the cards and each filtered list.",
+  "phone": false
+ },
+ {
+  "id": "SCH-01",
+  "area": "Schedule & attendance",
+  "title": "Generate weekly sessions and confirm no week is missing or duplicated",
+  "risk": "A practice is missing from the schedule (no reminders, no register) or doubled (double reminders, confusing records).",
+  "severity": "high",
+  "preconditions": [
+   "Under Schedule > Manage Templates, the test program has a weekly template (e.g. Tuesday 4:00 PM – 5:00 PM). Ideally, add a second test template on a weekday EARLIER in the week than today, and a third on today's weekday.",
+   "The test program has no end date within the next 4 weeks.",
+   "Generate Sessions creates the next 4 weeks for EVERY template, real ones included. This is normally harmless because existing sessions are skipped."
+  ],
+  "steps": [
+   "Click Manage Templates and note each test template's day and time.",
+   "Close it and click Generate Sessions. Note the toast.",
+   "Refresh the page (the grid may not update by itself). Use the arrows and the Today button to step through the next 4 weeks.",
+   "For each test template, list the dates on which a session appears.",
+   "Click Generate Sessions again, refresh and re-check."
+  ],
+  "expected": [
+   "Toast reads 'N session(s) generated'.",
+   "Each template has exactly one session in each of the next 4 weeks, on the correct weekday and time, starting today if today is that weekday. There are no gaps and no two sessions on the same date and time.",
+   "No sessions are created in the past or after the program's end date.",
+   "The second run reports '0 session(s) generated' and nothing is duplicated.",
+   "If the grid did not show the new sessions until a refresh, note it as a usability issue. If a run with no templates reports '0 session(s) generated' instead of an error, note that too."
+  ],
+  "evidence": "Screenshots of Manage Templates, the toasts, and each of the 4 weeks in the grid.",
+  "phone": false
+ },
+ {
+  "id": "SCH-02",
+  "area": "Schedule & attendance",
+  "title": "Check sessions show on the right day in the week grid and Session Details, in the evening too",
+  "risk": "Coaches and the owner turn up on the wrong day, or attendance is taken against the wrong date.",
+  "severity": "high",
+  "preconditions": [
+   "Test sessions generated (SCH-01) on a known weekday, e.g. Tuesday.",
+   "Computer set to Central time. Part 2 must be done after 7pm Central (after 6pm Central from 1 November)."
+  ],
+  "steps": [
+   "Daytime: open Schedule. Note which day column the test Tuesday session appears under, and which column is highlighted as today.",
+   "Click the session. In Session Details, note the date line, program name and school name.",
+   "Evening (after 7pm Central): repeat both steps without changing anything else.",
+   "Compare all four observations with the template's day in Manage Templates."
+  ],
+  "expected": [
+   "The session appears under Tue at all hours, and the today highlight is on today's real date.",
+   "Session Details shows the same date (e.g. 'Tuesday, October 6'), plus the program and school names.",
+   "Record a separate exception for each of these if it happens: in the evening, sessions appear one column off; at any time, Session Details shows the day before the grid's day; the program or school name is blank."
+  ],
+  "evidence": "Screenshots of the grid and Session Details, daytime and evening, with the computer clock visible.",
+  "phone": false
+ },
+ {
+  "id": "SCH-03",
+  "area": "Schedule & attendance",
+  "title": "Cancel a session and confirm it stays cancelled and cannot be used",
+  "risk": "Parents get a reminder for a cancelled practice, or a cancelled session quietly reappears or is used to record attendance.",
+  "severity": "medium",
+  "preconditions": [
+   "A future test session in the grid, with status scheduled."
+  ],
+  "steps": [
+   "Click the session, then Cancel Session. Leave the reason box ('Reason (optional)') empty and click Confirm Cancel. Note the message.",
+   "Type a reason (e.g. 'Audit test – gym closed') and click Confirm Cancel.",
+   "Check the grid, then reopen the session.",
+   "Click Generate Sessions and refresh. Check the date again.",
+   "If the cancelled session is tomorrow: the next morning, check Messaging > Outbox for any practice reminder for it."
+  ],
+  "expected": [
+   "With no reason, the cancellation is refused ('The session wasn't cancelled' with 'Cancellation reason is required.'). The box is labelled optional, so record this as a labelling mismatch.",
+   "With a reason: toast 'Session cancelled', and the session shows faded and struck through, with a Cancelled badge.",
+   "When reopened, it shows status 'cancelled' and no Save Attendance or Coach link buttons.",
+   "Generating again does not recreate it.",
+   "No practice reminder is prepared for a cancelled session. Record that the app does not tell parents about the cancellation itself; the owner must message them."
+  ],
+  "evidence": "Screenshots of the error, the cancelled tile, the reopened dialog, and the Outbox the next morning.",
+  "phone": false
+ },
+ {
+  "id": "SCH-04",
+  "area": "Schedule & attendance",
+  "title": "Take attendance from the dashboard and confirm it is saved correctly",
+  "risk": "The register is wrong or lost, so the business cannot show who attended (safeguarding and billing disputes).",
+  "severity": "high",
+  "preconditions": [
+   "A scheduled test session for a test program with at least four active test children and one withdrawn test child."
+  ],
+  "steps": [
+   "Click the session. Check the list of children against the active enrolment.",
+   "Click children to cycle their status: leave one present, and set one absent, one late and one excused.",
+   "Check the 'x/y' counter, then click Save Attendance.",
+   "Close and reopen the session. Check each child's status.",
+   "Click Mark Complete. Reopen the session."
+  ],
+  "expected": [
+   "Only active children are listed. The withdrawn child is not.",
+   "Clicking cycles present > absent > late > excused > present, and the counter counts present and late.",
+   "Toast 'Attendance saved'. On reopening, every status is as you set it.",
+   "After Mark Complete the badge shows 'completed'. Note whether the saved register can still be viewed. If it is hidden once the session is complete, record that attendance evidence for completed sessions cannot be reviewed on screen."
+  ],
+  "evidence": "Screenshots before saving, after reopening, and after Mark Complete.",
+  "phone": false
+ },
+ {
+  "id": "SCH-05",
+  "area": "Schedule & attendance",
+  "title": "Send a coach the passcode link and take the register on a phone",
+  "risk": "Coaches cannot take the register at the gym, so attendance is not recorded.",
+  "severity": "high",
+  "preconditions": [
+   "A scheduled test session today or soon, with active test children. One test child has a medical note.",
+   "A phone that is NOT logged in to the app (use a private browsing window)."
+  ],
+  "steps": [
+   "On the computer, open the session and click Coach link. Note the link, the 6-digit passcode and the validity text. Click 'Copy link and passcode' and send it to the phone by WhatsApp.",
+   "Close and reopen the session dialog. Note whether the passcode can be seen again.",
+   "On the phone, open the link. Check the screen before entering anything.",
+   "Enter the passcode and tap Open register.",
+   "Tap names to set one child Away and one Late, then tap Save register.",
+   "On the computer, reopen the session and check the statuses."
+  ],
+  "expected": [
+   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Valid for 12 hours. The passcode isn't shown again — copy it now.' The copied text includes the link and the passcode.",
+   "After reopening, the passcode is not shown again.",
+   "On the phone, before the passcode is entered, the page shows only 'Take the register' and a passcode box, with no child names. Open register stays disabled until 6 digits are entered.",
+   "After unlocking, the page shows the program, school, date and time, 'N of M here', the active children, their medical notes, and Here/Away/Late/Excused buttons.",
+   "Save register changes to 'Saved ✓', and the dashboard shows the same statuses."
+  ],
+  "evidence": "Screenshots of the coach link box, the phone before and after unlocking, the saved state, and the matching dashboard view.",
+  "phone": true
+ },
+ {
+  "id": "SCH-06",
+  "area": "Schedule & attendance",
+  "title": "Lock a coach link with wrong passcodes, and confirm replaced, expired and cancelled-session links are refused",
+  "risk": "Anyone who has or guesses a link could see children's names and medical notes, and old links keep working after they should not.",
+  "severity": "critical",
+  "preconditions": [
+   "A fresh coach link and passcode for a test session (Coach link button), opened on a phone in a private window.",
+   "A timer.",
+   "For the replaced-link check: a second Coach link issued for the same session. There is no separate Revoke button; issuing a new link is the only way to switch off the old one.",
+   "For the expiry check: a link issued at least 12 hours before testing."
+  ],
+  "steps": [
+   "Enter a wrong 6-digit passcode and tap Open register. Note the message.",
+   "Repeat with different wrong passcodes until you have made 5 wrong attempts.",
+   "Now enter the CORRECT passcode. Note the message and the time.",
+   "Try the correct passcode again after 5 minutes, and again after 16 minutes.",
+   "Optional: change one character of the link and enter the correct passcode.",
+   "Issue link A for a test session and confirm it unlocks. Then close and reopen the session and click Coach link again to issue link B. On the phone, open link A with passcode A, then link B with passcode B.",
+   "Try a link issued more than 12 hours ago with its correct passcode.",
+   "Issue a link for another test session, cancel that session (with a reason), then open the link with its passcode."
+  ],
+  "expected": [
+   "Each wrong attempt shows 'That link or passcode is not right.' and no child data.",
+   "After 5 wrong attempts, even the correct passcode is refused with 'Too many wrong passcodes. Try again in a few minutes, or ask for a new link.'",
+   "The link is still locked after 5 minutes and works again after about 15 minutes.",
+   "A tampered link gives the same 'not right' message, which reveals nothing about whether the link exists.",
+   "Link A is refused with 'This link has been turned off. Ask for a new one.' Link B works.",
+   "The 12-hour-old link is refused with 'This link has expired. Ask for a new one.'",
+   "A link for a cancelled session should be refused. If it still opens and allows saving, record an exception. Also record as an observation that the owner cannot switch off a link without issuing a new one."
+  ],
+  "evidence": "Screen recording of all passcode attempts with a clock visible. Screenshots of the lock message, the later successful unlock with times, and each refusal message with the time the link was issued and the time it was tested.",
+  "phone": true
+ },
+ {
+  "id": "SCH-07",
+  "area": "Schedule & attendance",
+  "title": "Check the coach register shows only what a coach needs (data minimisation)",
+  "risk": "A coach, or anyone a link is forwarded to, sees parents' phone numbers, addresses, fees or children from other sessions.",
+  "severity": "critical",
+  "preconditions": [
+   "A test session with test children whose records include parent names, phone numbers, emails, fees owed and medical notes.",
+   "A valid coach link and passcode, opened on a phone in a private window."
+  ],
+  "steps": [
+   "Unlock the register on the phone.",
+   "Read the whole page, scrolling to the bottom, and list every piece of information shown.",
+   "Tap each child's name and check that nothing extra appears.",
+   "Look for any link or button that leads elsewhere in the app.",
+   "Try changing the end of the address to /dashboard or /payments."
+  ],
+  "expected": [
+   "Shown: program, school, location, date and time, children's first and last names, medical notes, attendance buttons and Save register. Medical notes are there on purpose, for safety.",
+   "NOT shown: parent names, phone numbers, emails, addresses, dates of birth, fees, invoices, payment status, other sessions, or children from other programs.",
+   "Withdrawn children and children in other programs do not appear.",
+   "Nothing leads into the owner's dashboard. Trying /dashboard or /payments asks for a login."
+  ],
+  "evidence": "Full-length screenshots of the unlocked register, and of the login page reached when trying other addresses.",
+  "phone": true
+ },
+ {
+  "id": "SEC-04",
+  "area": "Access & security",
+  "title": "Reset a family's payment link after it has been shared too widely",
+  "risk": "A payment link forwarded beyond the family can't be withdrawn, so anyone holding it can keep viewing balances and changing the family's payment set-up.",
+  "severity": "high",
+  "preconditions": [
+   "A test family with an open invoice, and their current payment link open on a phone.",
+   "Signed in as the Boss on a computer."
+  ],
+  "steps": [
+   "On Payments → Invoices, find the family's row. Next to the link icon, click the circular-arrow icon ('Give this family a new payment link').",
+   "Read the confirmation and click Cancel. Confirm the old link on the phone still works.",
+   "Click the icon again and confirm.",
+   "On the phone, reload the OLD link.",
+   "Paste the new link (it was copied for you) into the phone's browser."
+  ],
+  "expected": [
+   "The confirmation says the old link stops working straight away.",
+   "After confirming: a message 'New link for <name> copied — the old one no longer works'.",
+   "The old link now shows 'not found'.",
+   "The new link shows the same family, balances and autopay status as before — nothing else about the family changed."
+  ],
+  "evidence": "Screenshots of the confirmation, the old link's 'not found', and the new link working.",
+  "phone": true
+ },
+ {
+  "id": "PAY-21",
+  "area": "Autopay & Stripe",
+  "title": "Check the payment page and Payments screen always say when Stripe is in test mode",
+  "risk": "A parent or the owner mistakes a sandbox practice run for a real payment, or believes real payments are on when they aren't.",
+  "severity": "high",
+  "preconditions": [
+   "Stripe is in Test mode (Settings → Payments shows the 'Test mode' badge).",
+   "A test family's payment link."
+  ],
+  "steps": [
+   "Open the family's payment page on a phone and look at the top.",
+   "As Boss, open Payments and look at the Autopay card's header.",
+   "After PAY-18 (switched to Live), repeat both checks, then switch back to Test."
+  ],
+  "expected": [
+   "In Test mode: the payment page shows an amber banner 'Test mode — card and bank payments here are practice runs. No real money moves.' and the Autopay card shows a 'TEST MODE' badge. Settings shows 'Test mode'.",
+   "In Live mode: no test banner on the payment page; the Autopay card shows 'LIVE'; Settings shows 'Live — real money'."
+  ],
+  "evidence": "Screenshots of the payment page and Autopay card in each mode.",
+  "phone": true
+ }
+]

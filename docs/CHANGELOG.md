@@ -5,6 +5,14 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- **Help** in the menu: step-by-step guides for every routine job, searchable,
+  with steps to tick off and "Show me" to start the tour at the right place;
+  a Practise tab that says whether Stripe is in test mode, with copyable test
+  cards and safe ways to try each payment; the full acceptance test plan
+  (82 checks) with pass/fail/blocked, expected-result ticks and notes saved in
+  the database (`acceptance_results`), an exception log and CSV export; and a
+  reference of what happens automatically and what each status means. The
+  tour gains a stop on the Help page
 - **Stripe test ↔ live switch** in Settings → Payments. Both modes' keys are
   kept; "Check connection" asks Stripe whose account a key belongs to and in
   which mode; switching needs confirmation and refuses unless the target mode's

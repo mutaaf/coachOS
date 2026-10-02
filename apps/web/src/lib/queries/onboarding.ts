@@ -107,3 +107,17 @@ export async function getOnboarding(): Promise<{ items: OnboardingItem[]; hidden
 
   return { items, hidden: !!meta.checklist_hidden };
 }
+
+export interface TestResult {
+  case_id: string;
+  status: "pass" | "fail" | "blocked" | "na" | null;
+  ticks: number[];
+  notes: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export async function getTestResults(): Promise<TestResult[]> {
+  const { data } = await createAdminSupabase().from("acceptance_results").select("*");
+  return (data || []) as TestResult[];
+}

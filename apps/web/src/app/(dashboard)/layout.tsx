@@ -21,6 +21,7 @@ import {
   Settings,
   LogOut,
   PlayCircle,
+  LifeBuoy,
   Menu,
   X,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const navigation = [
   { name: "Messaging", href: "/messaging", icon: MessageSquare },
   { name: "Marketing", href: "/marketing", icon: Target },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Help", href: "/help", icon: LifeBuoy },
 ];
 
 export default function DashboardLayout({
