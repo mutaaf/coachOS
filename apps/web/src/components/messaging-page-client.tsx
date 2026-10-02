@@ -12,6 +12,7 @@ import { sendBulkMessages, createMessageTemplate, updateMessageTemplate, deleteM
 import { toast } from "sonner";
 import { MessageSquare, Send, Users, Plus, Pencil, Trash2, RefreshCw, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import type { MessageTemplate } from "@/types/database";
+import { OutboxPanel } from "@/components/outbox-panel";
 
 const VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
 
@@ -21,9 +22,11 @@ interface MessagingPageClientProps {
   stats: { totalSent: number; pendingCount: number; failedCount: number };
   schools: any[];
   programs: any[];
+  outbox: { waiting: any[]; done: any[] };
+  initialTab?: string;
 }
 
-export function MessagingPageClient({ templates, log, stats, schools, programs }: MessagingPageClientProps) {
+export function MessagingPageClient({ templates, log, stats, schools, programs, outbox, initialTab }: MessagingPageClientProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -95,12 +98,19 @@ export function MessagingPageClient({ templates, log, stats, schools, programs }
         </div>
       </div>
 
-      <Tabs defaultValue="compose">
+      <Tabs defaultValue={initialTab ?? (outbox.waiting.length > 0 ? "outbox" : "compose")}>
         <TabsList>
+          <TabsTrigger value="outbox">
+            Outbox{outbox.waiting.length > 0 ? ` (${outbox.waiting.length})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="compose">Compose</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="outbox">
+          <OutboxPanel waiting={outbox.waiting} done={outbox.done} />
+        </TabsContent>
 
         <TabsContent value="compose">
           <div className="space-y-4">

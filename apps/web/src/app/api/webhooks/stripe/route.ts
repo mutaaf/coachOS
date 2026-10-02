@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { STRIPE_API_VERSION } from "@/lib/stripe-client";
 import { recalculateInvoiceStatus } from "@/lib/invoice-status";
-import { failAutopay, saveSetupIntent, settleAutopay } from "@/lib/autopay";
+import { chargeSplits, failAutopay, saveSetupIntent, settleAutopay } from "@/lib/autopay";
 
 async function getStripeConfig() {
   const supabase = createAdminSupabase();
@@ -99,9 +99,10 @@ export async function POST(request: NextRequest) {
 
     case "payment_intent.payment_failed": {
       const pi = event.data.object as Stripe.PaymentIntent;
-      if (pi.metadata?.source !== "autopay" || !pi.metadata.invoice_id) break;
+      const splits = chargeSplits(pi);
+      if (splits.length === 0) break;
       await failAutopay(supabase, {
-        invoiceId: pi.metadata.invoice_id,
+        invoiceIds: splits.map((x) => x.invoiceId),
         paymentIntentId: pi.id,
         reason: pi.last_payment_error?.message ?? null,
         parentId: pi.metadata.parent_id,

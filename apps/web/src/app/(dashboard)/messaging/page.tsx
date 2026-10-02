@@ -1,4 +1,4 @@
-import { getMessageTemplates, getMessageLog, getMessageStats } from "@/lib/queries/messages";
+import { getMessageTemplates, getMessageLog, getMessageStats, getOutbox } from "@/lib/queries/messages";
 import { getSchools } from "@/lib/queries/schools";
 import { getActivePrograms } from "@/lib/queries/programs";
 import { MessagingPageClient } from "@/components/messaging-page-client";
@@ -8,14 +8,23 @@ import { MessagingPageClient } from "@/components/messaging-page-client";
 // page keeps serving whatever the database held when it was deployed.
 export const dynamic = "force-dynamic";
 
-export default async function MessagingPage() {
-  const [templates, log, stats, schools, programs] = await Promise.all([
+export default async function MessagingPage({ searchParams }: { searchParams: { tab?: string } }) {
+  const [templates, log, stats, schools, programs, outbox] = await Promise.all([
     getMessageTemplates(),
     getMessageLog(),
     getMessageStats(),
     getSchools(),
     getActivePrograms(),
+    getOutbox(),
   ]);
 
-  return <MessagingPageClient templates={templates} log={log} stats={stats} schools={schools} programs={programs} />;
+  return <MessagingPageClient
+      templates={templates}
+      log={log}
+      stats={stats}
+      schools={schools}
+      programs={programs}
+      outbox={outbox}
+      initialTab={searchParams.tab}
+    />;
 }

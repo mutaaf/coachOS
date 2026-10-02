@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -189,6 +190,7 @@ function NeedsLookRow({ receipt, parents }: { receipt: any; parents: { id: strin
 }
 
 export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: CollectPanelProps) {
+  const router = useRouter();
   const { run, pending } = useAction();
   const [showSetup, setShowSetup] = useState(false);
 
@@ -218,14 +220,16 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
                 onClick={async () => {
                   if (
                     !window.confirm(
-                      `Send ${inviteCount} ${inviteCount === 1 ? "family" : "families"} their personal payment link on WhatsApp?`
+                      `Prepare a personal payment link message for ${inviteCount} ${inviteCount === 1 ? "family" : "families"}? You'll send them from the Outbox.`
                     )
                   )
                     return;
-                  await run(() => inviteFamiliesToAutopay(), {
-                    success: `Links queued for ${inviteCount} ${inviteCount === 1 ? "family" : "families"}`,
-                    error: "The links weren't sent",
+                  const ok = await run(() => inviteFamiliesToAutopay(), {
+                    success: `${inviteCount} ${inviteCount === 1 ? "message is" : "messages are"} ready to send`,
+                    error: "The links weren't prepared",
+                    refresh: false,
                   });
+                  if (ok) router.push("/messaging?tab=outbox");
                 }}
               >
                 Send {inviteCount} payment {inviteCount === 1 ? "link" : "links"}

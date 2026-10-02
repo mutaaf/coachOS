@@ -1,23 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createAdminSupabase, createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
+import { NOT_SIGNED_IN, signedIn } from "@/lib/auth-guard";
 import { checkRows, importRows, rowsFromCsv, type RosterRow } from "@/lib/roster";
 import { readRoster, type RosterInput } from "@/lib/roster-reader";
 
 /**
  * The roster import wizard: read a list, check it, save it.
  *
- * Signed-in only, checked here rather than trusted to the page: an action is a
- * public endpoint to anyone who has its id, and reading a screenshot spends
- * API credit while saving one writes parents and children.
+ * Signed-in only (see lib/auth-guard.ts): reading a screenshot spends API
+ * credit, and saving one writes parents and children.
  */
-async function signedIn() {
-  const { data } = await createServerSupabase().auth.getUser();
-  return !!data.user;
-}
 
-const NOT_SIGNED_IN = { error: "Your session has ended. Sign in again and retry." };
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 const MAX_IMAGES = 10;
 

@@ -222,7 +222,9 @@ test("the whole run-book, start to finish", async ({ page }) => {
 
     const { data: invoices } = await admin.from("invoices").select("amount, status");
     expect(Number(invoices![0].amount)).toBe(150);
-    expect(invoices![0].status).toBe("pending");
+    // Owed: pending on the 1st, overdue from the 2nd, since it falls due on the
+    // 1st. Expecting "pending" passed on the day this was written and no other.
+    expect(["pending", "overdue"]).toContain(invoices![0].status);
   });
 
   await test.step("record a Zelle payment against it", async () => {

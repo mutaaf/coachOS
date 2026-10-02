@@ -56,7 +56,7 @@ CoachOS is a full-stack management platform for youth sports program owners. It 
 3. **Server queries for reads** — separate `lib/queries/` modules that throw on error, called from server components
 4. **Client components for interactivity** — `*-page-client.tsx` pattern: server page fetches data, passes to client component
 5. **Shared template engine** — `packages/shared` exports `renderTemplate()` for mustache-style message templating, used by both web cron and bot
-6. **WhatsApp over email** — primary communication channel is WhatsApp via whatsapp-web.js headless browser
+6. **WhatsApp, sent by hand** — parents live on WhatsApp. Messages are queued in `message_queue` and sent from the owner's phone through Messaging → Outbox, where each opens WhatsApp (or SMS) with the text written. The whatsapp-web.js bot in `apps/whatsapp-bot` was never deployed and is not recommended (unofficial; WhatsApp bans automated numbers). The official WhatsApp Business API is the path if sending ever needs to be automatic
 7. **Getting paid without asking** — families save a bank account or card on their private `/pay/{token}` page and the daily cron charges each invoice on its due date (`lib/autopay.ts`); Zelle payments are recorded from the bank's emails, which a Gmail Apps Script posts to `/api/inbound/zelle` (`lib/zelle.ts`). See ADR-010
 8. **Stripe is optional** — enabled via config table (`stripe_enabled`, `stripe_secret_key`). When enabled, invoice generation auto-creates Stripe invoices and payment links can be sent via WhatsApp
 
@@ -228,6 +228,7 @@ something new bites — that is the point of it.**
 | Bank debits sit in `processing` for days | The overdue sweeps only move `pending`. Anything new that marks invoices overdue must leave `processing` alone, or families are chased for money already on its way. |
 | The Supabase CLI was linked to a different project | `supabase/.temp/project-ref` pointed at an unrelated project ("Jarvis"), so `npm run db:migrate` would have pushed CoachOS tables into it. Run `npx supabase migration list` and check the reference is `anzzhodsulqygshhptzt` before any push. |
 | The Anthropic SDK's zod helper wants zod 4 | `zod@3.25` ships v4 under a subpath: import `{ z } from "zod/v4"` where a schema goes to `betaZodOutputFormat`, or it fails to typecheck. |
+| Never assert a "pending" invoice for the current month | Invoices fall due on the 1st, so from the 2nd the app correctly calls them overdue. Three tests asserted "pending" and passed only on the day they were written. Use next month, or accept pending-or-overdue. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---

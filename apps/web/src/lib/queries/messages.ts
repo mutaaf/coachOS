@@ -57,3 +57,29 @@ export async function getMessageStats() {
     failedCount: failedRes.count || 0,
   };
 }
+
+/**
+ * Messages waiting for the owner to send from her phone, oldest first so the
+ * list reads in the order things happened, plus the last day's sent and
+ * skipped ones so a mis-tap can be undone.
+ */
+export async function getOutbox() {
+  const supabase = createAdminSupabase();
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const [waiting, done] = await Promise.all([
+    supabase
+      .from("message_queue")
+      .select("id, recipient_name, recipient_phone, message, created_at")
+      .in("status", ["pending", "sending"])
+      .order("created_at")
+      .limit(200),
+    supabase
+      .from("message_queue")
+      .select("id, recipient_name, recipient_phone, message, status, sent_via, updated_at")
+      .in("status", ["sent", "skipped"])
+      .gte("updated_at", since)
+      .order("updated_at", { ascending: false })
+      .limit(50),
+  ]);
+  return { waiting: waiting.data || [], done: done.data || [] };
+}

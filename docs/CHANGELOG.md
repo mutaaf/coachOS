@@ -4,6 +4,22 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Changed
+- **One autopay charge per family.** All of a family's due invoices — two
+  children, or this month plus an unpaid earlier one — go into a single charge,
+  so the parent sees one line on their statement and, if it fails, gets one
+  message. Each invoice still gets its own payment row for its exact amount and
+  fee. Charges started before this still settle
+- **Messages are sent from the owner's phone, through an Outbox**
+  (Messaging → Outbox). The WhatsApp bot was never deployed and is not
+  recommended: it is unofficial and WhatsApp bans numbers that automate. Each
+  queued message — payment links, failed-charge notices, reminders — opens
+  WhatsApp or Messages with the text written; she presses send. Marked as sent
+  when opened, undoable for a day. "Send payment links" now lands in the Outbox
+
+### Fixed
+- Two more tests that assumed today was the 1st of the month
+
 ### Added
 - **Roster import from a screenshot, a CSV, or pasted text.** "Import a roster"
   on the Schools page (and on each session) picks or creates the school and the

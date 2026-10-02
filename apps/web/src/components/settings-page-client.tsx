@@ -191,6 +191,18 @@ export function SettingsPageClient({ config, whatsappState }: SettingsPageClient
         ))}
 
         <TabsContent value="whatsapp">
+          <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <p className="font-medium">You don&apos;t need a bot to message parents.</p>
+            <p className="mt-1">
+              Messages wait in{" "}
+              <a href="/messaging?tab=outbox" className="font-medium underline">
+                Messaging → Outbox
+              </a>
+              , and each one opens WhatsApp on your phone with the text written — you just press send. The bot below
+              sends automatically, but it is unofficial and WhatsApp can ban numbers that use it; leave it unless
+              you&apos;ve decided that risk is worth it.
+            </p>
+          </div>
           <WhatsAppSetupWizard
             whatsappState={whatsappState}
             botUrl={config.find((c) => c.key === "whatsapp_bot_url")?.value || ""}

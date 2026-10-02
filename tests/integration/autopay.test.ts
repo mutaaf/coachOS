@@ -306,7 +306,7 @@ describe("a bank debit, which takes days to settle", () => {
     const inv = await invoice(f.invoiceId);
     expect(inv.status).toBe("paid");
     expect(inv.payments).toHaveLength(1);
-    expect(inv.payments[0]).toMatchObject({ amount: 100, fee: 0, external_id: "pi_test_1" });
+    expect(inv.payments[0]).toMatchObject({ amount: 100, fee: 0, external_id: `pi_test_1:${f.invoiceId}` });
   });
 });
 
@@ -324,7 +324,7 @@ describe("a charge that fails", () => {
 
     // Stripe also reports the failure by webhook; that must not message again.
     await failAutopay(db, {
-      invoiceId: f.invoiceId,
+      invoiceIds: [f.invoiceId],
       paymentIntentId: "pi_test_1",
       reason: "Your card was declined.",
       parentId: f.parents[0].id,
@@ -438,5 +438,123 @@ describe("saving what the parent set up in Stripe", () => {
 
     await saveSetupIntent(db, { ...pending, status: "succeeded", next_action: null } as any);
     expect(await parent(id)).toMatchObject({ autopay_status: "active", autopay_verify_url: null });
+  });
+});
+
+describe("a family with more than one invoice due", () => {
+  /** One parent on card autopay, two children on a $100 program, this month invoiced. */
+  async function siblings() {
+    const { programId } = await seedProgram({ monthlyFee: 100 });
+    const { data: parent } = await admin
+      .from("parents")
+      .insert({
+        first_name: "Tina",
+        last_name: "Okafor",
+        phone: "+12145550142",
+        stripe_customer_id: "cus_t",
+        autopay_status: "active",
+        autopay_method: "card",
+        autopay_payment_method_id: "pm_t",
+        autopay_label: "Visa ••••4242",
+        autopay_enabled_at: new Date(Date.now() - 86_400_000).toISOString(),
+      })
+      .select("id, pay_token")
+      .single();
+    for (const name of ["Ada", "Obi"]) {
+      const { data: s } = await admin
+        .from("students")
+        .insert({ first_name: name, last_name: "Okafor" })
+        .select("id")
+        .single();
+      await admin.from("student_parents").insert({ student_id: s!.id, parent_id: parent!.id });
+      await admin.from("enrollments").insert({ student_id: s!.id, program_id: programId, status: "active" });
+    }
+    const month = businessMonth();
+    await generateMonthlyInvoices(month);
+    const { data: invoices } = await admin.from("invoices").select("id").eq("parent_id", parent!.id);
+    return { parent: parent!, invoiceIds: invoices!.map((i) => i.id as string), dueDate: `${month}-01` };
+  }
+
+  it("is charged once, for everything due, so the statement shows one line", async () => {
+    const f = await siblings();
+    const fake = fakeStripe("succeeded");
+
+    const result = await chargeDueAutopay(db, fake.stripe, f.dueDate);
+
+    expect(result.paid).toBe(1);
+    expect(fake.created).toHaveLength(1);
+    // $100 + $100, and the 3% fee on each.
+    expect(fake.created[0].params.amount).toBe(20_600);
+    expect(fake.created[0].params.description).toMatch(/Ada and Obi/);
+    for (const id of f.invoiceIds) {
+      const inv = await invoice(id);
+      expect(inv.status).toBe("paid");
+      // Each invoice still balances to exactly what it was owed.
+      expect(inv.payments).toEqual([expect.objectContaining({ amount: 100, fee: 3, external_id: `pi_test_1:${id}` })]);
+    }
+  });
+
+  it("rolls an unpaid earlier month into the same charge", async () => {
+    const f = await siblings();
+    const [y, m] = businessMonth().split("-").map(Number);
+    const lastMonth = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+    await generateMonthlyInvoices(lastMonth);
+    const fake = fakeStripe("succeeded");
+
+    await chargeDueAutopay(db, fake.stripe, f.dueDate);
+
+    expect(fake.created).toHaveLength(1);
+    expect(fake.created[0].params.amount).toBe(41_200);
+  });
+
+  it("books a bank debit against every invoice when the webhook says it settled", async () => {
+    const f = await siblings();
+    await admin.from("parents").update({ autopay_method: "us_bank_account" }).eq("id", f.parent.id);
+    const fake = fakeStripe("processing");
+    await chargeDueAutopay(db, fake.stripe, f.dueDate);
+    const settled = {
+      id: "pi_test_1",
+      status: "succeeded",
+      amount: 20_000,
+      amount_received: 20_000,
+      metadata: fake.created[0].params.metadata,
+    } as unknown as Stripe.PaymentIntent;
+
+    await settleAutopay(db, settled);
+    await settleAutopay(db, settled);
+
+    for (const id of f.invoiceIds) {
+      const inv = await invoice(id);
+      expect(inv.status).toBe("paid");
+      expect(inv.payments).toHaveLength(1);
+    }
+  });
+
+  it("sends one message for the family when it fails, not one per child", async () => {
+    const f = await siblings();
+
+    await chargeDueAutopay(db, fakeStripe({ decline: "Your card was declined." }).stripe, f.dueDate);
+
+    const { data: messages } = await admin.from("message_queue").select("message");
+    expect(messages).toHaveLength(1);
+    expect(messages![0].message).toContain("$200.00");
+    expect(messages![0].message).toContain("Ada and Obi");
+    for (const id of f.invoiceIds) expect((await invoice(id)).autopay_status).toBe("failed");
+  });
+
+  it("still settles a charge made before charges were combined", async () => {
+    const f = await siblings();
+    const [one] = f.invoiceIds;
+    await admin.from("invoices").update({ status: "processing", autopay_status: "processing" }).eq("id", one);
+
+    await settleAutopay(db, {
+      id: "pi_legacy",
+      status: "succeeded",
+      amount: 10_300,
+      amount_received: 10_300,
+      metadata: { source: "autopay", invoice_id: one, fee_cents: "300" },
+    } as unknown as Stripe.PaymentIntent);
+
+    expect((await invoice(one)).payments).toEqual([expect.objectContaining({ amount: 100, fee: 3 })]);
   });
 });

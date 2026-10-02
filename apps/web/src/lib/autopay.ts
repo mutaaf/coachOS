@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type Stripe from "stripe";
 import type { OpsClient } from "@/lib/supabase/types";
 import { renderTemplate } from "shared";
@@ -163,44 +164,86 @@ function shortReason(message: string | null | undefined): string {
 }
 
 /**
- * Record a settled charge. Safe to call more than once for the same charge —
- * the card path settles on the spot and the webhook then reports it again.
+ * What one charge paid for: each invoice, its balance, and its share of the
+ * card fee. Carried in the PaymentIntent's metadata so the webhook, days later
+ * for a bank debit, can book it without looking anything up.
  */
-export async function settleAutopay(supabase: OpsClient, pi: Stripe.PaymentIntent) {
-  const invoiceId = pi.metadata?.invoice_id;
-  if (!invoiceId || pi.metadata?.source !== "autopay") return;
+export interface ChargeSplit {
+  invoiceId: string;
+  cents: number;
+  feeCents: number;
+}
 
-  const feeCents = Number(pi.metadata.fee_cents || 0);
-  const receivedCents = (pi.amount_received || pi.amount) - feeCents;
+function encodeSplits(splits: ChargeSplit[]) {
+  return {
+    invoice_ids: splits.map((s) => s.invoiceId).join(","),
+    balances: splits.map((s) => s.cents).join(","),
+    fees: splits.map((s) => s.feeCents).join(","),
+  };
+}
 
-  const { error } = await supabase.from("payments").insert({
-    invoice_id: invoiceId,
-    amount: receivedCents / 100,
-    fee: feeCents / 100,
-    method: "stripe",
-    reference: pi.metadata.label || "Autopay",
-    notes: feeCents > 0 ? `Autopay (card fee $${(feeCents / 100).toFixed(2)})` : "Autopay",
-    external_id: pi.id,
-  });
-  // 23505: this charge is already recorded. Anything else is a real failure.
-  if (error && error.code !== "23505") throw new Error(error.message);
-
-  await supabase
-    .from("invoices")
-    .update({ autopay_status: "succeeded", autopay_error: null, autopay_payment_intent_id: pi.id })
-    .eq("id", invoiceId);
-  await recalculateInvoiceStatus(supabase, invoiceId);
+export function chargeSplits(pi: Stripe.PaymentIntent): ChargeSplit[] {
+  const m = pi.metadata ?? {};
+  if (m.source !== "autopay") return [];
+  if (m.invoice_ids) {
+    const ids = m.invoice_ids.split(",");
+    const balances = (m.balances ?? "").split(",").map(Number);
+    const fees = (m.fees ?? "").split(",").map(Number);
+    return ids.map((invoiceId, i) => ({ invoiceId, cents: balances[i] || 0, feeCents: fees[i] || 0 }));
+  }
+  // Charges started before charges were combined carried a single invoice.
+  if (m.invoice_id) {
+    const feeCents = Number(m.fee_cents || 0);
+    return [{ invoiceId: m.invoice_id, cents: (pi.amount_received || pi.amount) - feeCents, feeCents }];
+  }
+  return [];
 }
 
 /**
- * A charge that did not go through: the invoice goes back to being owed, and
- * the parent hears about it once, with their link to fix it.
+ * Record a settled charge against every invoice it covered. Safe to call more
+ * than once for the same charge — the card path settles on the spot and the
+ * webhook then reports it again.
+ */
+export async function settleAutopay(supabase: OpsClient, pi: Stripe.PaymentIntent) {
+  for (const split of chargeSplits(pi)) {
+    const { error } = await supabase.from("payments").insert({
+      invoice_id: split.invoiceId,
+      amount: split.cents / 100,
+      fee: split.feeCents / 100,
+      method: "stripe",
+      reference: pi.metadata.label || "Autopay",
+      notes: split.feeCents > 0 ? `Autopay (card fee $${(split.feeCents / 100).toFixed(2)})` : "Autopay",
+      // One charge, several invoices: each payment row is the charge's share of
+      // one invoice, and is unique as such.
+      external_id: `${pi.id}:${split.invoiceId}`,
+    });
+    // 23505: this share is already recorded. Anything else is a real failure.
+    if (error && error.code !== "23505") throw new Error(error.message);
+
+    await supabase
+      .from("invoices")
+      .update({ autopay_status: "succeeded", autopay_error: null, autopay_payment_intent_id: pi.id })
+      .eq("id", split.invoiceId);
+    await recalculateInvoiceStatus(supabase, split.invoiceId);
+  }
+}
+
+function listNames(names: string[]) {
+  const unique = [...new Set(names.filter(Boolean))];
+  if (unique.length <= 1) return unique[0] ?? "";
+  return `${unique.slice(0, -1).join(", ")} and ${unique[unique.length - 1]}`;
+}
+
+/**
+ * A charge that did not go through: its invoices go back to being owed, and
+ * the parent hears about it once — one message for the family, not one per
+ * child — with their link to fix it.
  */
 export async function failAutopay(
   supabase: OpsClient,
-  opts: { invoiceId: string; paymentIntentId: string | null; reason: string | null; parentId?: string }
+  opts: { invoiceIds: string[]; paymentIntentId: string | null; reason: string | null; parentId?: string }
 ) {
-  // Only the call that flips it from processing sends the message. The card
+  // Only the call that flips them from processing sends the message. The card
   // path fails on the spot and Stripe's webhook then reports the same failure.
   const { data: flipped } = await supabase
     .from("invoices")
@@ -210,13 +253,12 @@ export async function failAutopay(
       autopay_payment_intent_id: opts.paymentIntentId,
       status: "pending",
     })
-    .eq("id", opts.invoiceId)
+    .in("id", opts.invoiceIds)
     .eq("autopay_status", "processing")
-    .select("id, amount, students(first_name), programs(name)")
-    .maybeSingle();
+    .select("id, amount, payments(amount), students(first_name), programs(name)");
 
-  if (!flipped) return;
-  await recalculateInvoiceStatus(supabase, opts.invoiceId);
+  if (!flipped || flipped.length === 0) return;
+  for (const inv of flipped) await recalculateInvoiceStatus(supabase, inv.id);
 
   if (!opts.parentId) return;
   const { data: parent } = await supabase
@@ -237,14 +279,20 @@ export async function failAutopay(
     template?.body ||
     "Hi {{parent_name}}, the automatic payment of {{amount}} for {{student_name}}'s {{program_name}} didn't go through ({{reason}}). You can update your payment details here: {{pay_link}}";
 
+  const owedCents = (flipped as any[]).reduce(
+    (sum, inv) =>
+      sum + toCents(inv.amount) - (inv.payments || []).reduce((s: number, p: any) => s + toCents(p.amount), 0),
+    0
+  );
+
   await queueMessage(
     supabase,
     parent,
     renderTemplate(body, {
       parent_name: parent.first_name,
-      amount: `$${Number(flipped.amount).toFixed(2)}`,
-      student_name: (flipped as any).students?.first_name ?? "",
-      program_name: (flipped as any).programs?.name ?? "",
+      amount: `$${(owedCents / 100).toFixed(2)}`,
+      student_name: listNames((flipped as any[]).map((i) => i.students?.first_name)),
+      program_name: listNames((flipped as any[]).map((i) => i.programs?.name)),
       reason: shortReason(opts.reason),
       pay_link: payLink(parent.pay_token),
     })
@@ -252,14 +300,21 @@ export async function failAutopay(
 }
 
 export interface ChargeRunResult {
+  /** Families whose charge went through on the spot. */
   paid: number;
+  /** Families whose bank debit has started and will settle by webhook. */
   processing: number;
   failed: number;
+  /** Invoices passed over: waiting for a new card, already paid, or claimed by another run. */
   skipped: number;
 }
 
 /**
- * Charge every invoice that is due and has an autopay parent behind it.
+ * Charge every family whose invoices are due, once each.
+ *
+ * A family's due invoices — two children, or this month and an unpaid last
+ * month — go into a single charge, so the parent sees one line on their
+ * statement and, if it fails, gets one message.
  *
  * Run daily from the cron, so it also picks up a family who switches autopay on
  * mid-month: their open balance is charged the next day, which the page tells
@@ -278,14 +333,18 @@ export async function chargeDueAutopay(
   const { data: invoices } = await supabase
     .from("invoices")
     .select(
-      "id, amount, month, status, autopay_status, autopay_attempted_at, stripe_invoice_id, student_id, students(first_name, last_name), programs(name), payments(amount)"
+      "id, amount, month, status, autopay_status, autopay_attempted_at, stripe_invoice_id, student_id, created_at, students(first_name, last_name), programs(name), payments(amount)"
     )
     .in("student_id", [...payers.keys()])
     .in("status", ["pending", "overdue"])
-    .lte("due_date", today);
+    .lte("due_date", today)
+    .order("due_date")
+    .order("created_at");
 
   const feePercent = await getCardFeePercent(supabase);
 
+  // Group what is due by the parent who pays it.
+  const families = new Map<string, { payer: AutopayParent; invoices: any[] }>();
   for (const inv of (invoices || []) as any[]) {
     const payer = payers.get(inv.student_id)!;
 
@@ -301,17 +360,23 @@ export async function chargeDueAutopay(
     }
 
     const paidCents = (inv.payments || []).reduce((s: number, p: any) => s + toCents(p.amount), 0);
-    const balanceCents = toCents(inv.amount) - paidCents;
-    if (balanceCents <= 0) {
+    inv.balanceCents = toCents(inv.amount) - paidCents;
+    if (inv.balanceCents <= 0) {
       await recalculateInvoiceStatus(supabase, inv.id);
       result.skipped++;
       continue;
     }
 
-    // Claim it. Two runs overlapping must not both charge, and the status
-    // change is also what keeps the overdue sweep off it while a bank debit
+    const family = families.get(payer.id) ?? { payer, invoices: [] };
+    family.invoices.push(inv);
+    families.set(payer.id, family);
+  }
+
+  for (const { payer, invoices: due } of families.values()) {
+    // Claim them. Two runs overlapping must not both charge, and the status
+    // change is also what keeps the overdue sweep off them while a bank debit
     // takes its few days.
-    const { data: claimed } = await supabase
+    const { data: claimedRows } = await supabase
       .from("invoices")
       .update({
         status: "processing",
@@ -319,59 +384,70 @@ export async function chargeDueAutopay(
         autopay_attempted_at: new Date().toISOString(),
         autopay_error: null,
       })
-      .eq("id", inv.id)
+      .in(
+        "id",
+        due.map((i) => i.id)
+      )
       .in("status", ["pending", "overdue"])
-      .select("id")
-      .maybeSingle();
+      .select("id");
 
-    if (!claimed) {
-      result.skipped++;
-      continue;
-    }
+    const claimedIds = new Set((claimedRows || []).map((r) => r.id));
+    const claimed = due.filter((i) => claimedIds.has(i.id));
+    result.skipped += due.length - claimed.length;
+    if (claimed.length === 0) continue;
 
     // A family on autopay must not also be able to pay a hosted Stripe invoice
     // for the same month and be charged twice.
-    if (inv.stripe_invoice_id) {
+    for (const inv of claimed.filter((i) => i.stripe_invoice_id)) {
       try {
         await stripe.invoices.voidInvoice(inv.stripe_invoice_id);
       } catch {
         // Already void, or never finalised; either way it can no longer be paid.
       }
-      await supabase
-        .from("invoices")
-        .update({ stripe_hosted_invoice_url: null })
-        .eq("id", inv.id);
+      await supabase.from("invoices").update({ stripe_hosted_invoice_url: null }).eq("id", inv.id);
     }
 
-    const feeCents = payer.autopay_method === "card" ? cardFeeCents(balanceCents, feePercent) : 0;
-    const childName = `${inv.students?.first_name ?? ""}`.trim();
+    const splits: ChargeSplit[] = claimed.map((inv) => ({
+      invoiceId: inv.id,
+      cents: inv.balanceCents,
+      feeCents: payer.autopay_method === "card" ? cardFeeCents(inv.balanceCents, feePercent) : 0,
+    }));
+    const total = splits.reduce((s, x) => s + x.cents + x.feeCents, 0);
+    const ids = claimed.map((i) => i.id);
+
+    const months = listNames(
+      [...new Set(claimed.map((i) => i.month as string))].map((m) =>
+        new Date(`${m}-01T00:00:00`).toLocaleDateString("en-US", { month: "long" })
+      )
+    );
+    const children = listNames(claimed.map((i) => i.students?.first_name));
 
     let pi: Stripe.PaymentIntent;
     try {
       pi = await stripe.paymentIntents.create(
         {
-          amount: balanceCents + feeCents,
+          amount: total,
           currency: "usd",
           customer: payer.stripe_customer_id ?? undefined,
           payment_method: payer.autopay_payment_method_id,
           payment_method_types: [payer.autopay_method],
           off_session: true,
           confirm: true,
-          description: `${inv.programs?.name ?? "Program"} — ${childName} (${inv.month})`,
-          metadata: {
-            source: "autopay",
-            invoice_id: inv.id,
-            parent_id: payer.id,
-            fee_cents: String(feeCents),
-          },
+          description: `${months} — ${children}`,
+          metadata: { source: "autopay", parent_id: payer.id, ...encodeSplits(splits) },
         },
-        // One charge per invoice per saved payment method, however many times
-        // this runs — a network blip and a retry must not become two charges.
-        { idempotencyKey: `autopay:${inv.id}:${payer.autopay_enabled_at}` }
+        // One charge per set of invoices per saved payment method, however many
+        // times this runs — a network blip and a retry must not become two
+        // charges. Hashed: Stripe caps keys at 255 characters.
+        {
+          idempotencyKey: `autopay:${createHash("sha256")
+            .update(`${payer.id}|${[...ids].sort().join(",")}|${payer.autopay_enabled_at}`)
+            .digest("hex")}`,
+        }
       );
     } catch (err: any) {
       await failAutopay(supabase, {
-        invoiceId: inv.id,
+        invoiceIds: ids,
         paymentIntentId: err?.raw?.payment_intent?.id ?? err?.payment_intent?.id ?? null,
         reason: err?.message ?? null,
         parentId: payer.id,
@@ -380,10 +456,7 @@ export async function chargeDueAutopay(
       continue;
     }
 
-    await supabase
-      .from("invoices")
-      .update({ autopay_payment_intent_id: pi.id })
-      .eq("id", inv.id);
+    await supabase.from("invoices").update({ autopay_payment_intent_id: pi.id }).in("id", ids);
 
     if (pi.status === "succeeded") {
       await settleAutopay(supabase, pi);
@@ -401,7 +474,7 @@ export async function chargeDueAutopay(
         // Nothing to undo if it is already finished.
       }
       await failAutopay(supabase, {
-        invoiceId: inv.id,
+        invoiceIds: ids,
         paymentIntentId: pi.id,
         reason: "Your bank asked you to confirm the payment",
         parentId: payer.id,

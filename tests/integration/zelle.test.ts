@@ -271,7 +271,8 @@ describe("the owner confirming who paid", () => {
     expect(undone).toMatchObject({ success: true });
     const [inv] = await invoices(parentId);
     expect(inv.payments).toHaveLength(0);
-    expect(inv.status).toBe("pending");
+    // Owed again — pending or overdue depending on the day, but not paid.
+    expect(inv.status).not.toBe("paid");
     const { data: alias } = await admin
       .from("zelle_senders")
       .select("*")
