@@ -87,7 +87,9 @@ test("typing a number that's already on file offers that family instead of a dup
 
   await signIn(page);
   await page.goto("/payments");
-  await page.getByRole("button", { name: "Record a payment" }).click();
+  // One button for money from anyone, top right — not a second one beside it.
+  await expect(page.getByRole("button", { name: /^Record (a )?Payment$/i })).toHaveCount(1);
+  await page.getByRole("button", { name: "Record Payment", exact: true }).click();
   const d = page.getByTestId("assign-payment");
   await d.getByLabel("Amount paid").fill("80");
   await d.getByRole("button", { name: "Someone new" }).click();

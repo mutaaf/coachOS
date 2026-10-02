@@ -1525,10 +1525,10 @@
    "A test family on file with a known phone number and a child in a program."
   ],
   "steps": [
-   "On Payments, tap 'Record a payment', enter an amount and choose Cash.",
+   "On Payments, tap 'Record Payment' (top right), enter an amount and choose Cash.",
    "Tap 'Someone new' and type the test family's phone number in a different format (e.g. with dots).",
    "Read the yellow message, then use the button offered.",
-   "Close and start again: 'Record a payment' → 'Someone new', a new phone number, a child name, '+ A new school' with the name of an EXISTING school typed in capitals. Continue to the summary and record.",
+   "Close and start again: 'Record Payment' → 'Someone new', a new phone number, a child name, '+ A new school' with the name of an EXISTING school typed in capitals. Continue to the summary and record.",
    "Start again with a new program but leave the monthly fee empty, and try to continue."
   ],
   "expected": [

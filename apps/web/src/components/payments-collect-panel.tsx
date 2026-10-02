@@ -10,7 +10,7 @@ import { useAction } from "@/lib/use-action";
 import { inviteFamiliesToAutopay } from "@/lib/actions/autopay";
 import { ignoreZelleReceipt, undoZelleMatch } from "@/lib/actions/zelle";
 import { AssignPaymentDialog, type AssignOptions } from "@/components/assign-payment-dialog";
-import { Repeat, Inbox, Mail, Undo2, Plus } from "lucide-react";
+import { Repeat, Inbox, Mail, Undo2 } from "lucide-react";
 
 export interface CollectPanelProps {
   autopay: {
@@ -139,16 +139,9 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: Co
   const router = useRouter();
   const { run, pending } = useAction();
   const [showSetup, setShowSetup] = useState(false);
-  const [recording, setRecording] = useState(false);
 
   return (
     <div className="mb-6 grid gap-4 lg:grid-cols-2">
-      <div className="flex justify-end lg:col-span-2">
-        <Button data-tour="record-payment" onClick={() => setRecording(true)}>
-          <Plus className="mr-1 h-4 w-4" /> Record a payment
-        </Button>
-        <AssignPaymentDialog open={recording} onOpenChange={setRecording} options={assign} source={{ kind: "manual" }} />
-      </div>
       {/* Autopay */}
       <section data-tour="autopay" className="rounded-2xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2">

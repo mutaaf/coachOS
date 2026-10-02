@@ -126,7 +126,7 @@ export const TASKS: HelpTask[] = [
     hrefLabel: "Open Payments",
     tourStep: "record-payment",
     steps: [
-      { text: "For a Zelle, tap [[Who paid this?]] on it. For cash or Venmo, tap [[Record a payment]] at the top of Payments and enter the amount." },
+      { text: "For a Zelle, tap [[Who paid this?]] on it. For cash or Venmo, tap [[Record Payment]] at the top right of Payments and enter the amount." },
       { text: "Tap [[Someone new]]. The parent's name is filled in from the Zelle — check it, and add their phone (that's how WhatsApp reaches them).", tip: "If the phone is already on file, CoachOS says whose it is and offers that family instead, so you never make a family twice." },
       { text: "Enter the child's first name." },
       { text: "Pick the school — or **+ A new school** and type its name. Then the program — or **+ A new program**, with its name and monthly fee (it starts at the amount paid)." },

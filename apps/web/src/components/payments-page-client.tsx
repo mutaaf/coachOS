@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RecordPaymentDialog } from "@/components/record-payment-dialog";
+import { AssignPaymentDialog } from "@/components/assign-payment-dialog";
 import { GenerateInvoicesDialog } from "@/components/generate-invoices-dialog";
 import { InvoiceFormDialog } from "@/components/invoice-form-dialog";
 import { formatCurrency } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
   const { run } = useAction();
   const [statusFilter, setStatusFilter] = useState("all");
   const [showRecordPayment, setShowRecordPayment] = useState(false);
+  const [recording, setRecording] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
@@ -134,7 +136,10 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
           <Button variant="outline" data-tour="generate-invoices" onClick={() => setShowGenerate(true)}>
             <FileText className="h-4 w-4 mr-2" /> Generate Invoices
           </Button>
-          <Button onClick={() => { setSelectedInvoiceId(null); setShowRecordPayment(true); }}>
+          {/* Money from anyone: an existing family, or someone new with their
+              child, school and program. Paying one particular invoice is the
+              "Record Payment" on its row. */}
+          <Button data-tour="record-payment" onClick={() => setRecording(true)}>
             <Plus className="h-4 w-4 mr-2" /> Record Payment
           </Button>
         </div>
@@ -483,6 +488,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
         invoice={editingInvoice}
       />
       <GenerateInvoicesDialog open={showGenerate} onOpenChange={setShowGenerate} />
+      <AssignPaymentDialog open={recording} onOpenChange={setRecording} options={collect.assign} source={{ kind: "manual" }} />
     </div>
   );
 }
