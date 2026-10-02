@@ -24,7 +24,7 @@ test("Help is in the menu, guides tick through, and Show me walks there", async 
   await expect(page.getByRole("heading", { name: "Help", exact: true })).toBeVisible();
 
   // Search narrows to one guide and opens it.
-  await page.getByLabel("Search help").fill("cash");
+  await page.getByLabel("Search help").fill("paid cash");
   const task = page.getByTestId("help-task");
   await expect(task).toHaveCount(1);
   await task.getByRole("button", { name: /Step 1: mark as done/ }).click();
@@ -32,7 +32,7 @@ test("Help is in the menu, guides tick through, and Show me walks there", async 
 
   // Ticks survive a reload (kept in this browser).
   await page.reload();
-  await page.getByLabel("Search help").fill("cash");
+  await page.getByLabel("Search help").fill("paid cash");
   await expect(page.getByTestId("help-task").getByRole("button", { name: /Step 1: mark as not done/ })).toBeVisible();
 
   // Show me starts the tour at the right stop.

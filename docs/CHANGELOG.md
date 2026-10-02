@@ -4,6 +4,16 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Added
+- **Who paid this?** On any Zelle payment CoachOS couldn't place, and from a
+  new **Record a payment** button for cash or Venmo: pick the family (closest
+  to the sender's name first), or **Someone new** — then the child, school and
+  program, creating whichever don't exist yet, with this month's invoice. A
+  summary says everything that will happen before anything is saved, and it
+  all saves in one transaction (`ops.place_family`). A phone already on file
+  offers that family instead of a duplicate; a "new" school or program with an
+  existing name is the existing one. The tour, Help and test plan cover it
+
 ### Fixed
 - The Gmail script only set up its 15-minute timer when "install" was the
   function chosen in Apps Script, but Run defaults to the first function, so a

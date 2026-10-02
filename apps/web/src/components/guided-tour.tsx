@@ -142,6 +142,19 @@ function buildSteps(ctx: TourContext | null): Step[] {
     ),
   },
   {
+    id: "record-payment",
+    path: "/payments",
+    target: '[data-tour="record-payment"]',
+    title: "Money from someone new",
+    body: (
+      <>
+        Cash, Venmo, or a Zelle from someone not set up yet? <strong>Record a payment</strong> (or{" "}
+        <strong>Who paid this?</strong> on a Zelle) asks who paid — and if they&apos;re new, adds the family, child,
+        school and program as you go, then records the money. It shows you everything before saving.
+      </>
+    ),
+  },
+  {
     id: "payments-invoices",
     path: "/payments",
     target: '[data-tour="invoice-statuses"]',

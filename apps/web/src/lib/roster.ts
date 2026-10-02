@@ -49,7 +49,7 @@ export function sameName(a: string | null | undefined, b: string | null | undefi
 }
 
 /** The last ten digits — how a stored number is compared, whatever format it was saved in. */
-function phoneKey(raw: string | null | undefined): string | null {
+export function phoneKey(raw: string | null | undefined): string | null {
   const digits = (raw ?? "").replace(/\D/g, "");
   return digits.length >= 10 ? digits.slice(-10) : null;
 }

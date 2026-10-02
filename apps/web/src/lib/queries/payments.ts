@@ -136,23 +136,6 @@ export async function getZelleInbox() {
   };
 }
 
-/** Everyone the owner might say a Zelle payment came from. */
-export async function getParentsForMatching() {
-  const supabase = createAdminSupabase();
-  const { data } = await supabase
-    .from("parents")
-    .select("id, first_name, last_name, student_parents(students(first_name))")
-    .order("first_name");
-  return (data || []).map((p: any) => ({
-    id: p.id as string,
-    label: `${p.first_name} ${p.last_name}${
-      p.student_parents?.length
-        ? ` (${p.student_parents.map((sp: any) => sp.students?.first_name).filter(Boolean).join(", ")})`
-        : ""
-    }`,
-  }));
-}
-
 export async function getAutopaySummary() {
   const supabase = createAdminSupabase();
   const stripe = await getStripeSettings();

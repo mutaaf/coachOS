@@ -1108,14 +1108,14 @@
    "Scroll to the 'Zelle email setup' section. Confirm step 1 reads 'Open Gmail as <the Gmail you entered>' and step 5 reads 'From now on, forward Zelle alerts from <the Yahoo address>'.",
    "Click 'Open Gmail' and check that the Gmail that opens is the right account, not another Google account you are signed in to.",
    "Click 'Open Apps Script'. Back in CoachOS, click 'Copy the script'. In Apps Script, delete what is already there, paste, and save.",
-   "At the top of Apps Script, choose 'install' and press Run. When Google warns that it has not verified the app, click Advanced, then 'Go to the project', then Allow.",
+   "Press Run (whichever function is selected). When Google warns that it has not verified the app, click Advanced, then 'Go to the project', then Allow.",
    "Optional cross-check: go to Payments. The Zelle card's button should now read 'Setup' instead of 'Connect Gmail', but only once at least one email containing the word 'zelle' has been posted. Before that, the card keeps saying 'Connect the Gmail your bank emails...'.",
    "In Apps Script, open Triggers (the clock icon) and confirm there is exactly one trigger, for 'reportZellePayments', set to every 15 minutes."
   ],
   "expected": [
    "Every address in the setup steps matches what you saved in Settings, with nothing typed by hand.",
    "The key is never shown in readable form on screen. It can only be copied.",
-   "Exactly one 15-minute trigger exists. Running 'install' a second time replaces the trigger rather than adding another.",
+   "Exactly one 15-minute trigger exists, whichever function was run. Pressing Run again does not add a second one.",
    "After the first Zelle email is processed, the Payments page shows the Zelle card as connected ('Setup' button)."
   ],
   "evidence": "Screenshots of the Settings fields (key masked), the setup steps showing the correct addresses, the Apps Script Triggers list showing one trigger, and the Payments Zelle card before and after it connects.",
@@ -1474,7 +1474,7 @@
    "In Settings, change 'Zelle Email Key' to a new value and save. Do not update the Apps Script.",
    "Have a known parent Zelle $1.00 and forward the alert. Wait 20 minutes.",
    "Check the Zelle card and Payment History. In Apps Script, open Executions and look at the latest run.",
-   "Now copy the script again (step 3, 'Copy the script'), paste it over the old one in Apps Script, save, and run 'install'.",
+   "Now copy the script again (step 3, 'Copy the script'), paste it over the old one in Apps Script, save, and press Run.",
    "Wait 20 minutes and check again."
   ],
   "expected": [
@@ -1485,6 +1485,61 @@
   ],
   "evidence": "Screenshots of the setup steps before and after the change, the Apps Script execution showing failure and then success, and Payment History showing a single recording.",
   "phone": false
+ },
+ {
+  "id": "ZEL-16",
+  "area": "Zelle",
+  "title": "A Zelle from a brand-new family creates the family, child, school and program together, and records the money",
+  "risk": "A payment from someone not yet set up sits unrecorded, or is forced onto the wrong family. A half-finished setup leaves a parent with no child, or a child with no program, who is then never billed.",
+  "severity": "critical",
+  "preconditions": [
+   "Test mode. A Zelle receipt from a sender not on file (ask Mutaaf to add one, or Zelle $1 from an account whose name isn't a parent's).",
+   "Pick a school name and program name that don't exist yet, e.g. 'Audit School' / 'Audit Program'."
+  ],
+  "steps": [
+   "On Payments, in the Zelle box, tap 'Who paid this?' on the payment.",
+   "Tap 'Someone new'. Note the name filled in from the Zelle sender.",
+   "Enter a test phone number and tap 'Next: their child'. Enter a child first name.",
+   "Choose '+ A new school' and type the school name. Type the program name; note the monthly fee filled in.",
+   "Tap 'Next: check it over' and read every line. Then tap 'Record'.",
+   "Open Schools, then Students, and find what was added. Open Payments → Invoices."
+  ],
+  "expected": [
+   "The parent's name is filled in from the sender, without a middle initial.",
+   "The fee starts at the amount paid.",
+   "The summary lists the new family, new school, new program with its fee, the child being added, and whether the month is paid in full — before anything is saved.",
+   "After Record: the school, program, parent and child all exist and are linked; this month's invoice exists for the child at the program's fee and shows paid (or the remaining balance).",
+   "The Zelle payment leaves the 'to check' list and appears under Recently recorded with the family's name.",
+   "A second Zelle from the same sender records itself without asking."
+  ],
+  "evidence": "Screenshots of the summary screen and of the resulting invoice; the school and student pages.",
+  "phone": true
+ },
+ {
+  "id": "ZEL-17",
+  "area": "Zelle",
+  "title": "'Who paid this?' never makes a duplicate family, school or program, and saves nothing if a step is missing",
+  "risk": "Duplicate families split a household's invoices and payments, so balances look wrong and parents are chased twice. A partial save leaves records that are never billed.",
+  "severity": "high",
+  "preconditions": [
+   "A test family on file with a known phone number and a child in a program."
+  ],
+  "steps": [
+   "On Payments, tap 'Record a payment', enter an amount and choose Cash.",
+   "Tap 'Someone new' and type the test family's phone number in a different format (e.g. with dots).",
+   "Read the yellow message, then use the button offered.",
+   "Close and start again: 'Record a payment' → 'Someone new', a new phone number, a child name, '+ A new school' with the name of an EXISTING school typed in capitals. Continue to the summary and record.",
+   "Start again with a new program but leave the monthly fee empty, and try to continue."
+  ],
+  "expected": [
+   "Typing an existing phone shows whose number it is and offers that family; 'Next' stays disabled until you use it.",
+   "Using the offered family goes on with that family — no second parent is created.",
+   "A 'new' school typed with an existing name in different capitals uses the existing school; Schools shows no duplicate.",
+   "With no fee, 'Next' stays disabled and nothing is created.",
+   "Payments shows the cash payment with method Cash."
+  ],
+  "evidence": "Screenshots of the yellow duplicate warning and of the Schools list afterwards.",
+  "phone": true
  },
  {
   "id": "EML-01",

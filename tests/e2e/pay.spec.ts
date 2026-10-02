@@ -178,10 +178,14 @@ test("the owner records a Zelle payment the app couldn't place on its own", asyn
   await page.goto("/payments");
   await expect(page.getByText("1 to check")).toBeVisible();
 
-  await page.getByLabel("Family for Miguel Garcia").selectOption({ label: "Raquel Garcia (Mia)" });
-  await page.getByRole("button", { name: "Record", exact: true }).click();
+  await page.getByRole("button", { name: "Who paid this?" }).click();
+  const dialog = page.getByTestId("assign-payment");
+  // The sender's last name puts the family first.
+  await dialog.getByRole("button", { name: /Raquel Garcia/ }).first().click();
+  await expect(dialog.getByTestId("assign-review")).toContainText("paid in full");
+  await dialog.getByRole("button", { name: "Record $100.00" }).click();
 
-  await expect(page.getByText("Payment recorded")).toBeVisible();
+  await expect(page.getByText("$100.00 recorded for Raquel Garcia")).toBeVisible();
   await expect(page.getByText("Nothing to check.")).toBeVisible();
   const { data } = await admin.from("invoices").select("status").eq("id", invoiceId).single();
   expect(data!.status).toBe("paid");

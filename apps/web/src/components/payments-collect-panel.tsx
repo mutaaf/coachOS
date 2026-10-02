@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ZelleSetupSteps } from "@/components/zelle-setup";
 import { formatCurrency } from "@/lib/utils";
 import { useAction } from "@/lib/use-action";
 import { inviteFamiliesToAutopay } from "@/lib/actions/autopay";
-import { ignoreZelleReceipt, matchZelleReceipt, undoZelleMatch } from "@/lib/actions/zelle";
-import { Repeat, Inbox, Mail, Undo2 } from "lucide-react";
+import { ignoreZelleReceipt, undoZelleMatch } from "@/lib/actions/zelle";
+import { AssignPaymentDialog, type AssignOptions } from "@/components/assign-payment-dialog";
+import { Repeat, Inbox, Mail, Undo2, Plus } from "lucide-react";
 
 export interface CollectPanelProps {
   autopay: {
@@ -24,7 +24,7 @@ export interface CollectPanelProps {
   };
   inviteCount: number;
   zelle: { needsLook: any[]; recent: any[]; connected: boolean; lastSeen: string | null };
-  parents: { id: string; label: string }[];
+  assign: AssignOptions;
 }
 
 function when(iso: string) {
@@ -81,13 +81,13 @@ function ScriptStatus({ lastSeen }: { lastSeen: string }) {
   );
 }
 
-function NeedsLookRow({ receipt, parents }: { receipt: any; parents: { id: string; label: string }[] }) {
+function NeedsLookRow({ receipt, assign }: { receipt: any; assign: AssignOptions }) {
   const { run, pending } = useAction();
-  const [parentId, setParentId] = useState<string>(receipt.parent_id ?? "");
+  const [open, setOpen] = useState(false);
   const unreadable = receipt.status === "unreadable";
 
   return (
-    <li className="py-3">
+    <li className="py-3" data-testid="zelle-needs-look">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="font-medium">
           {unreadable ? receipt.subject || "An email we couldn't read" : receipt.sender_name}
@@ -101,26 +101,9 @@ function NeedsLookRow({ receipt, parents }: { receipt: any; parents: { id: strin
       {receipt.note && <p className="mt-0.5 text-sm text-amber-700">{receipt.note}</p>}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {!unreadable && (
-          <>
-            <Select
-              aria-label={`Family for ${receipt.sender_name}`}
-              value={parentId}
-              onChange={(e) => setParentId(e.target.value)}
-              options={[{ value: "", label: "Who sent this?" }, ...parents.map((p) => ({ value: p.id, label: p.label }))]}
-            />
-            <Button
-              size="sm"
-              disabled={!parentId || pending}
-              onClick={() =>
-                run(() => matchZelleReceipt(receipt.id, parentId), {
-                  success: "Payment recorded",
-                  error: "The payment wasn't recorded",
-                })
-              }
-            >
-              Record
-            </Button>
-          </>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            Who paid this?
+          </Button>
         )}
         <Button
           size="sm"
@@ -134,17 +117,38 @@ function NeedsLookRow({ receipt, parents }: { receipt: any; parents: { id: strin
           {unreadable ? "Dismiss" : "Not a family"}
         </Button>
       </div>
+      {!unreadable && (
+        <AssignPaymentDialog
+          open={open}
+          onOpenChange={setOpen}
+          options={assign}
+          source={{
+            kind: "zelle",
+            receiptId: receipt.id,
+            sender: receipt.sender_name,
+            amount: Number(receipt.amount),
+            memo: receipt.memo,
+          }}
+        />
+      )}
     </li>
   );
 }
 
-export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: CollectPanelProps) {
+export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: CollectPanelProps) {
   const router = useRouter();
   const { run, pending } = useAction();
   const [showSetup, setShowSetup] = useState(false);
+  const [recording, setRecording] = useState(false);
 
   return (
     <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <div className="flex justify-end lg:col-span-2">
+        <Button data-tour="record-payment" onClick={() => setRecording(true)}>
+          <Plus className="mr-1 h-4 w-4" /> Record a payment
+        </Button>
+        <AssignPaymentDialog open={recording} onOpenChange={setRecording} options={assign} source={{ kind: "manual" }} />
+      </div>
       {/* Autopay */}
       <section data-tour="autopay" className="rounded-2xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
@@ -248,7 +252,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
         ) : (
           <ul className="divide-y">
             {zelle.needsLook.map((r) => (
-              <NeedsLookRow key={r.id} receipt={r} parents={parents} />
+              <NeedsLookRow key={r.id} receipt={r} assign={assign} />
             ))}
           </ul>
         )}

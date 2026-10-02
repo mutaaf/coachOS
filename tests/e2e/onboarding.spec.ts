@@ -34,6 +34,7 @@ const STOPS: { title: RegExp; url: RegExp; spotlight: boolean }[] = [
   { title: /Schedule and attendance/, url: /\/schedule/, spotlight: true },
   { title: /^Autopay$/, url: /\/payments/, spotlight: true },
   { title: /Zelle, recorded for you/, url: /\/payments/, spotlight: true },
+  { title: /Money from someone new/, url: /\/payments/, spotlight: true },
   { title: /Invoices and what each status means/, url: /\/payments/, spotlight: true },
   { title: /Monthly invoices make themselves/, url: /\/payments/, spotlight: true },
   { title: /The Outbox/, url: /\/messaging\?tab=outbox/, spotlight: true },

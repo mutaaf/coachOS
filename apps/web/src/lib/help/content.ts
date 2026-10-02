@@ -112,8 +112,25 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Payments**, the **Zelle** box shows how many are waiting." },
       { text: "Read the orange note — it says why CoachOS asked: a name it doesn't know (often a spouse), an amount that doesn't match, or what looks like a repeat." },
-      { text: "Pick the family in **Who sent this?** and tap [[Record]]. CoachOS remembers that name, so next time it's automatic." },
+      { text: "Tap [[Who paid this?]]. The families most like the sender's name are at the top — tap theirs, check the summary, and tap [[Record]]. CoachOS remembers that name, so next time it's automatic." },
+      { text: "Not on the list? Tap [[Someone new]] — see “Money from someone who isn't set up yet”." },
       { text: "Not a family at all (a friend paying you back)? Tap [[Not a family]]." },
+    ],
+  },
+  {
+    id: "someone-new",
+    title: "Money from someone who isn't set up yet",
+    when: "A new family pays before you've added them",
+    keywords: "new family unknown parent child school program add create zelle cash who paid someone new",
+    href: "/payments",
+    hrefLabel: "Open Payments",
+    tourStep: "record-payment",
+    steps: [
+      { text: "For a Zelle, tap [[Who paid this?]] on it. For cash or Venmo, tap [[Record a payment]] at the top of Payments and enter the amount." },
+      { text: "Tap [[Someone new]]. The parent's name is filled in from the Zelle — check it, and add their phone (that's how WhatsApp reaches them).", tip: "If the phone is already on file, CoachOS says whose it is and offers that family instead, so you never make a family twice." },
+      { text: "Enter the child's first name." },
+      { text: "Pick the school — or **+ A new school** and type its name. Then the program — or **+ A new program**, with its name and monthly fee (it starts at the amount paid)." },
+      { text: "Read the summary: everything it will add, and whether this pays the month in full. Tap [[Record]].", tip: "Nothing is saved until that last tap, and it all saves together — if anything's missing, nothing is half-made." },
     ],
   },
   {
@@ -326,7 +343,7 @@ export const PRACTICE: { id: string; title: string; why: string; steps: HelpStep
   {
     id: "p-plan",
     title: "Go through the full test plan",
-    why: "82 checks written for an auditor — every payment, message and record.",
+    why: "Every check, written for an auditor — every payment, message and record.",
     steps: [
       { text: "Open the **Test plan** tab here. Each test says what could go wrong, exactly what to do and what you should see." },
       { text: "Tap ✓ Pass, ✗ Fail, ⊘ Blocked or — N/A, tick each expected result you saw, and write notes. Everything you record is saved and Mutaaf can see the failures to fix them." },
