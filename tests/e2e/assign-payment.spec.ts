@@ -84,12 +84,20 @@ test("typing a number that's already on file offers that family instead of a dup
   const { data: s } = await admin.from("students").insert({ first_name: "Leo", last_name: "Lopez" }).select("id").single();
   await admin.from("student_parents").insert({ student_id: s!.id, parent_id: p!.id });
   await admin.from("enrollments").insert({ student_id: s!.id, program_id: programId, status: "active" });
+  // Someone else's open invoice, so invoice rows (with their own Record Payment) are on the page too.
+  const { data: other } = await admin.from("parents").insert({ first_name: "Bo", last_name: "Kim", phone: "+12145550111" }).select("id").single();
+  const { data: kid } = await admin.from("students").insert({ first_name: "Jun", last_name: "Kim" }).select("id").single();
+  await admin.from("student_parents").insert({ student_id: kid!.id, parent_id: other!.id });
+  await admin.from("invoices").insert({ parent_id: other!.id, student_id: kid!.id, program_id: programId, amount: 80, month: "2099-01", due_date: "2099-01-01", status: "pending" });
 
   await signIn(page);
   await page.goto("/payments");
-  // One button for money from anyone, top right — not a second one beside it.
-  await expect(page.getByRole("button", { name: /^Record (a )?Payment$/i })).toHaveCount(1);
-  await page.getByRole("button", { name: "Record Payment", exact: true }).click();
+  // One button for money from anyone, in the page header — not a second one
+  // beside it. (Invoice rows have their own, for paying that invoice.)
+  const header = page.locator("h1", { hasText: "Payments" }).locator("..");
+  await expect(header.getByRole("button", { name: /record (a )?payment/i })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /^record a payment$/i })).toHaveCount(0);
+  await header.getByRole("button", { name: "Record Payment" }).click();
   const d = page.getByTestId("assign-payment");
   await d.getByLabel("Amount paid").fill("80");
   await d.getByRole("button", { name: "Someone new" }).click();
@@ -107,7 +115,8 @@ test("typing a number that's already on file offers that family instead of a dup
   await d.getByRole("button", { name: "Record $80.00" }).click();
   await expect(page.getByText("$80.00 recorded for Ana Lopez")).toBeVisible();
 
-  const { count } = await admin.from("parents").select("*", { count: "exact", head: true });
+  // No second Ana.
+  const { count } = await admin.from("parents").select("*", { count: "exact", head: true }).eq("phone", "+12145550199");
   expect(count).toBe(1);
   const { data: pay } = await admin.from("payments").select("amount, method").single();
   expect(pay).toEqual({ amount: 80, method: "cash" });
