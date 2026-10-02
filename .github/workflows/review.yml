@@ -23,10 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Claude is set up?
+        id: token
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "::notice::CLAUDE_CODE_OAUTH_TOKEN isn't set (run /install-github-app in Claude Code); skipping."; fi
       - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
         with:
           fetch-depth: 0
       - uses: anthropics/claude-code-action@v1
+        if: steps.token.outputs.ok == 'true'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |

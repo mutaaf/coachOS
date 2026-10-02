@@ -38,25 +38,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      - name: Claude is set up?
+        id: token
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "::notice::CLAUDE_CODE_OAUTH_TOKEN isn't set (run /install-github-app in Claude Code); skipping."; fi
       - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
         with:
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
+        if: steps.token.outputs.ok == 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.token.outputs.ok == 'true'
 
       # So the agent can run the same tests Checks will.
       - uses: supabase/setup-cli@v1
+        if: steps.token.outputs.ok == 'true'
         with:
           version: latest
       - run: supabase start
+        if: steps.token.outputs.ok == 'true'
       - run: npx playwright install --with-deps chromium
+        if: steps.token.outputs.ok == 'true'
 
       - name: Fix the issue
-        if: github.event_name == 'issues'
+        if: steps.token.outputs.ok == 'true' && github.event_name == 'issues'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -85,7 +97,7 @@ jobs:
             --allowedTools "Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(git:*),Bash(gh:*),Bash(supabase status:*),Bash(docker exec:*),Edit,Write,Read,Glob,Grep"
 
       - name: Do what the comment asks
-        if: github.event_name != 'issues'
+        if: steps.token.outputs.ok == 'true' && github.event_name != 'issues'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
