@@ -60,7 +60,9 @@ function clean(text: string): string {
     .replace(/[   ]/g, " ")
     .replace(/[ \t]+/g, " ")
     .split("\n")
-    .map((l) => l.trim())
+    // A forwarded alert often arrives quoted ("> Memo: Jin"); the quote marks
+    // are not part of what the bank wrote.
+    .map((l) => l.replace(/^(\s*>)+/, "").trim())
     .join("\n");
 }
 

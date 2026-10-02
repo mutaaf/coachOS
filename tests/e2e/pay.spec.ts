@@ -33,7 +33,7 @@ test.beforeAll(async () => {
   // A fake key renders the page; nothing calls Stripe until a parent taps through.
   await admin.from("config").update({ value: "true" }).eq("key", "stripe_enabled");
   await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_secret_key");
-  await admin.from("config").update({ value: "972-900-0292" }).eq("key", "zelle_recipient");
+  await admin.from("config").update({ value: "972-900-0292, anum@example.test" }).eq("key", "zelle_recipient");
 });
 
 test.afterAll(async () => {
@@ -107,7 +107,9 @@ test("a parent opens their link, signed out, and sees what is owed and how to pa
   await expect(page.getByText("$100.00").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /bank account.*no fee/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /card.*3% card fee/i })).toBeVisible();
-  await expect(page.getByText("972-900-0292")).toBeVisible();
+  // Both places she accepts Zelle, each copyable on its own.
+  await expect(page.getByRole("button", { name: /972-900-0292.*Copy/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /anum@example\.test.*Copy/ })).toBeVisible();
 });
 
 test("a parent can say whose Zelle account the money comes from", async ({ page }) => {

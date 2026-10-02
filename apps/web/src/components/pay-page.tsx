@@ -63,7 +63,7 @@ export function PayPage({
   const [confirmingOff, setConfirmingOff] = useState(false);
   const [zelleName, setZelleName] = useState("");
   const [zelleSaved, setZelleSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [emailSaved, setEmailSaved] = useState(false);
   const [, startTransition] = useTransition();
@@ -124,12 +124,18 @@ export function PayPage({
     setBusy(null);
   }
 
-  async function copyRecipient() {
-    if (!data.zelleRecipient) return;
+  // The setting can hold several ("972-900-0292, anum@example.com"); each is
+  // its own line with its own copy button, since a parent pastes just one.
+  const zelleTargets = (data.zelleRecipient ?? "")
+    .split(/\s*(?:,|;|\bor\b)\s*/i)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  async function copyRecipient(value: string) {
     try {
-      await navigator.clipboard.writeText(data.zelleRecipient);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(value);
+      setCopied(value);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
       // Clipboard blocked; the number is on screen to type.
     }
@@ -350,27 +356,35 @@ export function PayPage({
             </h2>
             <p className="mt-1 text-sm text-slate-600">
               {zelleAmount > 0 ? <>Send {money(zelleAmount)} to</> : <>Send to</>}
+              {zelleTargets.length > 1 ? " either of these" : ""}
             </p>
-            <button
-              type="button"
-              onClick={copyRecipient}
-              className="mt-2 flex min-h-[44px] w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-left"
-            >
-              <span className="font-mono text-base font-semibold text-slate-900">
-                {data.zelleRecipient}
-              </span>
-              <span className="flex items-center gap-1 text-xs font-medium text-slate-500">
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4" /> Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" /> Copy
-                  </>
-                )}
-              </span>
-            </button>
+            <div className="mt-2 space-y-2">
+              {zelleTargets.map((target, i) => (
+                <div key={target}>
+                  {i > 0 && <p className="mb-2 text-center text-xs text-slate-400">or</p>}
+                  <button
+                    type="button"
+                    onClick={() => copyRecipient(target)}
+                    className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-left"
+                  >
+                    <span className="min-w-0 break-all font-mono text-base font-semibold text-slate-900">
+                      {target}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-500">
+                      {copied === target ? (
+                        <>
+                          <Check className="h-4 w-4" /> Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" /> Copy
+                        </>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              ))}
+            </div>
             <p className="mt-3 text-sm text-slate-600">
               No need to message us when you&apos;ve sent it — we&apos;ll see it come in and mark it
               paid.

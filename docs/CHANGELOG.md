@@ -4,6 +4,13 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Changed
+- Families' payment pages show every place the owner accepts Zelle — her
+  number and her email — each with its own copy button
+- Zelle alerts are read correctly when forwarded: her bank emails a Yahoo
+  inbox and she forwards them to the Gmail the script reads, so alerts arrive
+  as "Fwd:", with forwarding headers and sometimes "> " quoting
+
 ### Added
 - **Email that sends itself**, through Resend from payments@risingstars.training,
   to families with an email on file: a receipt for every payment (autopay,

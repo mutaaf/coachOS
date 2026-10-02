@@ -97,6 +97,37 @@ describe("reading bank emails", () => {
     expect(parsed).toMatchObject({ kind: "incoming", senderName: name, amount });
   });
 
+  // Her bank's alerts go to a Yahoo inbox and are forwarded to the Gmail the
+  // script reads, so every alert arrives as a forward.
+  it.each([
+    [
+      "forwarded from Gmail",
+      "Fwd: Raquel Garcia sent you $100.00",
+      "---------- Forwarded message ---------\nFrom: Bank of America <alerts@bankofamerica.com>\nSubject: Raquel Garcia sent you $100.00\nTo: <anumm786@yahoo.com>\n\nRaquel Garcia sent you $100.00\nMemo: Mia Oct",
+      { senderName: "Raquel Garcia", amount: 100, memo: "Mia Oct" },
+    ],
+    [
+      "forwarded from Yahoo",
+      "Fwd: You received money with Zelle®",
+      "----- Forwarded Message -----\nFrom: Chase <no.reply.alerts@chase.com>\nTo: anumm786@yahoo.com\n\nStar Okafor sent you money\nAmount: $200.00",
+      { senderName: "Star Okafor", amount: 200 },
+    ],
+    [
+      "forwarded from an iPhone, quoted",
+      "Fwd: You received $100.00 from YOOMI PARK",
+      "Begin forwarded message:\n\n> From: Wells Fargo <alerts@notify.wellsfargo.com>\n>\n> You received $100.00 from YOOMI PARK.\n> Memo: Jin",
+      { senderName: "YOOMI PARK", amount: 100, memo: "Jin" },
+    ],
+  ])("reads an alert %s", (_how, subject, body, expected) => {
+    expect(parseZelleEmail(subject, body)).toMatchObject({ kind: "incoming", ...expected });
+  });
+
+  it("still ignores her own payments when they arrive forwarded", () => {
+    expect(parseZelleEmail("Fwd: You sent $40.00 to Coach Store", "You sent $40.00 to Coach Store")).toEqual({
+      kind: "outgoing",
+    });
+  });
+
   it("keeps the memo", () => {
     const parsed = parseZelleEmail("Raquel Garcia sent you $100.00", "Memo: Mia - Oct");
     expect(parsed).toMatchObject({ memo: "Mia - Oct" });
