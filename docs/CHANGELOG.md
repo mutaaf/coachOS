@@ -4,6 +4,12 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Fixed
+- A Chase Zelle alert forwarded from Yahoo Mail couldn't be read: the table
+  arrives as "| Amount | $100.00 |". Read now — and an email stored as
+  unreadable is read again the next time the Gmail script sends it, so ones
+  already waiting fix themselves
+
 From here on, versions are git tags (`vX.Y.Z`) and each release's notes are
 on GitHub and in the app (Help → What's new). See docs/RELEASING.md.
 
