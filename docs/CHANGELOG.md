@@ -4,6 +4,11 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Fixed
+- The Gmail script only set up its 15-minute timer when "install" was the
+  function chosen in Apps Script, but Run defaults to the first function, so a
+  first Run checked once and never again. Every Run now sets the timer up
+
 ### Security
 - Every dashboard action now refuses callers who aren't signed in. Most did
   not check, and each holds the database's service role, so anyone who found
@@ -30,7 +35,7 @@ All notable changes to CoachOS.
 - "Reset link" gives a family a new payment link when the old one was shared
   too widely; the old one stops working
 - The Zelle card shows when the Gmail script last checked in, and warns when it
-  has gone quiet for two hours
+  has gone quiet for 40 minutes
 
 ### Fixed — found while writing the manual test plan
 - A Zelle alert forwarded twice could be recorded twice; the same sender and

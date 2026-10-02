@@ -59,22 +59,23 @@ function ZelleSetupDialog({
 }
 
 /**
- * The Gmail script checks in every 15 minutes. Quiet for two hours means it has
- * probably stopped — a revoked Google permission, a changed key — and Zelle
- * payments aren't being recorded.
+ * The Gmail script checks in every 15 minutes. Quiet for 40 minutes means two
+ * checks were missed: its timer isn't running (a Run that never set it up, a
+ * revoked Google permission, a changed key) and Zelle payments aren't being
+ * recorded.
  */
 function ScriptStatus({ lastSeen }: { lastSeen: string }) {
   const minutes = Math.round((Date.now() - new Date(lastSeen).getTime()) / 60_000);
   const ago =
     minutes < 2 ? "just now" : minutes < 90 ? `${minutes} min ago` : minutes < 48 * 60 ? `${Math.round(minutes / 60)} hours ago` : `${Math.round(minutes / 1440)} days ago`;
-  const quiet = minutes > 120;
+  const quiet = minutes > 40;
   return (
     <p
       data-testid="zelle-script-status"
       className={`mb-2 rounded-lg px-3 py-1.5 text-xs ${quiet ? "bg-amber-50 font-medium text-amber-900" : "text-muted-foreground"}`}
     >
       {quiet
-        ? `The Gmail script last checked in ${ago} — it may have stopped. Open Setup and run install again.`
+        ? `The Gmail script last checked in ${ago}, so it has stopped checking. Open Setup steps, copy the script again, paste it over the old one and press Run.`
         : `Gmail script checked in ${ago}.`}
     </p>
   );

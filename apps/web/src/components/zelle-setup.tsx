@@ -12,11 +12,17 @@ import { ExternalLink, Mail } from "lucide-react";
 
 export function zelleScript(endpoint: string, key: string) {
   return `// Reports Zelle payment emails to CoachOS so they're recorded automatically.
-// Run "install" once; it then checks every 15 minutes.
+// Press Run once, whichever function is selected: it sets itself up to check
+// every 15 minutes from then on.
 const ENDPOINT = "${endpoint}";
 const KEY = "${key}";
 
+function install() {
+  reportZellePayments();
+}
+
 function reportZellePayments() {
+  keepChecking();
   const threads = GmailApp.search("zelle newer_than:3d -in:sent");
   const messages = [];
   threads.forEach((t) =>
@@ -39,10 +45,13 @@ function reportZellePayments() {
   });
 }
 
-function install() {
-  ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
+// The 15-minute timer. Created on the first run, whichever function was run,
+// and never twice.
+function keepChecking() {
+  const triggers = ScriptApp.getProjectTriggers();
+  if (triggers.some((t) => t.getHandlerFunction() === "reportZellePayments")) return;
+  triggers.forEach((t) => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger("reportZellePayments").timeBased().everyMinutes(15).create();
-  reportZellePayments();
 }
 `;
 }
@@ -120,7 +129,7 @@ export function ZelleSetupSteps({
         </li>
 
         <li>
-          <p className="font-medium">4. Choose &ldquo;install&rdquo; at the top, press Run, then Allow</p>
+          <p className="font-medium">4. Press Run, then Allow</p>
           <p className="mt-0.5 text-muted-foreground">
             Google warns it hasn&apos;t verified the app — it&apos;s your own script. Click Advanced, then Go to the
             project, then Allow.

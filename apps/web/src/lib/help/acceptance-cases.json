@@ -1481,7 +1481,7 @@
    "Step 5 and the Settings setup section show the new address straight after saving.",
    "While the old key is in the script, the $1.00 is not recorded. Apps Script shows a failed or unauthorised request.",
    "After pasting the new script, the waiting payment is recorded automatically, because the script re-sends the last 3 days, and it is recorded once only.",
-   "The Zelle card shows 'Gmail script checked in N min ago'. If the script stops (e.g. the key no longer matches), within about two hours it changes to an amber warning: 'The Gmail script last checked in … ago — it may have stopped. Open Setup and run install again.'"
+   "The Zelle card shows 'Gmail script checked in N min ago'. If the script stops (e.g. the key no longer matches), within about 40 minutes it changes to an amber warning: 'The Gmail script last checked in … ago, so it has stopped checking.'"
   ],
   "evidence": "Screenshots of the setup steps before and after the change, the Apps Script execution showing failure and then success, and Payment History showing a single recording.",
   "phone": false
