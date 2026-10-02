@@ -103,11 +103,12 @@ test("skipping counts as done, and the menu brings the tour back", async ({ page
 
 test("the checklist ticks itself off from what has really happened", async ({ page }) => {
   await ensureTestUser();
-  const keys = ["zelle_recipient", "email_reply_to", "zelle_alerts_inbox"];
+  const keys = ["zelle_recipient", "email_reply_to", "zelle_alerts_inbox", "zelle_script_last_seen"];
   const { data: before } = await admin.from("config").select("key, value").in("key", keys);
   await admin.from("config").update({ value: "" }).eq("key", "zelle_recipient");
   await admin.from("config").update({ value: "" }).eq("key", "email_reply_to");
   await admin.from("config").update({ value: "" }).eq("key", "zelle_alerts_inbox");
+  await admin.from("config").update({ value: "" }).eq("key", "zelle_script_last_seen");
   try {
     await signIn(page);
     const items = page.getByTestId("onboarding-item");
@@ -126,6 +127,14 @@ test("the checklist ticks itself off from what has really happened", async ({ pa
     await admin.from("config").update({ value: "owner.zelle@example.test" }).eq("key", "zelle_alerts_inbox");
     await page.goto("/dashboard");
     await expect(page.getByText("2 of 6 done")).toBeVisible();
+
+    // Zelle counts as connected once the Gmail script checks in, before any
+    // payment has arrived — and the Payments card says so.
+    await admin.from("config").update({ value: new Date().toISOString() }).eq("key", "zelle_script_last_seen");
+    await page.goto("/dashboard");
+    await expect(page.getByText("3 of 6 done")).toBeVisible();
+    await page.goto("/payments");
+    await expect(page.locator('[data-tour="zelle"]').getByText("Connected", { exact: true })).toBeVisible();
   } finally {
     for (const r of before || []) await admin.from("config").update({ value: r.value }).eq("key", r.key);
   }

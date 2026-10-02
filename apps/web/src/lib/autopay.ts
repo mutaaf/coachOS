@@ -253,8 +253,10 @@ export async function settleAutopay(supabase: OpsClient, pi: Stripe.PaymentInten
   }
 }
 
-function listNames(names: string[]) {
+/** "Ada, Obi and Zara". Pass `sort` for people, so a family's message reads the same every time. */
+function listNames(names: string[], sort = false) {
   const unique = [...new Set(names.filter(Boolean))];
+  if (sort) unique.sort((a, b) => a.localeCompare(b));
   if (unique.length <= 1) return unique[0] ?? "";
   return `${unique.slice(0, -1).join(", ")} and ${unique[unique.length - 1]}`;
 }
@@ -316,8 +318,8 @@ export async function failAutopay(
     renderTemplate(body, {
       parent_name: parent.first_name,
       amount: `$${(owedCents / 100).toFixed(2)}`,
-      student_name: listNames((flipped as any[]).map((i) => i.students?.first_name)),
-      program_name: listNames((flipped as any[]).map((i) => i.programs?.name)),
+      student_name: listNames((flipped as any[]).map((i) => i.students?.first_name), true),
+      program_name: listNames((flipped as any[]).map((i) => i.programs?.name), true),
       reason: shortReason(opts.reason),
       pay_link: payLink(parent.pay_token),
     })
@@ -325,7 +327,7 @@ export async function failAutopay(
 
   await emailPaymentFailed(supabase, {
     parentId: opts.parentId,
-    childNames: listNames((flipped as any[]).map((i) => i.students?.first_name)),
+    childNames: listNames((flipped as any[]).map((i) => i.students?.first_name), true),
     owedCents,
     reason: shortReason(opts.reason),
     dedupeKey: `failed:${opts.paymentIntentId ?? [...opts.invoiceIds].sort().join(",")}`,
@@ -454,7 +456,7 @@ export async function chargeDueAutopay(
         new Date(`${m}-01T00:00:00`).toLocaleDateString("en-US", { month: "long" })
       )
     );
-    const children = listNames(claimed.map((i) => i.students?.first_name));
+    const children = listNames(claimed.map((i) => i.students?.first_name), true);
 
     let pi: Stripe.PaymentIntent;
     try {

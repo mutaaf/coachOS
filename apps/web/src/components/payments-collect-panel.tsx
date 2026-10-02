@@ -214,6 +214,11 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
             </div>
             <h2 className="font-semibold">
               Zelle
+              {zelle.connected && zelle.needsLook.length === 0 && (
+                <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                  Connected
+                </span>
+              )}
               {zelle.needsLook.length > 0 && (
                 <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                   {zelle.needsLook.length} to check
@@ -222,7 +227,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
             </h2>
           </div>
           <Button size="sm" variant="ghost" onClick={() => setShowSetup(true)}>
-            <Mail className="mr-1 h-4 w-4" /> {zelle.connected ? "Setup" : "Connect Gmail"}
+            <Mail className="mr-1 h-4 w-4" /> {zelle.connected ? "Setup steps" : "Connect Gmail"}
           </Button>
         </div>
 

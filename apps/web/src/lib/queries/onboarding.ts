@@ -38,6 +38,7 @@ export async function getOnboarding(): Promise<{ items: OnboardingItem[]; hidden
         "email_reply_to",
         "zelle_alerts_inbox",
         "zelle_alerts_forward_from",
+        "zelle_script_last_seen",
       ]),
   ]);
   const c = Object.fromEntries((config.data || []).map((r) => [r.key, r.value as string]));
@@ -71,7 +72,8 @@ export async function getOnboarding(): Promise<{ items: OnboardingItem[]; hidden
         : forwardFrom
           ? `One-time setup on a computer (about 3 minutes). Then forward Zelle alerts from ${forwardFrom} to ${inbox} and they record themselves.`
           : `One-time setup on a computer (about 3 minutes). After that, Zelle alerts reaching ${inbox} record themselves.`,
-      done: receipts > 0,
+      // Connected once the Gmail script has checked in, before any Zelle arrives.
+      done: receipts > 0 || !!c.zelle_script_last_seen?.trim(),
       href: "/payments",
       action: "Connect Gmail",
       tourStep: "payments-zelle",

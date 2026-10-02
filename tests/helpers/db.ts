@@ -213,6 +213,8 @@ export async function truncateAll() {
   // Keyed by test case id, not a uuid.
   const { error } = await admin.from("acceptance_results").delete().neq("case_id", "");
   if (error) throw new Error(`Failed clearing acceptance_results: ${error.message}`);
+  // A heartbeat left by one test would mark Zelle "connected" for the next.
+  await admin.from("config").update({ value: "" }).eq("key", "zelle_script_last_seen");
 }
 
 export const TEST_USER = {
