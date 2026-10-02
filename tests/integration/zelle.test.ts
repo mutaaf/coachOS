@@ -73,7 +73,49 @@ async function receipt(id: string) {
   return data!;
 }
 
+
+// A Chase alert forwarded from Yahoo Mail on an iPhone: the stylesheet comes
+// through as text, and the table's cells as "| ... |". (Names made up.)
+const YAHOO_FORWARDED_CHASE = [
+  "", "", "", "Sent from Yahoo Mail for iPhone", "", "", "Begin forwarded message:", "",
+  "On Friday, October 2, 2026, 9:17 AM, Chase <no.reply.alerts@chase.com> wrote:", "", " ",
+  "#yiv2029607686 * {line-height:normal !important;}#yiv2029607686 strong {font-weight:bold !important;}" + " x".repeat(3000),
+  "|  ", "|  ", "|  |  ", "| ", "|  |", "", " |", "| Zelle® payment |", "", "  |",
+  "| LAYLA RIVERA sent you money |", "", "  |  |", "", "  |", "| Here are the details: |", "|  ",
+  "| Amount | $100.00 |", "", "  |", "| Sent on | Oct 02, 2026 |", "", "  |",
+  "| Transaction number | 31054552896 |", "", "  |", "| Memo | Nico Lil Dribblers |", "", "  |",
+  "|  LAYLA RIVERA is registered with a Zelle® member bank that supports...",
+].join("\r\n");
+
 describe("reading bank emails", () => {
+  it("reads a Chase alert forwarded from Yahoo, table and all", () => {
+    expect(parseZelleEmail("Fw: You received money with Zelle®", YAHOO_FORWARDED_CHASE)).toEqual({
+      kind: "incoming",
+      senderName: "LAYLA RIVERA",
+      amount: 100,
+      memo: "Nico Lil Dribblers",
+    });
+  });
+
+  it("an email it couldn't read before is read again when it comes back", async () => {
+    const messageId = "yahoo-fwd-1";
+    // As the old reader stored it.
+    await admin.from("zelle_receipts").insert({ message_id: messageId, status: "unreadable", subject: "Fw: You received money with Zelle®" });
+    const result = await ingestZelleEmail(db, { messageId, subject: "Fw: You received money with Zelle®", text: YAHOO_FORWARDED_CHASE });
+    expect(result.outcome).toBe("unmatched");
+    const { data } = await admin.from("zelle_receipts").select("status, sender_name, amount, memo").eq("message_id", messageId);
+    expect(data).toEqual([{ status: "unmatched", sender_name: "LAYLA RIVERA", amount: 100, memo: "Nico Lil Dribblers" }]);
+    // And again on the next run: still one.
+    expect((await ingestZelleEmail(db, { messageId, subject: "x", text: YAHOO_FORWARDED_CHASE })).outcome).toBe("duplicate");
+  });
+
+  it("never replaces one she has already dealt with", async () => {
+    await admin.from("zelle_receipts").insert({ message_id: "dealt-1", status: "ignored", subject: "s" });
+    expect((await ingestZelleEmail(db, { messageId: "dealt-1", subject: "s", text: YAHOO_FORWARDED_CHASE })).outcome).toBe("duplicate");
+    const { data } = await admin.from("zelle_receipts").select("status").eq("message_id", "dealt-1");
+    expect(data).toEqual([{ status: "ignored" }]);
+  });
+
   it.each([
     ["Bank of America", "Raquel Garcia sent you $100.00", "", "Raquel Garcia", 100],
     [

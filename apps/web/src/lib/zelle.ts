@@ -63,6 +63,15 @@ function clean(text: string): string {
     // A forwarded alert often arrives quoted ("> Memo: Jin"); the quote marks
     // are not part of what the bank wrote.
     .map((l) => l.replace(/^(\s*>)+/, "").trim())
+    // Chase's alert is a table, and forwarded as text its cells become
+    // "| Amount | $100.00 |". Read a row as "Amount: $100.00".
+    .map((l) =>
+      l.includes("|")
+        ? l
+            .replace(/^[|\s]+|[|\s]+$/g, "")
+            .replace(/\s*\|\s*/g, ": ")
+        : l
+    )
     .join("\n");
 }
 
@@ -246,7 +255,8 @@ export async function ingestZelleEmail(
   const base = {
     message_id: email.messageId,
     subject: email.subject?.slice(0, 500) ?? null,
-    body: email.text?.slice(0, 5000) ?? null,
+    // Forwarded alerts carry the bank's stylesheet first; keep enough to reach the payment.
+    body: email.text?.slice(0, 20000) ?? null,
     received_at: email.receivedAt ?? new Date().toISOString(),
   };
 
@@ -264,6 +274,14 @@ export async function ingestZelleEmail(
           memo: parsed.memo,
           status: "unmatched",
         };
+
+  // An email that couldn't be read before, and can now (the reader got
+  // better), replaces its unreadable copy — the script re-sends the last
+  // three days every run, so it heals itself. Nothing she has dealt with is
+  // touched: only rows still marked unreadable.
+  if (parsed.kind === "incoming") {
+    await supabase.from("zelle_receipts").delete().eq("message_id", email.messageId).eq("status", "unreadable");
+  }
 
   // The forwarding script re-sends recent emails every run; the unique message
   // id turns a repeat into a no-op rather than a second payment.
