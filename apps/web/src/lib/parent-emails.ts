@@ -14,6 +14,12 @@ import { toCents } from "@/lib/invoice-status";
  * payment page still reach them.
  */
 
+/** The name parents know the business by, from Settings. */
+async function brand(supabase: OpsClient): Promise<string> {
+  const { data } = await supabase.from("config").select("value").eq("key", "business_name").maybeSingle();
+  return data?.value?.trim() || "Rising Stars Youth Academy";
+}
+
 async function parentFor(supabase: OpsClient, parentId: string) {
   const { data } = await supabase
     .from("parents")
@@ -68,6 +74,7 @@ export async function emailReceipt(
       : METHOD_NAMES[payments[0].method] ?? payments[0].method);
 
   const content = receiptEmail({
+    brand: await brand(supabase),
     parentName: parent.first_name,
     lines,
     feeCents,
@@ -96,6 +103,7 @@ export async function emailPaymentFailed(
     parentId: parent.id,
     to: parent.email,
     ...paymentFailedEmail({
+      brand: await brand(supabase),
       parentName: parent.first_name,
       childNames: opts.childNames,
       owedCents: opts.owedCents,
@@ -116,7 +124,7 @@ export async function emailInvite(
     dedupeKey: opts.dedupeKey,
     parentId: parent.id,
     to: parent.email,
-    ...inviteEmail({ parentName: parent.first_name, childNames: opts.childNames, payLink: payLink(parent.pay_token) }),
+    ...inviteEmail({ brand: await brand(supabase), parentName: parent.first_name, childNames: opts.childNames, payLink: payLink(parent.pay_token) }),
   });
 }
 
@@ -131,6 +139,6 @@ export async function emailReminder(
     dedupeKey: opts.dedupeKey,
     parentId: parent.id,
     to: parent.email,
-    ...reminderEmail({ parentName: parent.first_name, lines: opts.lines, payLink: payLink(parent.pay_token) }),
+    ...reminderEmail({ brand: await brand(supabase), parentName: parent.first_name, lines: opts.lines, payLink: payLink(parent.pay_token) }),
   });
 }

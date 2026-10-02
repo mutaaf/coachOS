@@ -1,4 +1,4 @@
-import { getConfig, getWhatsAppState } from "@/lib/queries/config";
+import { getConfig } from "@/lib/queries/config";
 import { SettingsPageClient } from "@/components/settings-page-client";
 
 // Every dashboard page reads live business data behind a login, so it must be
@@ -7,10 +7,7 @@ import { SettingsPageClient } from "@/components/settings-page-client";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [config, whatsappState] = await Promise.all([
-    getConfig(),
-    getWhatsAppState(),
-  ]);
+  const config = await getConfig();
 
-  return <SettingsPageClient config={config} whatsappState={whatsappState} />;
+  return <SettingsPageClient config={config} />;
 }

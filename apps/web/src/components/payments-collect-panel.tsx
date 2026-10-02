@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ZelleSetupSteps } from "@/components/zelle-setup";
 import { formatCurrency } from "@/lib/utils";
 import { useAction } from "@/lib/use-action";
 import { inviteFamiliesToAutopay } from "@/lib/actions/autopay";
 import { ignoreZelleReceipt, matchZelleReceipt, undoZelleMatch } from "@/lib/actions/zelle";
-import { Repeat, Inbox, Mail, Copy, Check, Undo2 } from "lucide-react";
+import { Repeat, Inbox, Mail, Undo2 } from "lucide-react";
 
 export interface CollectPanelProps {
   autopay: {
@@ -17,6 +18,8 @@ export interface CollectPanelProps {
     stripeEnabled: boolean;
     zelleSecret: string;
     zelleRecipient: string;
+    zelleInbox: string;
+    zelleForwardFrom: string;
   };
   inviteCount: number;
   zelle: { needsLook: any[]; recent: any[]; connected: boolean };
@@ -27,106 +30,28 @@ function when(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function gmailScript(endpoint: string, secret: string) {
-  return `// Reports Zelle payment emails to Rising Stars so they're recorded automatically.
-// Run "install" once; it then checks every 15 minutes.
-const ENDPOINT = "${endpoint}";
-const KEY = "${secret}";
-
-function reportZellePayments() {
-  const threads = GmailApp.search("zelle newer_than:3d -in:sent");
-  const messages = [];
-  threads.forEach((t) =>
-    t.getMessages().forEach((m) =>
-      messages.push({
-        id: m.getId(),
-        subject: m.getSubject(),
-        text: m.getPlainBody(),
-        receivedAt: m.getDate().toISOString(),
-      })
-    )
-  );
-  if (messages.length === 0) return;
-  UrlFetchApp.fetch(ENDPOINT, {
-    method: "post",
-    contentType: "application/json",
-    headers: { Authorization: "Bearer " + KEY },
-    payload: JSON.stringify({ messages: messages.slice(0, 100) }),
-  });
-}
-
-function install() {
-  ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger("reportZellePayments").timeBased().everyMinutes(15).create();
-  reportZellePayments();
-}
-`;
-}
-
 function ZelleSetupDialog({
   open,
   onOpenChange,
   secret,
+  inbox,
+  forwardFrom,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   secret: string;
+  inbox: string;
+  forwardFrom: string;
 }) {
-  const [copied, setCopied] = useState(false);
-  const [origin, setOrigin] = useState("");
-  useEffect(() => setOrigin(window.location.origin), []);
-  const script = gmailScript(`${origin}/api/inbound/zelle`, secret);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" onClose={() => onOpenChange(false)}>
         <DialogHeader>
           <DialogTitle>Record Zelle payments automatically</DialogTitle>
         </DialogHeader>
-        <ol className="list-decimal space-y-2 pl-5 text-sm">
-          <li>
-            On a computer, signed in to the Gmail account your bank sends Zelle emails to, open{" "}
-            <a
-              href="https://script.google.com/home/projects/create"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-blue-600 underline"
-            >
-              script.google.com
-            </a>
-            .
-          </li>
-          <li>Delete what&apos;s there, and paste in the script below.</li>
-          <li>
-            Choose <strong>install</strong> from the function menu at the top and press{" "}
-            <strong>Run</strong>. Google will ask for permission to read your email and connect to
-            the internet — allow it.
-          </li>
-          <li>That&apos;s it. Payments start appearing here within 15 minutes of arriving.</li>
-        </ol>
-        <div className="relative">
-          <pre className="max-h-64 overflow-auto rounded-lg bg-slate-950 p-4 text-xs leading-relaxed text-slate-100">
-            {script}
-          </pre>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="absolute right-2 top-2"
-            onClick={async () => {
-              await navigator.clipboard.writeText(script);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-          >
-            {copied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
+        <div className="mt-4">
+          <ZelleSetupSteps secret={secret} inbox={inbox} forwardFrom={forwardFrom} />
         </div>
-        <p className="text-xs text-muted-foreground">
-          The script only sends emails with &ldquo;zelle&rdquo; in them, and only from the last three
-          days. The key in it is the <strong>Zelle Email Key</strong> in Settings; change that to
-          switch an old script off.
-        </p>
       </DialogContent>
     </Dialog>
   );
@@ -197,7 +122,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
   return (
     <div className="mb-6 grid gap-4 lg:grid-cols-2">
       {/* Autopay */}
-      <section className="rounded-2xl border bg-card p-4">
+      <section data-tour="autopay" className="rounded-2xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
             <Repeat className="h-4 w-4 text-emerald-700" />
@@ -249,7 +174,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
       </section>
 
       {/* Zelle inbox */}
-      <section className="rounded-2xl border bg-card p-4">
+      <section data-tour="zelle" className="rounded-2xl border bg-card p-4">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100">
@@ -327,7 +252,13 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
         )}
       </section>
 
-      <ZelleSetupDialog open={showSetup} onOpenChange={setShowSetup} secret={autopay.zelleSecret} />
+      <ZelleSetupDialog
+        open={showSetup}
+        onOpenChange={setShowSetup}
+        secret={autopay.zelleSecret}
+        inbox={autopay.zelleInbox}
+        forwardFrom={autopay.zelleForwardFrom}
+      />
     </div>
   );
 }

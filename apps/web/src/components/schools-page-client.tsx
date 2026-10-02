@@ -65,7 +65,7 @@ export function SchoolsPageClient({ schools, importOptions }: SchoolsPageClientP
           </p>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
-          <Button onClick={() => setRosterOpen(true)} className="gap-2">
+          <Button data-tour="import-roster" onClick={() => setRosterOpen(true)} className="gap-2">
             <Users className="h-4 w-4" />
             Import a roster
           </Button>

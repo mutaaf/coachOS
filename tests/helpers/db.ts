@@ -229,17 +229,43 @@ export async function ensureTestUser() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Marked as having taken the first-login tour: it starts by itself otherwise,
+  // and would sit over every page every other test drives.
+  const user_metadata = { tour_completed_at: "2026-01-01T00:00:00Z" };
+
   const { data: existing } = await authAdmin.auth.admin.listUsers();
   const already = existing?.users?.find((u) => u.email === TEST_USER.email);
-  if (already) return already.id;
+  if (already) {
+    await authAdmin.auth.admin.updateUserById(already.id, { user_metadata });
+    return already.id;
+  }
 
   const { data, error } = await authAdmin.auth.admin.createUser({
     email: TEST_USER.email,
     password: TEST_USER.password,
     email_confirm: true,
+    user_metadata,
   });
   if (error) throw error;
   return data.user!.id;
+}
+
+/** Make the test user a first-time visitor again, for the tour's own tests. */
+export async function resetTour() {
+  const id = await ensureTestUser();
+  const authAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  await authAdmin.auth.admin.updateUserById(id, { user_metadata: { tour_completed_at: null, checklist_hidden: null } });
+  return id;
+}
+
+export async function userMetadata(id: string) {
+  const authAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data } = await authAdmin.auth.admin.getUserById(id);
+  return (data.user?.user_metadata ?? {}) as Record<string, unknown>;
 }
 
 /**

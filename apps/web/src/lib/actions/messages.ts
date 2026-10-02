@@ -161,17 +161,3 @@ export async function fetchRecipients(
 
   return [];
 }
-
-export async function retryFailedMessage(queueId: string) {
-  const supabase = createAdminSupabase();
-  const { error } = await supabase
-    .from("message_queue")
-    .update({
-      status: "pending",
-      next_attempt_at: new Date().toISOString(),
-    })
-    .eq("id", queueId);
-
-  if (error) throw error;
-  revalidatePath("/messaging");
-}

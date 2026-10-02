@@ -2,36 +2,36 @@
 
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import type { WhatsAppState } from "@/types/database";
+import { NOT_SIGNED_IN, signedIn } from "@/lib/auth-guard";
 
+/**
+ * Settings hold the Stripe keys, the Zelle details parents send money to, and
+ * the key that lets a script report payments. Only someone signed in changes
+ * them — an action is callable by anyone holding its id, from any page.
+ */
 export async function updateConfig(key: string, value: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("config")
     .update({ value })
     .eq("key", key);
-  if (error) throw error;
-  revalidatePath("/settings");
-}
-
-export async function fetchWhatsAppState(): Promise<WhatsAppState | null> {
-  const supabase = createAdminSupabase();
-  const { data } = await supabase
-    .from("whatsapp_state")
-    .select("*")
-    .limit(1)
-    .maybeSingle();
-  return data;
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { success: true };
 }
 
 export async function updateMultipleConfigs(updates: { key: string; value: string }[]) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   for (const { key, value } of updates) {
     const { error } = await supabase
       .from("config")
-      .update({ value })
+      .update({ value: value.trim() })
       .eq("key", key);
-    if (error) throw error;
+    if (error) return { error: error.message };
   }
-  revalidatePath("/settings");
+  // Settings feed every page (the tour, payment pages, emails); refresh them all.
+  revalidatePath("/", "layout");
+  return { success: true };
 }

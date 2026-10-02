@@ -2,6 +2,8 @@ import Link from "next/link";
 import { businessToday } from "@/lib/dates";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
+import { getOnboarding } from "@/lib/queries/onboarding";
+import { GettingStarted } from "@/components/getting-started";
 import {
   Card,
   CardContent,
@@ -165,6 +167,8 @@ export default async function DashboardPage() {
     },
   ];
 
+  const onboarding = await getOnboarding();
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -177,8 +181,10 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {onboarding && !onboarding.hidden && <GettingStarted items={onboarding.items} />}
+
       {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-tour="dashboard-stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
           <Card key={stat.label} className="border-0 shadow-sm">
             <CardContent className="p-5">

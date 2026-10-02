@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { GuidedTour, startTour } from "@/components/guided-tour";
+import { getTourContext, type TourContext } from "@/lib/actions/onboarding";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +20,7 @@ import {
   Target,
   Settings,
   LogOut,
+  PlayCircle,
   Menu,
   X,
 } from "lucide-react";
@@ -43,6 +46,19 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [firstVisit, setFirstVisit] = useState(false);
+  const [tourContext, setTourContext] = useState<TourContext | null>(null);
+
+  // The tour starts by itself until she has finished or skipped it once, on
+  // any device — it is recorded on her account.
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (data.user && !data.user.user_metadata?.tour_completed_at) setFirstVisit(true);
+      });
+    getTourContext().then(setTourContext);
+  }, []);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -88,8 +104,18 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Sign Out */}
+        {/* Tour + Sign Out */}
         <div className="border-t p-3">
+          <button
+            onClick={() => {
+              setSidebarOpen(false);
+              startTour();
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <PlayCircle className="h-5 w-5 flex-shrink-0" />
+            Take the tour
+          </button>
           <button
             onClick={handleSignOut}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -154,6 +180,10 @@ export default function DashboardLayout({
             <span className="text-sm font-semibold">CoachOS</span>
           </div>
         </div>
+
+        <Suspense fallback={null}>
+          <GuidedTour autoStart={firstVisit} ctx={tourContext} />
+        </Suspense>
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">

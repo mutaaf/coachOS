@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { sendBulkMessages, createMessageTemplate, updateMessageTemplate, deleteMessageTemplate, retryFailedMessage, fetchRecipients } from "@/lib/actions/messages";
+import { sendBulkMessages, createMessageTemplate, updateMessageTemplate, deleteMessageTemplate, fetchRecipients } from "@/lib/actions/messages";
 import { toast } from "sonner";
 import { MessageSquare, Send, Users, Plus, Pencil, Trash2, RefreshCw, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import type { MessageTemplate } from "@/types/database";
@@ -56,7 +56,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
     setSending(true);
     try {
       const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined);
-      toast.success(`${result.count} message(s) queued for sending`);
+      toast.success(`${result.count} message(s) ready in the Outbox`);
       setMessage("");
       setRecipients([]);
     } catch {
@@ -99,6 +99,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
       </div>
 
       <Tabs defaultValue={initialTab ?? (outbox.waiting.length > 0 ? "outbox" : "compose")}>
+        <div data-tour="messaging-tabs" className="w-fit">
         <TabsList>
           <TabsTrigger value="outbox">
             Outbox{outbox.waiting.length > 0 ? ` (${outbox.waiting.length})` : ""}
@@ -107,6 +108,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="outbox">
           <OutboxPanel waiting={outbox.waiting} done={outbox.done} />

@@ -150,7 +150,14 @@ export async function getAutopaySummary() {
     supabase
       .from("config")
       .select("key, value")
-      .in("key", ["stripe_enabled", "stripe_secret_key", "zelle_inbound_secret", "zelle_recipient"]),
+      .in("key", [
+        "stripe_enabled",
+        "stripe_secret_key",
+        "zelle_inbound_secret",
+        "zelle_recipient",
+        "zelle_alerts_inbox",
+        "zelle_alerts_forward_from",
+      ]),
   ]);
   const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
   return {
@@ -158,5 +165,7 @@ export async function getAutopaySummary() {
     stripeEnabled: c.stripe_enabled === "true" && !!c.stripe_secret_key,
     zelleSecret: (c.zelle_inbound_secret as string) || "",
     zelleRecipient: (c.zelle_recipient as string) || "",
+    zelleInbox: (c.zelle_alerts_inbox as string) || "",
+    zelleForwardFrom: (c.zelle_alerts_forward_from as string) || "",
   };
 }

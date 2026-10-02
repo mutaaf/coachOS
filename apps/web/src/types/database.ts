@@ -244,18 +244,9 @@ export type Config = {
   value: string;
   label: string;
   description: string | null;
-  field_type: "toggle" | "number" | "text" | "time" | "select" | "textarea";
+  field_type: "toggle" | "number" | "text" | "time" | "select" | "textarea" | "secret" | "email" | "url" | "phone";
   options: string[] | null;
   sort_order: number;
-};
-
-export type WhatsAppState = {
-  id: string;
-  status: "disconnected" | "connecting" | "qr_ready" | "connected";
-  qr_code: string | null;
-  phone_number: string | null;
-  last_connected_at: string | null;
-  updated_at: string;
 };
 
 // Joined types for queries

@@ -28,18 +28,16 @@
 | Icons | lucide-react | ^0.468.0 | SVG icon components |
 | Toasts | sonner | ^1.7.1 | Notification system |
 | Dates | date-fns | ^4.1.0 | Date formatting |
-| WhatsApp | whatsapp-web.js | ^1.26.0 | WhatsApp Web automation |
-| QR Code | qrcode (Node.js) | ^1.5.4 | QR code generation |
+| Email | resend | ^6 | Receipts, notices, reminders |
+| AI | @anthropic-ai/sdk | ^0.131 | Reading roster screenshots |
 | TypeScript | TypeScript | ^5.7.0 | Type safety |
 | Deployment (web) | Vercel | - | Serverless hosting |
-| Deployment (bot) | Railway (Docker) | - | Container hosting |
 
 ### Key Commands
 ```bash
 # Development
 npm run dev           # Start all apps (Turborepo)
 npm run dev:web       # Start web app only (http://localhost:3050)
-npm run dev:bot       # Start WhatsApp bot only
 
 # Build
 npm run build         # Build all workspaces
@@ -51,7 +49,6 @@ npm run db:migrate    # Push Supabase migrations
 # Individual apps
 cd apps/web && npx next build    # Build web
 cd apps/web && npx next dev      # Dev web
-cd apps/whatsapp-bot && npm run dev   # Dev bot (needs Chromium)
 ```
 
 ---
@@ -75,7 +72,7 @@ cd apps/whatsapp-bot && npm run dev   # Dev bot (needs Chromium)
 | 21 | Payments filtering (student/parent/program/method) | Complete | `payments-page-client.tsx` |
 | 12 | Message templates | Complete | `actions/messages.ts`, `queries/messages.ts` |
 | 13 | Message queue + sending | Complete | `messaging-page-client.tsx`, bot `message-queue.ts` |
-| 14 | WhatsApp bot (QR, send) | Complete | `whatsapp-bot/src/client.ts`, `health.ts` |
+| 14 | Outbox (send by hand from the owner's phone) | Complete | `components/outbox-panel.tsx`, `lib/outbox.ts` |
 | 15 | Daily cron reminders | Complete | `api/cron/daily-reminders/route.ts` |
 | 16 | Lead/sales pipeline | Complete | `actions/leads.ts`, `queries/leads.ts`, `marketing-page-client.tsx` |
 | 17 | System configuration | Complete | `actions/config.ts`, `queries/config.ts`, `settings-page-client.tsx` |
@@ -196,14 +193,10 @@ daily-reminders/route.ts
 message_queue table (status: "pending")
         │
         v
-WhatsApp Bot (polls queue)
-  message-queue.ts
-        │
+Messaging → Outbox (owner's phone)
+        │  each message opens WhatsApp / Messages with the text written
         v
-whatsapp-web.js → WhatsApp API
-        │
-        v
-message_logs table (status: "sent")
+message_log table (status: "sent", sent_via: whatsapp | sms)
 ```
 
 ### Stripe Payment Flow
@@ -222,9 +215,9 @@ createStripeInvoice(invoiceId)
         │  4. Save stripe_invoice_id + stripe_hosted_invoice_url to invoice row
         v
 sendStripePaymentLink(invoiceId)   ← triggered by "Send Link" button
-        │  Queues WhatsApp message with payment URL to parent
+        │  Queues a message with the payment URL
         v
-message_queue table → WhatsApp Bot → Parent receives link
+message_queue table → Outbox → owner sends it from her phone
 ```
 
 Stripe is entirely optional — toggled via `config` table (`stripe_enabled`, `stripe_secret_key`). When disabled, invoices are managed manually with cash/Zelle/Venmo payment recording.
@@ -265,7 +258,6 @@ Called by: `recordPayment`, `updatePayment`, `deletePayment`
 | `leads` | Sales pipeline prospects | stage-based funnel |
 | `lead_activities` | Lead interaction history | lead_id + type + description |
 | `config` | System settings | key-value with UI metadata |
-| `whatsapp_state` | Bot connection state | status + qr_code + phone_number |
 
 ### Key Types (from `types/database.ts`)
 
@@ -294,12 +286,6 @@ type Parent = {
   notes: string | null; created_at: string; updated_at: string;
 };
 
-type WhatsAppState = {
-  id: string;
-  status: "disconnected" | "connecting" | "qr_ready" | "connected";
-  qr_code: string | null; phone_number: string | null;
-  last_connected_at: string | null; updated_at: string;
-};
 ```
 
 ---
@@ -414,14 +400,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 CRON_SECRET=your-cron-secret
-WHATSAPP_BOT_URL=http://localhost:3001
-```
-
-### WhatsApp Bot (`apps/whatsapp-bot/.env`)
-```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ```
 
 ---
@@ -432,7 +410,7 @@ PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - Core CRUD operations built for schools, students, parents, programs, enrollments
 - Scheduling system with sessions, attendance tracking, and schedule templates
 - Payment system with invoices and multi-method payment recording (cash, Zelle, Venmo)
-- WhatsApp integration via whatsapp-web.js with QR code authentication flow
+- WhatsApp bot (whatsapp-web.js) built, never deployed, and removed in favour of the Outbox
 - Message templating system with shared `renderTemplate()` package
 - Automated daily reminders via Vercel cron (practice + payment)
 - Lead/marketing pipeline for new school acquisition

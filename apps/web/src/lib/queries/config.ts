@@ -1,5 +1,5 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
-import type { Config, WhatsAppState } from "@/types/database";
+import type { Config } from "@/types/database";
 
 export async function getConfig(): Promise<Config[]> {
   const supabase = createAdminSupabase();
@@ -32,15 +32,4 @@ export async function getConfigValue(key: string): Promise<string | null> {
     .single();
   if (error) return null;
   return data?.value || null;
-}
-
-export async function getWhatsAppState(): Promise<WhatsAppState | null> {
-  const supabase = createAdminSupabase();
-  const { data, error } = await supabase
-    .from("whatsapp_state")
-    .select("*")
-    .limit(1)
-    .maybeSingle();
-  if (error) return null;
-  return data;
 }

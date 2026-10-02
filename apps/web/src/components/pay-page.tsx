@@ -124,7 +124,7 @@ export function PayPage({
     setBusy(null);
   }
 
-  // The setting can hold several ("972-900-0292, anum@example.com"); each is
+  // The setting can hold several ("214-555-0100, payments@example.com"); each is
   // its own line with its own copy button, since a parent pastes just one.
   const zelleTargets = (data.zelleRecipient ?? "")
     .split(/\s*(?:,|;|\bor\b)\s*/i)

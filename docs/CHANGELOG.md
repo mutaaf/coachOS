@@ -4,6 +4,33 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Added
+- **First-login onboarding.** A guided tour starts the first time the owner
+  signs in: it walks every page, spotlighting each control with what it's for,
+  and ends with her weekly routine. On a phone the explanation docks at the
+  bottom and the spotlight never sits under it. Finishing or skipping is
+  recorded on her account; "Take the tour" in the menu replays it
+- **Getting started** on the dashboard: six setup steps that tick themselves
+  off from real data, each with a button to do it and "Show me" to jump to that
+  part of the tour
+- **Settings for everything an admin changes, no deploy needed.** The Gmail
+  that reads Zelle alerts and the inbox the bank sends them to are new
+  settings; the business name now drives every email and payment page. Keys
+  are masked with Show and Copy; addresses, links and phones get Copy plus a
+  one-tap Email / Open / WhatsApp. Zelle email setup lives in Settings →
+  Payments as numbered steps, each with its own button (open Gmail as the right
+  account, open Apps Script, copy the script)
+
+### Removed
+- **The WhatsApp bot**, which was never deployed: `apps/whatsapp-bot`, its
+  Railway deploy, the setup wizard and Settings tab, `/api/bot-health`, the
+  `whatsapp_state` table and the `whatsapp_bot_url` setting. Messages go out
+  from the Outbox
+
+### Security
+- Saving Settings now requires a signed-in user. Before, the action that writes
+  the Stripe keys and Zelle details could be called by anyone holding its id
+
 ### Changed
 - Families' payment pages show every place the owner accepts Zelle — her
   number and her email — each with its own copy button

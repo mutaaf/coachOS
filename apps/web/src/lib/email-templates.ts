@@ -16,7 +16,6 @@ export interface EmailLine {
   cents: number;
 }
 
-const BRAND = "Rising Stars Youth Academy";
 
 export const dollars = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -27,10 +26,10 @@ export const monthName = (month: string) =>
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-function layout(title: string, body: string) {
+function layout(brand: string, title: string, body: string) {
   return `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#0f172a">
 <div style="max-width:520px;margin:0 auto;padding:32px 20px">
-<p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#ea580c">${BRAND}</p>
+<p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#ea580c">${esc(brand)}</p>
 <h1 style="margin:0 0 20px;font-size:22px;line-height:1.3">${esc(title)}</h1>
 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;font-size:15px;line-height:1.55">${body}</div>
 <p style="margin:20px 0 0;font-size:12px;color:#64748b">Questions? Just reply to this email.</p>
@@ -64,6 +63,7 @@ function button(href: string, label: string) {
 }
 
 export function receiptEmail(opts: {
+  brand: string;
   parentName: string;
   lines: EmailLine[];
   feeCents: number;
@@ -72,7 +72,7 @@ export function receiptEmail(opts: {
   payLink: string;
 }) {
   const totalCents = opts.lines.reduce((s, l) => s + l.cents, 0) + opts.feeCents;
-  const subject = `Receipt: ${dollars(totalCents)} received — ${BRAND}`;
+  const subject = `Receipt: ${dollars(totalCents)} received — ${opts.brand}`;
   const feeText = opts.feeCents > 0 ? `\n  Card processing fee: ${dollars(opts.feeCents)}` : "";
   const text = `Hi ${opts.parentName},
 
@@ -85,8 +85,9 @@ Paid by ${opts.method} on ${opts.receivedOn}.
 
 Your payment page: ${opts.payLink}
 
-${BRAND}`;
+${opts.brand}`;
   const html = layout(
+    opts.brand,
     "Payment received — thank you",
     `<p style="margin:0 0 12px">Hi ${esc(opts.parentName)}, we've received your payment.</p>
 ${table(
@@ -101,13 +102,14 @@ ${button(opts.payLink, "View your payment page")}`
 }
 
 export function paymentFailedEmail(opts: {
+  brand: string;
   parentName: string;
   childNames: string;
   owedCents: number;
   reason: string;
   payLink: string;
 }) {
-  const subject = `Your automatic payment didn't go through — ${BRAND}`;
+  const subject = `Your automatic payment didn't go through — ${opts.brand}`;
   const text = `Hi ${opts.parentName},
 
 The automatic payment of ${dollars(opts.owedCents)} for ${opts.childNames} didn't go through (${opts.reason}).
@@ -115,8 +117,9 @@ The automatic payment of ${dollars(opts.owedCents)} for ${opts.childNames} didn'
 You can update your card or bank account, or pay another way, here:
 ${opts.payLink}
 
-${BRAND}`;
+${opts.brand}`;
   const html = layout(
+    opts.brand,
     "Your automatic payment didn't go through",
     `<p style="margin:0">Hi ${esc(opts.parentName)}, the automatic payment of <strong>${dollars(opts.owedCents)}</strong> for ${esc(opts.childNames)} didn't go through (${esc(opts.reason)}).</p>
 <p style="margin:12px 0 0">You can update your card or bank account, or pay another way, from your payment page.</p>
@@ -125,8 +128,9 @@ ${button(opts.payLink, "Update payment")}`
   return { subject, text, html };
 }
 
-export function inviteEmail(opts: { parentName: string; childNames: string; payLink: string }) {
-  const subject = `Pay for ${opts.childNames} automatically — ${BRAND}`;
+export function inviteEmail(opts: {
+  brand: string; parentName: string; childNames: string; payLink: string }) {
+  const subject = `Pay for ${opts.childNames} automatically — ${opts.brand}`;
   const text = `Hi ${opts.parentName},
 
 You can now pay for ${opts.childNames} automatically each month — from your bank account (no fee) or by card. It takes a minute:
@@ -134,8 +138,9 @@ ${opts.payLink}
 
 Prefer Zelle? The page has the details, and you won't need to message us when you've sent it.
 
-${BRAND}`;
+${opts.brand}`;
   const html = layout(
+    opts.brand,
     `Pay for ${opts.childNames} automatically`,
     `<p style="margin:0">Hi ${esc(opts.parentName)}, you can now pay each month automatically — from your bank account with no fee, or by card. It takes about a minute.</p>
 <p style="margin:12px 0 0">Prefer Zelle? Your page has the details, and you won't need to message us when you've sent it.</p>
@@ -144,9 +149,10 @@ ${button(opts.payLink, "Set up payments")}`
   return { subject, text, html };
 }
 
-export function reminderEmail(opts: { parentName: string; lines: EmailLine[]; payLink: string }) {
+export function reminderEmail(opts: {
+  brand: string; parentName: string; lines: EmailLine[]; payLink: string }) {
   const totalCents = opts.lines.reduce((s, l) => s + l.cents, 0);
-  const subject = `Payment reminder: ${dollars(totalCents)} — ${BRAND}`;
+  const subject = `Payment reminder: ${dollars(totalCents)} — ${opts.brand}`;
   const text = `Hi ${opts.parentName},
 
 A friendly reminder that this is still open:
@@ -157,8 +163,9 @@ You can pay here: ${opts.payLink}
 
 If you've already sent it, thank you — please ignore this.
 
-${BRAND}`;
+${opts.brand}`;
   const html = layout(
+    opts.brand,
     "A friendly payment reminder",
     `<p style="margin:0 0 12px">Hi ${esc(opts.parentName)}, this is still open:</p>
 ${table(linesHtml(opts.lines))}

@@ -130,7 +130,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">Payments</h1>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setShowGenerate(true)}>
+          <Button variant="outline" data-tour="generate-invoices" onClick={() => setShowGenerate(true)}>
             <FileText className="h-4 w-4 mr-2" /> Generate Invoices
           </Button>
           <Button onClick={() => { setSelectedInvoiceId(null); setShowRecordPayment(true); }}>
@@ -189,7 +189,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
 
         <TabsContent value="invoices">
           {/* Status Filter Bar */}
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div data-tour="invoice-statuses" className="flex gap-2 mb-4 flex-wrap">
             {["all", "pending", "processing", "overdue", "paid", "waived"].map((s) => (
               <Button
                 key={s}
@@ -290,7 +290,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
                               onClick={async () => {
                                 const result = await sendStripePaymentLink(inv.id);
                                 if ("error" in result) toast.error(result.error);
-                                else toast.success("Payment link sent via WhatsApp");
+                                else toast.success("Payment link ready in Messaging → Outbox");
                               }}
                             >
                               <Send className="h-4 w-4 mr-1" /> Send Link
