@@ -2,7 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { NOT_SIGNED_IN, signedIn } from "@/lib/auth-guard";
+import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { renderTemplate } from "shared";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { payLink } from "@/lib/app-url";
@@ -34,6 +34,7 @@ async function familiesToInvite(supabase: ReturnType<typeof createAdminSupabase>
 }
 
 export async function countFamiliesToInvite() {
+  if (!(await signedIn())) return 0;
   return (await familiesToInvite(createAdminSupabase())).length;
 }
 
@@ -43,6 +44,7 @@ export async function countFamiliesToInvite() {
  * reminding again.
  */
 export async function inviteFamiliesToAutopay() {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   const families = await familiesToInvite(supabase);
   if (families.length === 0) return { error: "Every family with a child enrolled is already on autopay." };

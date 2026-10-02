@@ -15,6 +15,7 @@ afterEach(async () => {
 
 describe("changing settings", () => {
   it("refuses anyone who isn't signed in, and changes nothing", async () => {
+    (globalThis as any).__signedOut = true;
     const { data } = await admin.from("config").select("value").eq("key", "zelle_recipient").single();
     saved = data!.value;
 

@@ -224,6 +224,7 @@ describe("reading screenshots", () => {
 
 describe("the wizard's actions", () => {
   it("refuse anyone who isn't signed in", async () => {
+    (globalThis as any).__signedOut = true;
     // Reading a screenshot spends API credit and importing writes families;
     // an action's id is all a stranger would need to call it.
     const fd = new FormData();

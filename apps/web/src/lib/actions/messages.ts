@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { renderTemplate } from "shared";
@@ -21,6 +22,7 @@ const SYSTEM_TEMPLATES = new Set([
 ]);
 
 export async function createMessageTemplate(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const body = formData.get("body") as string;
   const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
@@ -37,6 +39,7 @@ export async function createMessageTemplate(formData: FormData) {
 }
 
 export async function updateMessageTemplate(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const body = formData.get("body") as string;
   const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
@@ -59,6 +62,7 @@ export async function updateMessageTemplate(id: string, formData: FormData) {
 }
 
 export async function deleteMessageTemplate(id: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { data: current } = await supabase.from("message_templates").select("name").eq("id", id).maybeSingle();
   if (SYSTEM_TEMPLATES.has(current?.name ?? "")) {
@@ -73,6 +77,7 @@ export async function deleteMessageTemplate(id: string) {
 }
 
 export async function sendMessage(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { error } = await supabase.from("message_queue").insert({
     recipient_phone: formData.get("recipient_phone") as string,
@@ -93,6 +98,7 @@ export async function sendBulkMessages(
   message: string,
   templateId?: string
 ) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   // Compose knows each recipient's name and nothing else, so {{parent_name}}
@@ -127,6 +133,7 @@ export async function fetchRecipients(
   mode: "all" | "school" | "program",
   id?: string
 ): Promise<{ phone: string; name: string }[]> {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   if (mode === "all") {

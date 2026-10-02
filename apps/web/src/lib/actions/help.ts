@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createAdminSupabase, createServerSupabase } from "@/lib/supabase/server";
-import { NOT_SIGNED_IN } from "@/lib/auth-guard";
+import { createAdminSupabase } from "@/lib/supabase/server";
+import { currentUser, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import cases from "@/lib/help/acceptance-cases.json";
 
 const IDS = new Set((cases as { id: string }[]).map((c) => c.id));
@@ -15,13 +15,13 @@ export async function saveTestResult(
   caseId: string,
   patch: { status?: "pass" | "fail" | "blocked" | "na" | null; ticks?: number[]; notes?: string }
 ) {
-  const { data: auth } = await createServerSupabase().auth.getUser();
-  if (!auth.user) return NOT_SIGNED_IN;
+  const user = await currentUser();
+  if (!user) return NOT_SIGNED_IN;
   if (!IDS.has(caseId)) return { error: "Unknown test." };
 
   const row: Record<string, unknown> = {
     case_id: caseId,
-    updated_by: auth.user.email ?? null,
+    updated_by: user.email,
     updated_at: new Date().toISOString(),
   };
   if (patch.status !== undefined) row.status = patch.status;

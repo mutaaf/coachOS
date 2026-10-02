@@ -1,97 +1,20 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { businessMonth } from "@/lib/dates";
 import { recalculateInvoiceStatus } from "@/lib/invoice-status";
 import { emailReceipt } from "@/lib/parent-emails";
 import { revalidatePath } from "next/cache";
+import { createMonthlyInvoices } from "@/lib/invoices";
 
 export async function generateMonthlyInvoices(month?: string) {
-  const supabase = createAdminSupabase();
-  const targetMonth = month || businessMonth();
-  const dueDate = `${targetMonth}-01`;
-
-  const { data: enrollments } = await supabase
-    .from("enrollments")
-    .select("*, programs(*), students(*, student_parents(parent_id))")
-    .eq("status", "active");
-
-  if (!enrollments) return { created: 0, skipped: 0, total: 0 };
-
-  // Query existing invoices for the target month to enable idempotency
-  const { data: existingInvoices } = await supabase
-    .from("invoices")
-    .select("parent_id, student_id, program_id")
-    .eq("month", targetMonth);
-
-  // Keyed by child and program, deliberately not by parent: one child on one
-  // program owes one fee, whoever pays it.
-  const existingKeys = new Set(
-    (existingInvoices || []).map((inv) => `${inv.student_id}|${inv.program_id}`)
-  );
-
-  let created = 0;
-  let skipped = 0;
-  let noParent = 0;
-
-  for (const enrollment of enrollments) {
-    const program = enrollment.programs as any;
-    const student = enrollment.students as any;
-    const parentLinks = student?.student_parents as any[];
-
-    if (!parentLinks || parentLinks.length === 0) {
-      noParent++;
-      continue;
-    }
-
-    const key = `${enrollment.student_id}|${enrollment.program_id}`;
-
-    if (existingKeys.has(key)) {
-      skipped++;
-      continue;
-    }
-
-    // Bill a single parent. Iterating every link used to create one invoice
-    // per parent, so a family with both parents on file was charged twice for
-    // the same child. Sorted so repeat runs always pick the same one.
-    const billTo = [...parentLinks].sort((a, b) =>
-      String(a.parent_id).localeCompare(String(b.parent_id))
-    )[0];
-
-    const { error } = await supabase.from("invoices").insert({
-      parent_id: billTo.parent_id,
-      student_id: enrollment.student_id,
-      program_id: enrollment.program_id,
-      amount: program.monthly_fee,
-      month: targetMonth,
-      due_date: dueDate,
-      status: "pending",
-    });
-
-    if (!error) {
-      created++;
-      existingKeys.add(key);
-    }
-  }
-
-  // If Stripe is enabled, create Stripe invoices for the new batch
-  const { data: stripeConfig } = await supabase
-    .from("config")
-    .select("value")
-    .eq("key", "stripe_enabled")
-    .single();
-
-  if (stripeConfig?.value === "true" && created > 0) {
-    const { createStripeInvoicesForMonth } = await import("@/lib/actions/stripe");
-    await createStripeInvoicesForMonth(targetMonth);
-  }
-
-  revalidatePath("/payments");
-  revalidatePath("/dashboard");
-  return { created, skipped, noParent, total: created + skipped };
+  await requireSignedIn();
+  return createMonthlyInvoices(month);
 }
 
 export async function recordPayment(formData: FormData) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const invoiceId = formData.get("invoice_id") as string;
@@ -142,6 +65,7 @@ export async function recordPayment(formData: FormData) {
 }
 
 export async function fetchPendingInvoices() {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("invoices")
@@ -153,6 +77,7 @@ export async function fetchPendingInvoices() {
 }
 
 export async function fetchInvoiceDetail(id: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { data, error } = await supabase
     .from("invoices")
@@ -164,6 +89,7 @@ export async function fetchInvoiceDetail(id: string) {
 }
 
 export async function waiveInvoice(invoiceId: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("invoices")
@@ -174,6 +100,7 @@ export async function waiveInvoice(invoiceId: string) {
 }
 
 export async function updateInvoice(id: string, formData: FormData) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const amount = Number(formData.get("amount"));
@@ -205,6 +132,7 @@ export async function updateInvoice(id: string, formData: FormData) {
 }
 
 export async function deleteInvoice(id: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { data: existingPayments } = await supabase
@@ -226,6 +154,7 @@ export async function deleteInvoice(id: string) {
 }
 
 export async function updatePayment(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const amount = Number(formData.get("amount"));
@@ -254,6 +183,7 @@ export async function updatePayment(id: string, formData: FormData) {
 }
 
 export async function deletePayment(id: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { data: payment } = await supabase

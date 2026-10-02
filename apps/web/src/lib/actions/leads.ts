@@ -1,14 +1,17 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getLeadActivities } from "@/lib/queries/leads";
 
 export async function fetchLeadActivities(leadId: string) {
+  await requireSignedIn();
   return getLeadActivities(leadId);
 }
 
 export async function createLead(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { error } = await supabase.from("leads").insert({
     school_name: formData.get("school_name") as string,
@@ -25,6 +28,7 @@ export async function createLead(formData: FormData) {
 }
 
 export async function updateLead(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("leads")
@@ -44,6 +48,7 @@ export async function updateLead(id: string, formData: FormData) {
 }
 
 export async function updateLeadStage(id: string, stage: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("leads")
@@ -62,6 +67,7 @@ export async function updateLeadStage(id: string, stage: string) {
 }
 
 export async function addLeadActivity(leadId: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const { error } = await supabase.from("lead_activities").insert({
     lead_id: leadId,
@@ -73,6 +79,7 @@ export async function addLeadActivity(leadId: string, formData: FormData) {
 }
 
 export async function deleteLead(leadId: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   // Delete lead activities first
@@ -84,6 +91,7 @@ export async function deleteLead(leadId: string) {
 }
 
 export async function convertLeadToSchool(leadId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { data: lead, error: leadError } = await supabase

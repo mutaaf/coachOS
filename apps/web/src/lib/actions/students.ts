@@ -1,9 +1,11 @@
 "use server";
 
+import { requireSignedIn } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 
 export async function createStudent(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const first_name = formData.get("first_name") as string;
@@ -40,6 +42,7 @@ export async function createStudent(formData: FormData) {
 }
 
 export async function updateStudent(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const first_name = formData.get("first_name") as string;
@@ -79,6 +82,7 @@ export async function updateStudent(id: string, formData: FormData) {
 }
 
 export async function createParent(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const first_name = formData.get("first_name") as string;
@@ -120,6 +124,7 @@ export async function createParent(formData: FormData) {
 }
 
 export async function updateParent(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const first_name = formData.get("first_name") as string;
@@ -168,6 +173,7 @@ export async function linkParentToStudent(
   parentId: string,
   relationship: string
 ) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { error } = await supabase.from("student_parents").insert({
@@ -190,6 +196,7 @@ export async function unlinkParentFromStudent(
   studentId: string,
   parentId: string
 ) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { error } = await supabase
@@ -209,6 +216,7 @@ export async function unlinkParentFromStudent(
 }
 
 export async function enrollStudent(studentId: string, programId: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   // Check for existing active enrollment
@@ -256,6 +264,7 @@ export async function enrollStudent(studentId: string, programId: string) {
 }
 
 export async function deleteStudent(studentId: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   // Check for active enrollments
@@ -285,6 +294,7 @@ export async function deleteStudent(studentId: string) {
 }
 
 export async function deleteParent(parentId: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   // Check for linked students
@@ -309,6 +319,7 @@ export async function deleteParent(parentId: string) {
 }
 
 export async function withdrawEnrollment(enrollmentId: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { data, error } = await supabase

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { NOT_SIGNED_IN, signedIn } from "@/lib/auth-guard";
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { checkRows, importRows, rowsFromCsv, type RosterRow } from "@/lib/roster";
 import { readRoster, type RosterInput } from "@/lib/roster-reader";
 
@@ -73,7 +73,7 @@ export async function readRosterSource(formData: FormData) {
 
 /** What the review screen shows beside each row: problems, and who is already on file. */
 export async function checkRoster(programId: string | null, rows: RosterRow[]) {
-  if (!(await signedIn())) return NOT_SIGNED_IN;
+  await requireSignedIn();
   return { checks: await checkRows(createAdminSupabase(), programId, rows) };
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { businessDaysAgo, businessToday } from "@/lib/dates";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { renderTemplate } from "shared";
-import { generateMonthlyInvoices } from "@/lib/actions/payments";
+import { createMonthlyInvoices } from "@/lib/invoices";
 import { chargeDueAutopay } from "@/lib/autopay";
 import { payLink } from "@/lib/app-url";
 import { toCents } from "@/lib/invoice-status";
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   // daily, it would bill a child who joined on the 20th for the whole month.
   const today = businessToday();
   if (today.endsWith("-01") && (await getConfigValue("auto_generate_invoices")) === "true") {
-    results.invoicesGenerated = (await generateMonthlyInvoices(today.slice(0, 7))).created;
+    results.invoicesGenerated = (await createMonthlyInvoices(today.slice(0, 7))).created;
   }
 
   // Autopay before any reminder, so no family is chased for money being taken

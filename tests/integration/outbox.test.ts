@@ -36,6 +36,7 @@ describe("the links", () => {
 
 describe("marking messages", () => {
   it("refuses anyone who isn't signed in", async () => {
+    (globalThis as any).__signedOut = true;
     const { data } = await admin
       .from("message_queue")
       .insert({ recipient_phone: "+19155002487", message: "Hi", status: "pending" })

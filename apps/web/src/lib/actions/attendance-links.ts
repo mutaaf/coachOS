@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase, createAdminPublicSupabase } from "@/lib/supabase/server";
@@ -26,6 +27,7 @@ function generateToken() {
  * cannot be read back afterwards. If it is lost, issue a new link.
  */
 export async function createAttendanceLink(sessionId: string, hoursValid = 12) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { data: session, error: sessionError } = await supabase
@@ -72,6 +74,7 @@ export async function createAttendanceLink(sessionId: string, hoursValid = 12) {
 }
 
 export async function revokeAttendanceLink(sessionId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { error } = await supabase

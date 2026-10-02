@@ -11,6 +11,7 @@ import { TASKS, PRACTICE } from "@/lib/help/content";
  */
 describe("recording test results", () => {
   it("refuses anyone who isn't signed in, and records nothing", async () => {
+    (globalThis as any).__signedOut = true;
     const id = (cases as { id: string }[])[0].id;
     expect(await saveTestResult(id, { status: "pass" })).toHaveProperty("error");
     const { data } = await admin.from("acceptance_results").select("case_id").eq("case_id", id);

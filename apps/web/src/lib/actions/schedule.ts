@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { businessToday, toISODate } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
@@ -9,16 +10,19 @@ import { getSessions } from "@/lib/queries/schedule";
 // ---------- Server Action Wrappers ----------
 
 export async function fetchScheduleTemplates(programId?: string) {
+  await requireSignedIn();
   return getScheduleTemplates(programId);
 }
 
 export async function fetchSessionsForWeek(startDate: string, endDate: string) {
+  await requireSignedIn();
   return getSessions({ startDate, endDate });
 }
 
 // ---------- Schedule Template Actions ----------
 
 export async function createScheduleTemplate(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const program_id = formData.get("program_id") as string;
@@ -60,6 +64,7 @@ export async function createScheduleTemplate(formData: FormData) {
 }
 
 export async function updateScheduleTemplate(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const program_id = formData.get("program_id") as string;
@@ -98,6 +103,7 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
 }
 
 export async function deleteScheduleTemplate(id: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { error } = await supabase
@@ -118,6 +124,7 @@ export async function deleteScheduleTemplate(id: string) {
 // ---------- Session Generation ----------
 
 export async function generateSessions(programId: string | null, weeksAhead: number) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   // Fetch schedule templates with program date range
@@ -207,6 +214,7 @@ export async function generateSessions(programId: string | null, weeksAhead: num
 // ---------- Session Status Actions ----------
 
 export async function cancelSession(id: string, reason: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   if (!reason || reason.trim().length === 0) {
@@ -233,6 +241,7 @@ export async function cancelSession(id: string, reason: string) {
 }
 
 export async function completeSession(id: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { data, error } = await supabase
@@ -256,6 +265,7 @@ export async function completeSession(id: string) {
 // ---------- Makeup Session ----------
 
 export async function createMakeupSession(formData: FormData) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const program_id = formData.get("program_id") as string;
@@ -297,6 +307,7 @@ export async function recordAttendance(
   sessionId: string,
   records: { studentId: string; status: "present" | "absent" | "late" | "excused" }[]
 ) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   if (!sessionId || !records || records.length === 0) {

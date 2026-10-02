@@ -1,5 +1,6 @@
 "use server";
 
+import { requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -34,6 +35,7 @@ export type BulkImportResult = {
 export async function bulkCreateSchools(
   rows: BulkSchoolRow[]
 ): Promise<BulkImportResult> {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
   const validRows: { name: string; address: string | null; contact_name: string | null; contact_phone: string | null; status: "active" }[] = [];
@@ -76,6 +78,7 @@ export async function bulkCreateSchools(
 export async function bulkCreateStudents(
   rows: BulkStudentRow[]
 ): Promise<BulkImportResult> {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
   const validRows: { first_name: string; last_name: string; grade: string | null }[] = [];
@@ -122,6 +125,7 @@ export async function bulkCreateStudents(
 export async function bulkCreateParents(
   rows: BulkParentRow[]
 ): Promise<BulkImportResult> {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
   const validRows: {

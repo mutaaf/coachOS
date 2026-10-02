@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 
@@ -23,6 +24,7 @@ function readCoachFields(formData: FormData) {
 }
 
 export async function createCoach(formData: FormData) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   const fields = readCoachFields(formData);
 
@@ -39,6 +41,7 @@ export async function createCoach(formData: FormData) {
 }
 
 export async function updateCoach(id: string, formData: FormData) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   const fields = readCoachFields(formData);
 
@@ -60,6 +63,7 @@ export async function updateCoach(id: string, formData: FormData) {
  * and takes them out of the assignment lists.
  */
 export async function deleteCoach(id: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { count } = await supabase
@@ -82,6 +86,7 @@ export async function deleteCoach(id: string) {
 
 /** Who is scheduled for this weekly slot from now on. */
 export async function assignCoachToTemplate(templateId: string, coachId: string | null) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { error } = await supabase
@@ -101,6 +106,7 @@ export async function assignCoachToTemplate(templateId: string, coachId: string 
  * substitutions are normal, and the session is what gets paid.
  */
 export async function assignCoachToSession(sessionId: string, coachId: string | null) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { error } = await supabase

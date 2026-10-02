@@ -47,6 +47,7 @@ describe("which mode a key is", () => {
 
 describe("the switch", () => {
   it("can't be checked or thrown by anyone who isn't signed in", async () => {
+    (globalThis as any).__signedOut = true;
     await set("stripe_mode", "test");
     expect(await checkStripeConnection("live")).toHaveProperty("error", expect.stringMatching(/sign in/i));
     expect(await setStripeMode("live")).toHaveProperty("error", expect.stringMatching(/sign in/i));

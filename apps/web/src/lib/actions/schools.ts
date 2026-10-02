@@ -1,9 +1,11 @@
 "use server";
 
+import { requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function createSchool(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const name = formData.get("name") as string;
@@ -41,6 +43,7 @@ export async function createSchool(formData: FormData) {
 }
 
 export async function updateSchool(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const name = formData.get("name") as string;
@@ -80,6 +83,7 @@ export async function updateSchool(id: string, formData: FormData) {
 }
 
 export async function archiveSchool(id: string) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { error } = await supabase

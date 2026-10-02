@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { NOT_SIGNED_IN, signedIn } from "@/lib/auth-guard";
+import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 
 /**
  * The owner has opened a message in WhatsApp or Messages, or decided not to

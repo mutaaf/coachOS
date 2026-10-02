@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase, createAdminPublicSupabase } from "@/lib/supabase/server";
 
@@ -74,6 +75,7 @@ function readRegistrationFields(formData: FormData) {
 }
 
 export async function createProgram(formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const schoolId = formData.get("school_id") as string;
@@ -124,6 +126,7 @@ export async function createProgram(formData: FormData) {
 }
 
 export async function updateProgram(id: string, formData: FormData) {
+  await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const schoolId = formData.get("school_id") as string;
@@ -184,6 +187,7 @@ export async function updateProgramStatus(
   id: string,
   status: "active" | "upcoming" | "completed" | "cancelled"
 ) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   // Fetch the program first to get the school_id for revalidation
@@ -214,6 +218,7 @@ export async function duplicateProgram(
   programId: string,
   targetSchoolId: string
 ) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   // Fetch source program

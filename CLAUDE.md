@@ -218,6 +218,7 @@ something new bites — that is the point of it.**
 | Never assert a "pending" invoice for the current month | Invoices fall due on the 1st, so from the 2nd the app correctly calls them overdue. Three tests asserted "pending" and passed only on the day they were written. Use next month, or accept pending-or-overdue. |
 | PostgREST can miss a table after `supabase db reset` | Tests fail with "Could not find the table 'ops.x' in the schema cache" though the table exists. `NOTIFY pgrst, 'reload schema';` in the db container fixes it. |
 | Email goes out from risingstars.training via Resend | DNS is at Namecheap, which also forwards the domain's mail. Resend's records live on `send`, `rsend`, `resend._domainkey` and `_dmarc` — never touch the root MX or SPF, or forwarding breaks. |
+| Every action is guarded, and a test enforces it | All but six actions were callable signed out, holding the service role — anyone with an action id (they ship in page bundles) could read or change rosters and payments. Each now starts with `signedIn()`/`requireSignedIn()`; `tests/integration/action-guards.test.ts` calls every export signed out and fails if one opens a database client. A public action goes in its `PUBLIC` list with the reason. Work the cron needs lives in plain modules (`lib/invoices.ts`, `lib/stripe-invoices.ts`), never behind a guarded action. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---

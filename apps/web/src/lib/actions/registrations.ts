@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Registration } from "@/types/database";
@@ -100,6 +101,7 @@ export async function submitRegistration(formData: FormData) {
  * matched by phone rather than duplicated.
  */
 export async function convertRegistration(registrationId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { data: reg, error: regError } = await supabase
@@ -207,6 +209,7 @@ export async function convertRegistration(registrationId: string) {
  * Re-checks capacity rather than trusting the caller's view of it.
  */
 export async function promoteFromWaitlist(registrationId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { data: reg, error: regError } = await supabase
@@ -244,6 +247,7 @@ export async function setRegistrationStatus(
   registrationId: string,
   status: "pending" | "confirmed" | "waitlisted" | "cancelled" | "declined"
 ) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { error } = await supabase
@@ -261,6 +265,7 @@ export async function setRegistrationPaymentStatus(
   registrationId: string,
   paymentStatus: "unpaid" | "paid" | "refunded" | "waived"
 ) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { error } = await supabase

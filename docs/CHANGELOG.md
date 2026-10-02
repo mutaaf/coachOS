@@ -4,6 +4,12 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Security
+- Every dashboard action now refuses callers who aren't signed in. Most did
+  not check, and each holds the database's service role, so anyone who found
+  an action's id could have read or changed rosters and payments. A test calls
+  every action signed out and fails the build if one reaches the database
+
 ### Added
 - **Help** in the menu: step-by-step guides for every routine job, searchable,
   with steps to tick off and "Show me" to start the tour at the right place;

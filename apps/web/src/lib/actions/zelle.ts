@@ -1,5 +1,6 @@
 "use server";
 
+import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { openInvoicesForFamily, recalculateInvoiceStatus } from "@/lib/invoice-status";
@@ -16,6 +17,7 @@ function refresh() {
  * payment matches by itself.
  */
 export async function matchZelleReceipt(receiptId: string, parentId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   if (!receiptId || !parentId) return { error: "Pick the family this came from." };
   const supabase = createAdminSupabase();
 
@@ -58,6 +60,7 @@ export async function matchZelleReceipt(receiptId: string, parentId: string) {
 
 /** Not a family paying — a refund, a friend, something unrelated. */
 export async function ignoreZelleReceipt(receiptId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from("zelle_receipts")
@@ -74,6 +77,7 @@ export async function ignoreZelleReceipt(receiptId: string) {
  * name is forgotten so the same mistake does not repeat next month.
  */
 export async function undoZelleMatch(receiptId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
   const { data: receipt } = await supabase
