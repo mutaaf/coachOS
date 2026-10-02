@@ -10,6 +10,8 @@ import { saveTestResult } from "@/lib/actions/help";
 import { AUTOMATIC, GLOSSARY, PRACTICE, TASKS, TEST_CARDS, type HelpStep } from "@/lib/help/content";
 import cases from "@/lib/help/acceptance-cases.json";
 import type { TestResult } from "@/lib/queries/onboarding";
+import type { Release } from "@/lib/releases";
+import { ReleaseNotes } from "@/components/whats-new";
 import { Check, ChevronRight, Download, ExternalLink, PlayCircle, Search } from "lucide-react";
 
 /* ---------------------------------------------------------------------------
@@ -574,16 +576,70 @@ function Reference() {
   );
 }
 
+interface Report {
+  id: string;
+  created_at: string;
+  message: string;
+  status: "new" | "sent" | "fixed" | "closed";
+  fixed_in: string | null;
+}
+
+function WhatsNew({ releases, reports }: { releases: Release[]; reports: Report[] }) {
+  return (
+    <div className="space-y-6">
+      {reports.length > 0 && (
+        <section>
+          <h3 className="mb-2 font-semibold">Problems you reported</h3>
+          <ul className="divide-y rounded-2xl border bg-white">
+            {reports.map((r) => (
+              <li key={r.id} className="flex items-start justify-between gap-3 p-3 text-sm" data-testid="my-report">
+                <span className="min-w-0">
+                  <span className="line-clamp-2">{r.message}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    r.status === "fixed" ? "bg-green-100 text-green-800" : "bg-amber-50 text-amber-800"
+                  }`}
+                >
+                  {r.status === "fixed" ? `Fixed in v${r.fixed_in}` : r.status === "closed" ? "Closed" : "Being looked at"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {releases.length === 0 ? (
+        <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+          Updates will be listed here as they arrive.
+        </p>
+      ) : (
+        <div className="space-y-5 rounded-2xl border bg-white p-4">
+          {releases.map((r) => (
+            <ReleaseNotes key={r.version} release={r} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function HelpPageClient({
   results,
   testMode,
   initialTab,
+  releases = [],
+  reports = [],
 }: {
   results: TestResult[];
   testMode: boolean;
   initialTab?: string;
+  releases?: Release[];
+  reports?: Report[];
 }) {
-  const tab = ["how", "practise", "tests", "reference"].includes(initialTab ?? "") ? initialTab! : "how";
+  const tab = ["how", "practise", "tests", "reference", "new"].includes(initialTab ?? "") ? initialTab! : "how";
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-5">
@@ -599,12 +655,14 @@ export function HelpPageClient({
             <TabsTrigger value="practise">Practise</TabsTrigger>
             <TabsTrigger value="tests">Test plan</TabsTrigger>
             <TabsTrigger value="reference">What things mean</TabsTrigger>
+            <TabsTrigger value="new">What&rsquo;s new</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="how"><HowTo /></TabsContent>
         <TabsContent value="practise"><Practice testMode={testMode} /></TabsContent>
         <TabsContent value="tests"><TestPlan initial={results} /></TabsContent>
         <TabsContent value="reference"><Reference /></TabsContent>
+        <TabsContent value="new"><WhatsNew releases={releases} reports={reports} /></TabsContent>
       </Tabs>
     </div>
   );

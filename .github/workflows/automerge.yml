@@ -1,0 +1,27 @@
+name: Auto-merge
+
+# Pull requests from this repository merge themselves (squash, with the PR
+# title as the commit) once every required check passes. Branch protection on
+# main is what makes "auto" wait for the checks.
+#
+# Enabled with BOT_TOKEN, a personal token, not the workflow's own: a merge
+# made with GITHUB_TOKEN does not start other workflows, so Ship would never
+# run for it.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  enable:
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'hold')
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "::warning::BOT_TOKEN is not set; not enabling auto-merge."; exit 0; fi
+          gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"

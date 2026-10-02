@@ -4,6 +4,24 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+From here on, versions are git tags (`vX.Y.Z`) and each release's notes are
+on GitHub and in the app (Help → What's new). See docs/RELEASING.md.
+
+### Added
+- **Releases**: strict semantic versions worked out from conventional commit
+  titles; a punny, plain-English "What's new" she sees once after each
+  release, with "Show me" into the tour (and a tour of only the new stops);
+  the version in the sidebar; every release in Help → What's new
+- **Report a problem** in the menu: saved in CoachOS, filed as a GitHub issue
+  with families' names and numbers removed, and shown as "Fixed in vX.Y.Z"
+  when a release fixes it
+- **CI/CD**: Checks on every pull request (conventional title, typecheck and
+  build, migration rules, integration and end-to-end tests); Ship on main
+  (checks, migrate, deploy, smoke test, roll back on failure, release);
+  Claude agents that fix `agent`-labelled issues, answer `@claude`, and review
+  every pull request; auto-merge when checks pass; a twice-daily production
+  health check (`/api/health`, `/api/health/deep`)
+
 ### Added
 - **Who paid this?** On any Zelle payment CoachOS couldn't place, and from a
   new **Record a payment** button for cash or Venmo: pick the family (closest

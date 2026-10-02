@@ -198,6 +198,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // For the nightly health check: a cron that stopped looks just like a quiet day otherwise.
+  await supabase.from("config").update({ value: new Date().toISOString() }).eq("key", "cron_last_run");
+
   return NextResponse.json({
     success: true,
     ...results,

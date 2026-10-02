@@ -1,0 +1,51 @@
+name: Review
+
+# Claude reviews every pull request from this repository (agents' and
+# people's alike) against what this codebase has learned the hard way, and
+# comments. Checks decide whether it merges; this catches what tests can't.
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+            Read CLAUDE.md (especially "Environment nuances" and "Working as an agent"), then the diff
+            (`gh pr diff ${{ github.event.pull_request.number }}`).
+
+            Look for, in order of importance:
+            1. Anything that could move money wrongly, charge twice, lose a payment, or show one family another's data.
+            2. A new server action without signedIn()/requireSignedIn() first (tests/integration/action-guards.test.ts should catch it — check it was not weakened).
+            3. Migrations that are not additive, or code that needs the new schema in a way the previous deploy can't tolerate.
+            4. Dates taken from toISOString(), "pending" asserted for the current month, or other traps in the nuances table.
+            5. A change she would see without the tour, Help and test plan updated to match.
+            6. Tests that don't test the change.
+
+            Post one review with `gh pr review ${{ github.event.pull_request.number }} --comment --body ...`:
+            say what is wrong and where (file:line), most serious first, and nothing about style.
+            If it all looks right, say so in one line.
+          claude_args: |
+            --model claude-opus-5-5
+            --max-turns 40
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review:*),Bash(git:*),Read,Glob,Grep"

@@ -68,7 +68,7 @@ describe("every server action refuses anyone who isn't signed in", () => {
           expect(String((threw as Error).message), `${file} → ${name}`).toBe(NOT_SIGNED_IN.error);
         } else {
           // A refusal, or the empty answer a read gives when there is no one to answer.
-          expect([NOT_SIGNED_IN, null, 0], `${file} → ${name} returned ${JSON.stringify(result)}`).toContainEqual(
+          expect([NOT_SIGNED_IN, null, 0, []], `${file} → ${name} returned ${JSON.stringify(result)}`).toContainEqual(
             result
           );
         }

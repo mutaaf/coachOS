@@ -241,8 +241,18 @@ function buildSteps(ctx: TourContext | null): Step[] {
 export const TOUR_EVENT = "coachos:tour";
 
 /** Start the tour from anywhere, optionally at a given step. */
-export function startTour(stepId?: string) {
-  window.dispatchEvent(new CustomEvent(TOUR_EVENT, { detail: { step: stepId } }));
+/**
+ * Start the tour: from the beginning, at one stop (then onward), or — given a
+ * list — through just those stops, as "What's new" does for a release.
+ */
+export function startTour(stepId?: string | string[]) {
+  const detail = Array.isArray(stepId) ? { only: stepId } : { step: stepId };
+  window.dispatchEvent(new CustomEvent(TOUR_EVENT, { detail }));
+}
+
+/** Every stop's id, for checking that release notes point at real ones. */
+export function tourStepIds(): string[] {
+  return buildSteps(null).map((s) => s.id);
 }
 
 function visible(el: Element | null): el is HTMLElement {
@@ -257,7 +267,9 @@ function findTarget(selector: string): HTMLElement | null {
 }
 
 export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourContext | null }) {
-  const STEPS = useMemo(() => buildSteps(ctx), [ctx]);
+  const ALL = useMemo(() => buildSteps(ctx), [ctx]);
+  const [only, setOnly] = useState<string[] | null>(null);
+  const STEPS = useMemo(() => (only ? ALL.filter((s) => only.includes(s.id)) : ALL), [ALL, only]);
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -272,6 +284,7 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
   const finish = useCallback(async () => {
     setIndex(null);
     setRect(null);
+    setOnly(null);
     // On the account, not the browser, so it doesn't start again on her phone
     // after she has done it on a laptop.
     await createClient().auth.updateUser({ data: { tour_completed_at: new Date().toISOString() } });
@@ -281,8 +294,16 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
   // Started from the menu or a "Show me".
   useEffect(() => {
     function onStart(e: Event) {
-      const id = (e as CustomEvent).detail?.step as string | undefined;
-      const at = id ? STEPS.findIndex((s) => s.id === id) : 0;
+      const detail = (e as CustomEvent).detail ?? {};
+      if (Array.isArray(detail.only)) {
+        const known = (detail.only as string[]).filter((id) => ALL.some((s) => s.id === id));
+        if (known.length === 0) return;
+        setOnly(known);
+        setIndex(0);
+        return;
+      }
+      setOnly(null);
+      const at = detail.step ? ALL.findIndex((s) => s.id === detail.step) : 0;
       setIndex(at >= 0 ? at : 0);
     }
     window.addEventListener(TOUR_EVENT, onStart);

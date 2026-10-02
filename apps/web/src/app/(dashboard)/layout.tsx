@@ -3,6 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { GuidedTour, startTour } from "@/components/guided-tour";
 import { getTourContext, type TourContext } from "@/lib/actions/onboarding";
+import { getReleaseState, type ReleaseState } from "@/lib/actions/releases";
+import { WhatsNewDialog } from "@/components/whats-new";
+import { ReportProblemDialog } from "@/components/report-problem";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +25,7 @@ import {
   LogOut,
   PlayCircle,
   LifeBuoy,
+  MessageSquareWarning,
   Menu,
   X,
 } from "lucide-react";
@@ -50,6 +54,8 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [firstVisit, setFirstVisit] = useState(false);
   const [tourContext, setTourContext] = useState<TourContext | null>(null);
+  const [releases, setReleases] = useState<ReleaseState | null>(null);
+  const [reporting, setReporting] = useState(false);
 
   // The tour starts by itself until she has finished or skipped it once, on
   // any device — it is recorded on her account.
@@ -60,6 +66,7 @@ export default function DashboardLayout({
         if (data.user && !data.user.user_metadata?.tour_completed_at) setFirstVisit(true);
       });
     getTourContext().then(setTourContext);
+    getReleaseState().then(setReleases);
   }, []);
 
   async function handleSignOut() {
@@ -119,12 +126,32 @@ export default function DashboardLayout({
             Take the tour
           </button>
           <button
+            onClick={() => {
+              setSidebarOpen(false);
+              setReporting(true);
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <MessageSquareWarning className="h-5 w-5 flex-shrink-0" />
+            Report a problem
+          </button>
+          <button
             onClick={handleSignOut}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <LogOut className="h-5 w-5 flex-shrink-0" />
             Sign Out
           </button>
+          {releases?.current && (
+            <Link
+              href="/help?tab=new"
+              onClick={() => setSidebarOpen(false)}
+              data-testid="app-version"
+              className="mt-1 block px-3 font-mono text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              v{releases.current} · what&rsquo;s new
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -186,6 +213,13 @@ export default function DashboardLayout({
         <Suspense fallback={null}>
           <GuidedTour autoStart={firstVisit} ctx={tourContext} />
         </Suspense>
+        {!firstVisit && releases && releases.unseen.length > 0 && (
+          <WhatsNewDialog
+            releases={releases.unseen}
+            onDone={() => setReleases((r) => (r ? { ...r, unseen: [] } : r))}
+          />
+        )}
+        <ReportProblemDialog open={reporting} onOpenChange={setReporting} />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">

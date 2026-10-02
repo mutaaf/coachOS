@@ -1,0 +1,58 @@
+name: Health
+
+# Every morning before she starts, and after the evening run: is everything
+# that should happen by itself still happening? Keeps one "Production health"
+# issue open while anything is wrong, with counts only (the repo is public),
+# and closes it when all is well again.
+
+on:
+  schedule:
+    - cron: "0 13 * * *" # 8am in Dallas
+    - cron: "30 18 * * *" # half an hour after the daily run
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ vars.APP_URL || 'https://app.risingstars.training' }}
+      HEALTH_SECRET: ${{ secrets.HEALTH_SECRET }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Ask production
+        id: ask
+        run: |
+          set -euo pipefail
+          body=$(curl -fsS -H "Authorization: Bearer $HEALTH_SECRET" "$APP_URL/api/health/deep") || body='{"ok":false,"checks":[{"name":"Health endpoint","ok":false,"detail":"unreachable"}]}'
+          echo "$body" | jq .
+          echo "ok=$(echo "$body" | jq -r .ok)" >> "$GITHUB_OUTPUT"
+          {
+            echo "report<<EOF"
+            echo "| | Check | |"
+            echo "|---|---|---|"
+            echo "$body" | jq -r '.checks[] | "| \(if .ok then "✅" else "❌" end) | \(.name) | \(.detail) |"'
+            echo ""
+            echo "Open problem reports from the Boss: $(echo "$body" | jq -r '.openReports // "?"')"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Keep the issue in step
+        env:
+          OK: ${{ steps.ask.outputs.ok }}
+          REPORT: ${{ steps.ask.outputs.report }}
+        run: |
+          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label health --json number --jq '.[0].number // empty')
+          if [ "$OK" = "true" ]; then
+            [ -n "$issue" ] && gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "All clear at $(date -u +%FT%TZ)."
+            exit 0
+          fi
+          body=$(printf '%s\n\n%s\n' "$REPORT" "Checked $(date -u +%FT%TZ). Most of these are something to look at in CoachOS rather than a code change — a stopped Gmail script is fixed by running it again." )
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh label create health --repo "$GITHUB_REPOSITORY" --color D93F0B 2>/dev/null || true
+            gh issue create --repo "$GITHUB_REPOSITORY" --label health --title "Production health" --body "$body"
+          fi

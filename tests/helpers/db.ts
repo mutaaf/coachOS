@@ -210,6 +210,11 @@ export async function truncateAll() {
       throw new Error(`Failed clearing ${table}: ${error.message}`);
     }
   }
+  // Reports first: a fixed one points at its release.
+  for (const [table, key] of [["problem_reports", "id"], ["releases", "version"]]) {
+    const { error } = await admin.from(table).delete().not(key, "is", null);
+    if (error) throw new Error(`Failed clearing ${table}: ${error.message}`);
+  }
   // Keyed by test case id, not a uuid.
   const { error } = await admin.from("acceptance_results").delete().neq("case_id", "");
   if (error) throw new Error(`Failed clearing acceptance_results: ${error.message}`);
@@ -236,7 +241,9 @@ export async function ensureTestUser() {
 
   // Marked as having taken the first-login tour: it starts by itself otherwise,
   // and would sit over every page every other test drives.
-  const user_metadata = { tour_completed_at: "2026-01-01T00:00:00Z" };
+  // Updates merge into what's there, so anything a test may have set is
+  // cleared by name.
+  const user_metadata = { tour_completed_at: "2026-01-01T00:00:00Z", last_seen_release: null, checklist_hidden: null };
 
   const { data: existing } = await authAdmin.auth.admin.listUsers();
   const already = existing?.users?.find((u) => u.email === TEST_USER.email);

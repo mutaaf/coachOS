@@ -223,6 +223,32 @@ something new bites — that is the point of it.**
 
 ---
 
+## Working as an agent
+
+Agents open pull requests all day; each merges itself when Checks pass and
+ships straight to the owner. See [docs/RELEASING.md](./docs/RELEASING.md).
+
+- **PR title is a conventional commit** (`feat(payments): …`, `fix(zelle): …`).
+  It becomes the commit and decides the version. `!` only for a real break.
+- **Say what changes for her** in the PR body, in one plain sentence, and
+  `Fixes #N` for the issue — that is how her report shows "Fixed in vX.Y.Z".
+- **Anything she sees differently updates the tour, Help and the test plan**
+  in the same PR: a stop in `guided-tour.tsx` (new stops are offered to the
+  release notes for "Show me"), a guide in `lib/help/content.ts`, a case in
+  `lib/help/acceptance-cases.json`.
+- **Every new server action starts with `signedIn()`/`requireSignedIn()`.**
+  `action-guards.test.ts` fails otherwise; never add to its `PUBLIC` list
+  without a reason that holds up.
+- **Migrations are new, additive files** sorting after the newest on main.
+  Production runs them before the new code is live; the old code must still work.
+- **Tests first for bugs.** A failing test that shows the bug, then the fix.
+- **Never touch production data** or run anything against the hosted project.
+  The tests refuse to; don't work around that.
+- **The owner is "Boss" in the UI**, and not technical: plain words in anything
+  she reads.
+
+---
+
 ## Deployment
 
 ### Web (Vercel)
