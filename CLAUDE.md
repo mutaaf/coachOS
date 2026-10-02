@@ -226,6 +226,8 @@ something new bites — that is the point of it.**
 | `supabase stop` misses orphaned stacks | It only stops this project's containers. A stack started from another directory, or orphaned by a `start` over a half-dead one, keeps running and holds the VM open — 20 containers were once left up this way. `npm run down` now sweeps any `supabase_*` container. |
 | Autopay and Zelle logic is not `"use server"` | Every export of a `"use server"` module is a public endpoint, callable from any page — including the signed-out `/pay` and `/join` pages. `lib/autopay.ts` charges cards, so it is a plain module reached only from the cron, the webhook, and token-checked actions. |
 | Bank debits sit in `processing` for days | The overdue sweeps only move `pending`. Anything new that marks invoices overdue must leave `processing` alone, or families are chased for money already on its way. |
+| The Supabase CLI was linked to a different project | `supabase/.temp/project-ref` pointed at an unrelated project ("Jarvis"), so `npm run db:migrate` would have pushed CoachOS tables into it. Run `npx supabase migration list` and check the reference is `anzzhodsulqygshhptzt` before any push. |
+| The Anthropic SDK's zod helper wants zod 4 | `zod@3.25` ships v4 under a subpath: import `{ z } from "zod/v4"` where a schema goes to `betaZodOutputFormat`, or it fails to typecheck. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---
@@ -235,7 +237,7 @@ something new bites — that is the point of it.**
 ### Web (Vercel)
 - Deployed via Vercel with automatic git deploys
 - `vercel.json` configures daily cron at `/api/cron/daily-reminders` (6 PM UTC)
-- Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`
+- Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `APP_URL` (the address in parents' links), `ANTHROPIC_API_KEY` (reading roster screenshots; CSV import works without it)
 
 ### WhatsApp Bot (Railway)
 - Deployed via Railway using the Dockerfile

@@ -1,5 +1,7 @@
 "use client";
 
+import { RosterImportDialog, type ImportSchoolOption } from "@/components/roster-import-dialog";
+
 import { useState } from "react";
 import Link from "next/link";
 import { School as SchoolIcon, MapPin, Users, Plus, GraduationCap, Upload } from "lucide-react";
@@ -16,6 +18,7 @@ type SchoolWithCounts = School & {
 
 interface SchoolsPageClientProps {
   schools: SchoolWithCounts[];
+  importOptions: ImportSchoolOption[];
 }
 
 function getStatusBadgeVariant(
@@ -33,7 +36,8 @@ function getStatusBadgeVariant(
   }
 }
 
-export function SchoolsPageClient({ schools }: SchoolsPageClientProps) {
+export function SchoolsPageClient({ schools, importOptions }: SchoolsPageClientProps) {
+  const [rosterOpen, setRosterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | undefined>(
@@ -53,19 +57,23 @@ export function SchoolsPageClient({ schools }: SchoolsPageClientProps) {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Schools</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage your partner schools and programs
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <Button onClick={() => setRosterOpen(true)} className="gap-2">
+            <Users className="h-4 w-4" />
+            Import a roster
+          </Button>
           <Button variant="outline" onClick={() => setBulkOpen(true)} className="gap-2">
             <Upload className="h-4 w-4" />
             Bulk Import
           </Button>
-          <Button onClick={handleAddSchool} className="gap-2">
+          <Button variant="outline" onClick={handleAddSchool} className="gap-2">
             <Plus className="h-4 w-4" />
             Add School
           </Button>
@@ -81,13 +89,19 @@ export function SchoolsPageClient({ schools }: SchoolsPageClientProps) {
           </div>
           <h3 className="text-lg font-semibold">No schools yet</h3>
           <p className="text-sm text-muted-foreground mt-1 mb-4 text-center max-w-sm">
-            Get started by adding your first partner school. You can then create
-            programs and enroll students.
+            The quickest start: import a session&apos;s roster from a screenshot or
+            a spreadsheet. The school and session are created as you go.
           </p>
-          <Button onClick={handleAddSchool} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add your first school
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={() => setRosterOpen(true)} className="gap-2">
+              <Users className="h-4 w-4" />
+              Import a roster
+            </Button>
+            <Button variant="outline" onClick={handleAddSchool} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add a school by hand
+            </Button>
+          </div>
         </div>
       ) : (
         /* School cards grid */
@@ -160,6 +174,7 @@ export function SchoolsPageClient({ schools }: SchoolsPageClientProps) {
         }}
         school={editingSchool}
       />
+      <RosterImportDialog open={rosterOpen} onOpenChange={setRosterOpen} schools={importOptions} />
     </>
   );
 }

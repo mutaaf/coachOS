@@ -15,6 +15,9 @@ import { SchoolDetailClient } from "@/components/school-detail-client";
 // page keeps serving whatever the database held when it was deployed.
 export const dynamic = "force-dynamic";
 
+// Reading roster screenshots takes up to a minute; the default limit would cut it off.
+export const maxDuration = 120;
+
 interface SchoolDetailPageProps {
   params: { schoolId: string };
 }

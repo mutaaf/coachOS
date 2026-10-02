@@ -23,6 +23,7 @@ import {
   Trash2,
   Link2,
   Archive,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ import { EnrollStudentDialog } from "@/components/enroll-student-dialog";
 import { StudentFormDialog } from "@/components/student-form-dialog";
 import { RecordPaymentDialog } from "@/components/record-payment-dialog";
 import { LinkParentDialog } from "@/components/link-parent-dialog";
+import { RosterImportDialog } from "@/components/roster-import-dialog";
 import { deleteScheduleTemplate } from "@/lib/actions/schedule";
 import { archiveSchool } from "@/lib/actions/schools";
 import { withdrawEnrollment } from "@/lib/actions/students";
@@ -146,6 +148,8 @@ export function SchoolDetailClient({
 }: SchoolDetailClientProps) {
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // undefined = closed; null = open for a new session at this school.
+  const [rosterProgramId, setRosterProgramId] = useState<string | null | undefined>();
   const [programDialogOpen, setProgramDialogOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | undefined>();
   const [duplicatingProgram, setDuplicatingProgram] = useState<
@@ -409,6 +413,10 @@ export function SchoolDetailClient({
                   {programs.length}{" "}
                   {programs.length === 1 ? "program" : "programs"}
                 </span>
+                <Button size="sm" variant="outline" onClick={() => setRosterProgramId(null)}>
+                  <Upload className="h-4 w-4 mr-1" />
+                  Import roster
+                </Button>
                 <Button size="sm" onClick={handleAddProgram}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add Program
@@ -466,6 +474,15 @@ export function SchoolDetailClient({
                       <Badge variant={getProgramStatusVariant(program.status)}>
                         {program.status}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRosterProgramId(program.id)}
+                        title="Import this session's roster"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        <span className="sr-only">Import roster</span>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1036,6 +1053,21 @@ export function SchoolDetailClient({
         onOpenChange={handleTemplateDialogClose}
         programs={programs.map((p) => ({ id: p.id, name: p.name }))}
         template={editingTemplate}
+      />
+      <RosterImportDialog
+        open={rosterProgramId !== undefined}
+        onOpenChange={(open) => !open && setRosterProgramId(undefined)}
+        schools={[
+          {
+            id: school.id,
+            name: school.name,
+            programs: programs
+              .filter((p) => p.status !== "cancelled" && p.status !== "completed")
+              .map((p) => ({ id: p.id, name: p.name, monthly_fee: Number(p.monthly_fee) })),
+          },
+        ]}
+        initialSchoolId={school.id}
+        initialProgramId={rosterProgramId ?? undefined}
       />
     </div>
   );

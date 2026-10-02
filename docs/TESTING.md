@@ -121,6 +121,15 @@ claim a name that belongs to another family.
 
 Each safeguard was checked by removing it and watching its test fail.
 
+### Roster import — `tests/integration/roster.test.ts`, `tests/e2e/roster-import.spec.ts`
+
+What it must never do is duplicate a family — that would mean two payment
+links and every reminder sent twice. Covered: the same list imported twice, one
+phone typed two ways, a family with children in two sessions, and a parent who
+registered through the website first. The screenshot reader is tested against
+a fake client for what it sends and how it fails; the wizard is driven end to
+end from an empty dashboard with a CSV, which needs no model.
+
 ### Dates — `tests/integration/dates.test.ts`
 
 `toISOString()` converts to UTC first, so from 7pm in Dallas it reports tomorrow.

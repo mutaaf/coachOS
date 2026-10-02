@@ -5,6 +5,17 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- **Roster import from a screenshot, a CSV, or pasted text.** "Import a roster"
+  on the Schools page (and on each session) picks or creates the school and the
+  session, reads the list, and shows every child on a review screen to correct
+  before anything is saved. Screenshots — a spreadsheet, a sign-up sheet, a
+  WhatsApp group's member list — are read by Claude (`claude-opus-5-5`, needs
+  `ANTHROPIC_API_KEY`); a CSV or pasted table with recognisable headers is read
+  locally, with no model. Importing never duplicates: a parent is matched by
+  phone in any format, a child by first name under that parent, and re-importing
+  a list only reports who is already on the roster
+
+### Added
 - **Autopay.** Each parent has a private payment page, `/pay/{token}`, linked
   from WhatsApp. They can save a bank account (no fee) or a card (with the
   `card_fee_percent` setting added, shown before they choose) through Stripe,

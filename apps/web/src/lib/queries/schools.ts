@@ -303,3 +303,20 @@ export async function getSchoolInvoices(schoolId: string): Promise<SchoolInvoice
     students: undefined,
   }));
 }
+
+/** Schools and their sessions, for the roster import wizard's pickers. */
+export async function getImportOptions() {
+  const supabase = createAdminSupabase();
+  const { data } = await supabase
+    .from("schools")
+    .select("id, name, programs(id, name, monthly_fee, status)")
+    .neq("status", "archived")
+    .order("name");
+  return (data || []).map((s: any) => ({
+    id: s.id as string,
+    name: s.name as string,
+    programs: (s.programs || [])
+      .filter((p: any) => p.status !== "cancelled" && p.status !== "completed")
+      .map((p: any) => ({ id: p.id as string, name: p.name as string, monthly_fee: Number(p.monthly_fee) })),
+  }));
+}
