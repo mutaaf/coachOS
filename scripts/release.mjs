@@ -59,7 +59,8 @@ if (last) {
     stepsBefore = tourStepIdsFromSource(git("show", `v${last}:${TOUR}`));
   } catch {}
 }
-const newSteps = stepsNow.filter((s) => !stepsBefore.includes(s));
+// The first release has nothing to compare with: nothing is "new".
+const newSteps = last ? stepsNow.filter((s) => !stepsBefore.includes(s)) : [];
 
 // Notes she'll read ------------------------------------------------------
 function askClaude() {

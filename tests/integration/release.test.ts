@@ -78,6 +78,9 @@ describe("the notes", () => {
     const n = fallbackNotes("1.2.3", [c("feat(payments): record cash from anyone"), c("fix: zelle timer"), c("chore: x")], ["record-payment"]);
     expect(n.notes).toEqual([{ text: "Record cash from anyone", tourStep: "record-payment" }, { text: "Fixed: Zelle timer" }]);
     expect(n.title.length).toBeGreaterThan(3);
+    // Two features, two new stops: no guessing which goes with which.
+    const two = fallbackNotes("1.3.0", [c("feat: a"), c("feat: b")], ["x", "y"]);
+    expect(two.notes.every((x: any) => !x.tourStep)).toBe(true);
   });
 });
 
