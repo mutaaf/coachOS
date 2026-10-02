@@ -229,6 +229,8 @@ something new bites — that is the point of it.**
 | The Supabase CLI was linked to a different project | `supabase/.temp/project-ref` pointed at an unrelated project ("Jarvis"), so `npm run db:migrate` would have pushed CoachOS tables into it. Run `npx supabase migration list` and check the reference is `anzzhodsulqygshhptzt` before any push. |
 | The Anthropic SDK's zod helper wants zod 4 | `zod@3.25` ships v4 under a subpath: import `{ z } from "zod/v4"` where a schema goes to `betaZodOutputFormat`, or it fails to typecheck. |
 | Never assert a "pending" invoice for the current month | Invoices fall due on the 1st, so from the 2nd the app correctly calls them overdue. Three tests asserted "pending" and passed only on the day they were written. Use next month, or accept pending-or-overdue. |
+| PostgREST can miss a table after `supabase db reset` | Tests fail with "Could not find the table 'ops.x' in the schema cache" though the table exists. `NOTIFY pgrst, 'reload schema';` in the db container fixes it. |
+| Email goes out from risingstars.training via Resend | DNS is at Namecheap, which also forwards the domain's mail. Resend's records live on `send`, `rsend`, `resend._domainkey` and `_dmarc` — never touch the root MX or SPF, or forwarding breaks. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---
@@ -238,7 +240,7 @@ something new bites — that is the point of it.**
 ### Web (Vercel)
 - Deployed via Vercel with automatic git deploys
 - `vercel.json` configures daily cron at `/api/cron/daily-reminders` (6 PM UTC)
-- Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `APP_URL` (the address in parents' links), `ANTHROPIC_API_KEY` (reading roster screenshots; CSV import works without it)
+- Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `APP_URL` (the address in parents' links), `ANTHROPIC_API_KEY` (reading roster screenshots; CSV import works without it), `RESEND_API_KEY` (parent emails; without it they are logged as skipped)
 
 ### WhatsApp Bot (Railway)
 - Deployed via Railway using the Dockerfile

@@ -4,6 +4,23 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Added
+- **Email that sends itself**, through Resend from payments@risingstars.training,
+  to families with an email on file: a receipt for every payment (autopay,
+  matched Zelle, recorded by hand, or a Stripe invoice), a failed-payment
+  notice, the payment-page invite, and the overdue reminder. WhatsApp stays the
+  main channel through the Outbox; email is in addition. Each email is keyed by
+  the event it reports, so a redelivered webhook or re-run cron sends nothing
+  twice, and a send that fails is logged rather than thrown
+- Families can leave an email for receipts on their payment page; the page only
+  ever shows it masked
+
+### Fixed
+- **Overdue reminders repeated every day.** The cron reminded every invoice
+  overdue by three days *or more*, so an unpaid invoice was chased daily. Each
+  invoice is now reminded once (`invoices.reminded_at`), and a family's overdue
+  invoices are one reminder rather than one per child
+
 ### Changed
 - **One autopay charge per family.** All of a family's due invoices — two
   children, or this month plus an unpaid earlier one — go into a single charge,

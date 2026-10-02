@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Copy, Landmark, CreditCard, Lock, Hourglass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { startAutopaySetup, turnOffAutopay, rememberZelleName } from "@/lib/actions/pay-page";
+import { startAutopaySetup, turnOffAutopay, rememberZelleName, saveParentEmail } from "@/lib/actions/pay-page";
 import type { PayPageData, PayPageLine } from "@/lib/queries/pay-page";
 
 const money = (cents: number) =>
@@ -64,6 +64,8 @@ export function PayPage({
   const [zelleName, setZelleName] = useState("");
   const [zelleSaved, setZelleSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailSaved, setEmailSaved] = useState(false);
   const [, startTransition] = useTransition();
 
   const { parent } = data;
@@ -102,6 +104,21 @@ export function PayPage({
     } else {
       setZelleSaved(true);
       setZelleName("");
+      startTransition(() => router.refresh());
+    }
+    setBusy(null);
+  }
+
+  async function saveEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy("email");
+    setError(null);
+    const result = await saveParentEmail(token, email);
+    if ("error" in result && result.error) {
+      setError(result.error);
+    } else {
+      setEmailSaved(true);
+      setEmail("");
       startTransition(() => router.refresh());
     }
     setBusy(null);
@@ -391,6 +408,39 @@ export function PayPage({
             </form>
           </section>
         )}
+
+        {/* Receipts */}
+        <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
+          <form onSubmit={saveEmail}>
+            <label htmlFor="receipt_email" className="font-semibold text-slate-900">
+              Receipts by email
+            </label>
+            <p className="mt-0.5 text-sm text-slate-600">
+              {parent.emailHint
+                ? `We send a receipt to ${parent.emailHint} whenever a payment comes in. Change it below.`
+                : "Get a receipt whenever a payment comes in — handy for your records or an employer."}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Input
+                id="receipt_email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailSaved(false);
+                }}
+                placeholder="you@example.com"
+                className="h-11"
+              />
+              <Button type="submit" className="h-11" disabled={busy !== null || !email.trim()}>
+                {busy === "email" ? "Saving…" : "Save"}
+              </Button>
+            </div>
+            {emailSaved && <p className="mt-2 text-xs text-emerald-700">Saved — receipts will go there.</p>}
+          </form>
+        </section>
 
         <p className="mt-8 text-center text-xs text-slate-500">
           Questions? Message us on WhatsApp.

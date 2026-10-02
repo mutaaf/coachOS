@@ -3,6 +3,7 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { businessMonth } from "@/lib/dates";
 import { recalculateInvoiceStatus } from "@/lib/invoice-status";
+import { emailReceipt } from "@/lib/parent-emails";
 import { revalidatePath } from "next/cache";
 
 export async function generateMonthlyInvoices(month?: string) {
@@ -99,17 +100,22 @@ export async function recordPayment(formData: FormData) {
   const reference = formData.get("reference") as string;
   const notes = formData.get("notes") as string;
 
-  const { error } = await supabase.from("payments").insert({
-    invoice_id: invoiceId,
-    amount,
-    method,
-    reference: reference || null,
-    notes: notes || null,
-  });
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      invoice_id: invoiceId,
+      amount,
+      method,
+      reference: reference || null,
+      notes: notes || null,
+    })
+    .select("id")
+    .single();
 
   if (error) throw error;
 
   await recalculateInvoiceStatus(supabase, invoiceId);
+  await emailReceipt(supabase, { paymentIds: [payment.id], parentId: null, dedupeKey: `receipt:${payment.id}` });
 
   revalidatePath("/payments");
   revalidatePath("/dashboard");

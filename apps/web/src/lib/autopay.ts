@@ -5,6 +5,7 @@ import { renderTemplate } from "shared";
 import { businessToday } from "@/lib/dates";
 import { payLink } from "@/lib/app-url";
 import { recalculateInvoiceStatus, toCents } from "@/lib/invoice-status";
+import { emailPaymentFailed, emailReceipt } from "@/lib/parent-emails";
 
 /**
  * Autopay: a parent saves a bank account or card once, and each invoice is
@@ -226,6 +227,24 @@ export async function settleAutopay(supabase: OpsClient, pi: Stripe.PaymentInten
       .eq("id", split.invoiceId);
     await recalculateInvoiceStatus(supabase, split.invoiceId);
   }
+
+  // One receipt for the charge, however many invoices it covered and however
+  // many times this runs for it.
+  const splits = chargeSplits(pi);
+  if (splits.length) {
+    const { data: rows } = await supabase
+      .from("payments")
+      .select("id")
+      .in(
+        "external_id",
+        splits.map((x) => `${pi.id}:${x.invoiceId}`)
+      );
+    await emailReceipt(supabase, {
+      paymentIds: (rows || []).map((r) => r.id),
+      parentId: pi.metadata?.parent_id ?? null,
+      dedupeKey: `receipt:${pi.id}`,
+    });
+  }
 }
 
 function listNames(names: string[]) {
@@ -297,6 +316,14 @@ export async function failAutopay(
       pay_link: payLink(parent.pay_token),
     })
   );
+
+  await emailPaymentFailed(supabase, {
+    parentId: opts.parentId,
+    childNames: listNames((flipped as any[]).map((i) => i.students?.first_name)),
+    owedCents,
+    reason: shortReason(opts.reason),
+    dedupeKey: `failed:${opts.paymentIntentId ?? [...opts.invoiceIds].sort().join(",")}`,
+  });
 }
 
 export interface ChargeRunResult {

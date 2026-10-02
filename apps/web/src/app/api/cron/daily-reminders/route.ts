@@ -5,6 +5,8 @@ import { renderTemplate } from "shared";
 import { generateMonthlyInvoices } from "@/lib/actions/payments";
 import { chargeDueAutopay } from "@/lib/autopay";
 import { payLink } from "@/lib/app-url";
+import { toCents } from "@/lib/invoice-status";
+import { emailReminder } from "@/lib/parent-emails";
 import { getStripeClient } from "@/lib/stripe-client";
 
 export async function GET(request: NextRequest) {
@@ -120,39 +122,76 @@ export async function GET(request: NextRequest) {
       .eq("status", "pending")
       .lt("due_date", businessToday());
 
+    // Once per invoice, however many days it stays unpaid; and once per family
+    // per run, so two children's invoices are one reminder, not two.
     const { data: overdueInvoices } = await supabase
       .from("invoices")
-      .select("*, parents(*), students(*), programs(*)")
+      .select("*, parents(*), students(*), programs(*), payments(amount)")
       .eq("status", "overdue")
-      .lte("due_date", cutoffStr);
+      .lte("due_date", cutoffStr)
+      .is("reminded_at", null)
+      .order("due_date");
 
     const template = await getTemplate("payment_reminder");
 
+    const byParent = new Map<string, any[]>();
     for (const invoice of overdueInvoices || []) {
-      const parent = invoice.parents as any;
-      const student = invoice.students as any;
-      const program = invoice.programs as any;
+      const list = byParent.get(invoice.parent_id) ?? [];
+      list.push(invoice);
+      byParent.set(invoice.parent_id, list);
+    }
 
-      if (!parent?.phone) continue;
+    const names = (xs: string[]) => {
+      const u = [...new Set(xs.filter(Boolean))];
+      return u.length <= 1 ? u[0] ?? "" : `${u.slice(0, -1).join(", ")} and ${u[u.length - 1]}`;
+    };
+    const owed = (inv: any) =>
+      toCents(inv.amount) - (inv.payments || []).reduce((s: number, p: any) => s + toCents(p.amount), 0);
 
-      const message = renderTemplate(template, {
-        parent_name: parent.first_name,
-        student_name: `${student.first_name}`,
-        program_name: program?.name || "",
-        month: invoice.month,
-        amount: `$${invoice.amount}`,
-        payment_method: parent.preferred_payment || "cash",
-        pay_link: parent.pay_token ? payLink(parent.pay_token) : "",
+    for (const invoices of byParent.values()) {
+      const parent = invoices[0].parents as any;
+      if (!parent) continue;
+      const totalCents = invoices.reduce((s, inv) => s + owed(inv), 0);
+
+      if (parent.phone) {
+        const message = renderTemplate(template, {
+          parent_name: parent.first_name,
+          student_name: names(invoices.map((i) => i.students?.first_name)),
+          program_name: names(invoices.map((i) => i.programs?.name)),
+          month: names(invoices.map((i) => i.month)),
+          amount: `$${(totalCents / 100).toFixed(2)}`,
+          payment_method: parent.preferred_payment || "cash",
+          pay_link: parent.pay_token ? payLink(parent.pay_token) : "",
+        });
+
+        await supabase.from("message_queue").insert({
+          recipient_phone: parent.phone,
+          recipient_name: `${parent.first_name} ${parent.last_name}`,
+          message,
+          status: "pending",
+          attempts: 0,
+          max_attempts: 3,
+        });
+      }
+
+      await emailReminder(supabase, {
+        parentId: parent.id,
+        lines: invoices.map((inv) => ({
+          childName: inv.students?.first_name ?? "",
+          programName: inv.programs?.name ?? "",
+          month: inv.month,
+          cents: owed(inv),
+        })),
+        dedupeKey: `reminder:${invoices.map((i) => i.id).sort().join(",")}`,
       });
 
-      await supabase.from("message_queue").insert({
-        recipient_phone: parent.phone,
-        recipient_name: `${parent.first_name} ${parent.last_name}`,
-        message,
-        status: "pending",
-        attempts: 0,
-        max_attempts: 3,
-      });
+      await supabase
+        .from("invoices")
+        .update({ reminded_at: new Date().toISOString() })
+        .in(
+          "id",
+          invoices.map((i) => i.id)
+        );
 
       results.paymentReminders = (results.paymentReminders as number) + 1;
     }

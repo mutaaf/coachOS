@@ -185,6 +185,8 @@ export async function truncateAll() {
   for (const table of [
     "attendance",
     "message_queue",
+    "message_log",
+    "emails",
     "registrations",
     "enrollments",
     "student_parents",

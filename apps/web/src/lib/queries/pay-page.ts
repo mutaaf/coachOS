@@ -2,6 +2,12 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import { openInvoicesForFamily, toCents } from "@/lib/invoice-status";
 import type { AutopayMethod } from "@/lib/autopay";
 
+export function maskEmail(email: string | null): string | null {
+  if (!email || !email.includes("@")) return null;
+  const [user, domain] = email.trim().split("@");
+  return `${user.slice(0, 1)}•••@${domain}`;
+}
+
 /** Tokens are 24 URL-safe characters; anything else is not worth a query. */
 export function isPayToken(token: string): boolean {
   return /^[A-Za-z0-9_-]{20,64}$/.test(token);
@@ -25,6 +31,8 @@ export interface PayPageData {
     autopayMethod: AutopayMethod | null;
     autopayLabel: string | null;
     autopayVerifyUrl: string | null;
+    /** Masked — "r•••@gmail.com" — since the page is shared by link. */
+    emailHint: string | null;
   };
   childNames: string[];
   open: PayPageLine[];
@@ -51,7 +59,7 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
 
   const { data: parent } = await supabase
     .from("parents")
-    .select("id, first_name, autopay_status, autopay_method, autopay_label, autopay_verify_url")
+    .select("id, first_name, email, autopay_status, autopay_method, autopay_label, autopay_verify_url")
     .eq("pay_token", token)
     .maybeSingle();
   if (!parent) return null;
@@ -119,6 +127,7 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
       autopayMethod: parent.autopay_method,
       autopayLabel: parent.autopay_label,
       autopayVerifyUrl: parent.autopay_verify_url,
+      emailHint: maskEmail(parent.email),
     },
     childNames,
     open,

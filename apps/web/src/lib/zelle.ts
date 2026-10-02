@@ -4,6 +4,7 @@ import {
   recalculateInvoiceStatus,
   type OpenInvoice,
 } from "@/lib/invoice-status";
+import { emailReceipt } from "@/lib/parent-emails";
 
 /**
  * Zelle has no API. What it does have is the email every bank sends when money
@@ -193,8 +194,9 @@ export async function applyReceipt(
   allocations: Allocation[],
   note: string | null = null
 ) {
+  const paymentIds: string[] = [];
   for (const { invoice, cents } of allocations) {
-    const { error } = await supabase.from("payments").insert({
+    const { data: inserted, error } = await supabase.from("payments").insert({
       invoice_id: invoice.id,
       amount: cents / 100,
       method: "zelle",
@@ -202,8 +204,9 @@ export async function applyReceipt(
       received_at: receipt.received_at,
       notes: receipt.memo,
       zelle_receipt_id: receipt.id,
-    });
+    }).select("id").single();
     if (error) return { error: error.message };
+    paymentIds.push(inserted.id);
     await recalculateInvoiceStatus(supabase, invoice.id);
   }
 
@@ -212,6 +215,13 @@ export async function applyReceipt(
     .update({ status: "matched", parent_id: parentId, note })
     .eq("id", receipt.id);
   if (error) return { error: error.message };
+
+  await emailReceipt(supabase, {
+    paymentIds,
+    parentId,
+    method: "Zelle",
+    dedupeKey: `receipt:zelle:${receipt.id}`,
+  });
 
   return { success: true as const };
 }

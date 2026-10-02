@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { STRIPE_API_VERSION } from "@/lib/stripe-client";
 import { recalculateInvoiceStatus } from "@/lib/invoice-status";
+import { emailReceipt } from "@/lib/parent-emails";
 import { chargeSplits, failAutopay, saveSetupIntent, settleAutopay } from "@/lib/autopay";
 
 async function getStripeConfig() {
@@ -60,6 +61,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       await recalculateInvoiceStatus(supabase, invoiceId);
+      const { data: paid } = await supabase
+        .from("payments")
+        .select("id")
+        .eq("external_id", stripeInvoice.id);
+      await emailReceipt(supabase, {
+        paymentIds: (paid || []).map((p) => p.id),
+        parentId: null,
+        method: "card",
+        dedupeKey: `receipt:${stripeInvoice.id}`,
+      });
       break;
     }
 

@@ -8,6 +8,7 @@ import { appUrl } from "@/lib/app-url";
 import { getOrCreateStripeCustomer } from "@/lib/actions/stripe";
 import { isPayToken } from "@/lib/queries/pay-page";
 import { findSender, senderKey } from "@/lib/zelle";
+import { isEmail } from "@/lib/email";
 
 /**
  * What a parent can do from their payment page.
@@ -143,5 +144,16 @@ export async function rememberZelleName(token: string, name: string) {
     .upsert({ sender_key: key, parent_id: parent.id }, { onConflict: "sender_key" });
   if (error) return { error: error.message };
 
+  return { success: true };
+}
+
+/** Where receipts go. Replacing it is fine; the page never shows it in full. */
+export async function saveParentEmail(token: string, email: string) {
+  const parent = await parentForToken(token);
+  if (!parent) return NOT_FOUND;
+  const value = String(email ?? "").trim().toLowerCase().slice(0, 200);
+  if (!isEmail(value)) return { error: "That doesn't look like an email address." };
+  const { error } = await createAdminSupabase().from("parents").update({ email: value }).eq("id", parent.id);
+  if (error) return { error: error.message };
   return { success: true };
 }

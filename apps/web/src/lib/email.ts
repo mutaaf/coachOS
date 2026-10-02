@@ -1,0 +1,105 @@
+import { Resend } from "resend";
+import type { OpsClient } from "@/lib/supabase/types";
+
+/**
+ * Email to a parent, at most once per event, never in the way of the payment.
+ *
+ * Every send is recorded in `emails` under a key naming the event it is about
+ * ("receipt:pi_123"). A webhook redelivered, a cron re-run, two paths reporting
+ * the same payment — the second insert finds the key taken and nothing goes
+ * out. The same key is passed to Resend as its idempotency key, which covers
+ * the one gap left: a request that reached Resend but whose reply was lost.
+ *
+ * This never throws. An email that fails is a row marked failed; it must not
+ * turn a payment that went through into an error.
+ */
+
+export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder";
+
+export interface OutgoingEmail {
+  kind: EmailKind;
+  dedupeKey: string;
+  parentId: string | null;
+  to: string | null | undefined;
+  subject: string;
+  text: string;
+  html: string;
+}
+
+type Sender = Pick<Resend, "emails">;
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isEmail(value: string | null | undefined): value is string {
+  return !!value && EMAIL.test(value.trim());
+}
+
+export type SendOutcome = "sent" | "failed" | "skipped" | "duplicate" | "no_address" | "disabled";
+
+export async function sendEmail(
+  supabase: OpsClient,
+  email: OutgoingEmail,
+  sender: Sender | null = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+): Promise<SendOutcome> {
+  try {
+    if (!isEmail(email.to)) return "no_address";
+    const to = email.to.trim();
+
+    const { data: config } = await supabase
+      .from("config")
+      .select("key, value")
+      .in("key", ["emails_enabled", "email_from", "email_reply_to"]);
+    const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
+    if (c.emails_enabled !== "true") return "disabled";
+
+    const { data: row } = await supabase
+      .from("emails")
+      .upsert(
+        {
+          dedupe_key: email.dedupeKey,
+          kind: email.kind,
+          parent_id: email.parentId,
+          to_address: to,
+          subject: email.subject,
+          body_text: email.text,
+        },
+        { onConflict: "dedupe_key", ignoreDuplicates: true }
+      )
+      .select("id")
+      .maybeSingle();
+    if (!row) return "duplicate";
+
+    if (!sender) {
+      await supabase
+        .from("emails")
+        .update({ status: "skipped", error: "Email sending isn't set up (no RESEND_API_KEY)." })
+        .eq("id", row.id);
+      return "skipped";
+    }
+
+    const { data, error } = await sender.emails.send(
+      {
+        from: c.email_from || "Rising Stars <payments@risingstars.training>",
+        to,
+        ...(isEmail(c.email_reply_to) ? { replyTo: c.email_reply_to.trim() } : {}),
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      },
+      { idempotencyKey: email.dedupeKey.slice(0, 256) }
+    );
+
+    await supabase
+      .from("emails")
+      .update(
+        error
+          ? { status: "failed", error: error.message }
+          : { status: "sent", provider_id: data?.id ?? null, sent_at: new Date().toISOString() }
+      )
+      .eq("id", row.id);
+    return error ? "failed" : "sent";
+  } catch (err) {
+    console.error("Email failed", email.dedupeKey, err);
+    return "failed";
+  }
+}

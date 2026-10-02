@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { renderTemplate } from "shared";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { payLink } from "@/lib/app-url";
+import { businessToday } from "@/lib/dates";
+import { emailInvite } from "@/lib/parent-emails";
 
 /**
  * Families with a child on an active roster who are not on autopay yet, and
@@ -71,6 +73,18 @@ export async function inviteFamiliesToAutopay() {
 
   const { error } = await supabase.from("message_queue").insert(rows);
   if (error) return { error: error.message };
+
+  // Families with an email get it there too — once a day at most, however many
+  // times the button is pressed.
+  const today = businessToday();
+  for (const p of families) {
+    const names: string[] = p.children;
+    await emailInvite(supabase, {
+      parentId: p.id,
+      childNames: names.length <= 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`,
+      dedupeKey: `invite:${p.id}:${today}`,
+    });
+  }
 
   revalidatePath("/messaging");
   revalidatePath("/payments");

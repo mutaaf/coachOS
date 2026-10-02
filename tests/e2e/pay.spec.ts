@@ -114,8 +114,9 @@ test("a parent can say whose Zelle account the money comes from", async ({ page 
   const { token, parentId } = await family();
 
   await page.goto(`/pay/${token}`);
-  await page.getByLabel(/someone else.s name/i).fill("Miguel Garcia");
-  await page.getByRole("button", { name: /^save$/i }).click();
+  const zelleName = page.getByLabel(/someone else.s name/i);
+  await zelleName.fill("Miguel Garcia");
+  await page.locator("form", { has: zelleName }).getByRole("button", { name: /^save$/i }).click();
 
   await expect(page.getByText("Saved — thank you.")).toBeVisible();
   await expect(page.getByText(/We.ll recognise: Miguel Garcia/)).toBeVisible();
@@ -136,6 +137,21 @@ test("autopay can be turned off from the same page, in two taps", async ({ page 
   await expect(page.getByText("Pay automatically")).toBeVisible();
   const { data } = await admin.from("parents").select("autopay_status").eq("id", parentId).single();
   expect(data!.autopay_status).toBe("off");
+});
+
+test("a parent can leave an email for receipts, and the page never shows it in full", async ({ page }) => {
+  const { token, parentId } = await family();
+
+  await page.goto(`/pay/${token}`);
+  const field = page.getByLabel("Receipts by email");
+  await field.fill("Raquel.Garcia@Example.com");
+  await page.locator("form", { has: field }).getByRole("button", { name: /^save$/i }).click();
+
+  await expect(page.getByText("Saved — receipts will go there.")).toBeVisible();
+  await expect(page.getByText(/We send a receipt to r•••@example\.com/)).toBeVisible();
+  await expect(page.getByText("raquel.garcia@example.com")).toHaveCount(0);
+  const { data } = await admin.from("parents").select("email").eq("id", parentId).single();
+  expect(data!.email).toBe("raquel.garcia@example.com");
 });
 
 test("a link that doesn't belong to anyone shows nothing", async ({ page }) => {
