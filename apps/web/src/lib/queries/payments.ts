@@ -1,5 +1,6 @@
+import { getStripeSettings, stripeReady } from "@/lib/stripe-client";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { businessToday } from "@/lib/dates";
+import { businessMonth, businessToday } from "@/lib/dates";
 
 export async function getInvoices(filters?: {
   status?: string;
@@ -52,31 +53,37 @@ export async function getPayments(filters?: {
   return data || [];
 }
 
+/**
+ * The four cards on the Payments page.
+ *
+ * Pending and Overdue are what is still owed — a $100 invoice with $40 paid
+ * counts $60, not $100. "This month" is the month in Central time: on the last
+ * evening of a month it is still that month, whatever the server's clock says.
+ */
 export async function getPaymentSummary() {
   const supabase = createAdminSupabase();
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const currentMonth = businessMonth();
 
-  const [invoicesRes, paymentsRes, overdueRes, monthPayRes] = await Promise.all([
-    supabase.from("invoices").select("amount, status"),
-    supabase.from("payments").select("amount"),
-    supabase.from("invoices").select("amount").eq("status", "overdue"),
-    supabase
-      .from("payments")
-      .select("amount")
-      .gte("received_at", `${currentMonth}-01`),
+  const [invoicesRes, paymentsRes] = await Promise.all([
+    supabase.from("invoices").select("amount, status, payments(amount)"),
+    supabase.from("payments").select("amount, received_at"),
   ]);
 
-  const totalRevenue = (paymentsRes.data || []).reduce((sum, p) => sum + Number(p.amount), 0);
-  const pendingAmount = (invoicesRes.data || [])
-    // A bank debit on its way is still money not yet in hand.
-    .filter((i) => i.status === "pending" || i.status === "processing")
-    .reduce((sum, i) => sum + Number(i.amount), 0);
-  const overdueAmount = (overdueRes.data || []).reduce((sum, i) => sum + Number(i.amount), 0);
-  const overdueCount = overdueRes.data?.length || 0;
-  const paidThisMonth = (monthPayRes.data || []).reduce((sum, p) => sum + Number(p.amount), 0);
+  const owed = (i: any) =>
+    Number(i.amount) - (i.payments || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+  const invoices = (invoicesRes.data || []) as any[];
 
-  return { totalRevenue, pendingAmount, overdueAmount, overdueCount, paidThisMonth };
+  const totalRevenue = (paymentsRes.data || []).reduce((sum, p) => sum + Number(p.amount), 0);
+  const pendingAmount = invoices
+    .filter((i) => i.status === "pending" || i.status === "processing")
+    .reduce((sum, i) => sum + owed(i), 0);
+  const overdue = invoices.filter((i) => i.status === "overdue");
+  const overdueAmount = overdue.reduce((sum, i) => sum + owed(i), 0);
+  const paidThisMonth = (paymentsRes.data || [])
+    .filter((p) => businessMonth(new Date(p.received_at)) === currentMonth)
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  return { totalRevenue, pendingAmount, overdueAmount, overdueCount: overdue.length, paidThisMonth };
 }
 
 export async function getOverdueInvoices() {
@@ -105,7 +112,7 @@ export async function getOverdueInvoices() {
  */
 export async function getZelleInbox() {
   const supabase = createAdminSupabase();
-  const [needsLook, recent, everReceived] = await Promise.all([
+  const [needsLook, recent, everReceived, lastSeen] = await Promise.all([
     supabase
       .from("zelle_receipts")
       .select("*, parents(id, first_name, last_name)")
@@ -118,11 +125,14 @@ export async function getZelleInbox() {
       .order("received_at", { ascending: false })
       .limit(8),
     supabase.from("zelle_receipts").select("id", { count: "exact", head: true }),
+    supabase.from("config").select("value").eq("key", "zelle_script_last_seen").maybeSingle(),
   ]);
   return {
     needsLook: needsLook.data || [],
     recent: recent.data || [],
-    connected: (everReceived.count ?? 0) > 0,
+    connected: (everReceived.count ?? 0) > 0 || !!lastSeen.data?.value,
+    /** When the Gmail script last checked in, if it ever has. */
+    lastSeen: (lastSeen.data?.value as string) || null,
   };
 }
 
@@ -145,14 +155,13 @@ export async function getParentsForMatching() {
 
 export async function getAutopaySummary() {
   const supabase = createAdminSupabase();
+  const stripe = await getStripeSettings();
   const [{ count: active }, { data: config }] = await Promise.all([
     supabase.from("parents").select("id", { count: "exact", head: true }).eq("autopay_status", "active"),
     supabase
       .from("config")
       .select("key, value")
       .in("key", [
-        "stripe_enabled",
-        "stripe_secret_key",
         "zelle_inbound_secret",
         "zelle_recipient",
         "zelle_alerts_inbox",
@@ -162,7 +171,8 @@ export async function getAutopaySummary() {
   const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
   return {
     activeCount: active ?? 0,
-    stripeEnabled: c.stripe_enabled === "true" && !!c.stripe_secret_key,
+    stripeEnabled: stripeReady(stripe),
+    stripeMode: stripe.mode,
     zelleSecret: (c.zelle_inbound_secret as string) || "",
     zelleRecipient: (c.zelle_recipient as string) || "",
     zelleInbox: (c.zelle_alerts_inbox as string) || "",

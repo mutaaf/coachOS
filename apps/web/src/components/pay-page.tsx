@@ -160,6 +160,12 @@ export function PayPage({
           )}
         </header>
 
+        {data.testMode && data.stripeEnabled && (
+          <div className="mb-5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900">
+            Test mode — card and bank payments here are practice runs. No real money moves.
+          </div>
+        )}
+
         {error && (
           <div
             role="alert"
@@ -235,6 +241,15 @@ export function PayPage({
                     </p>
                   </div>
                 </div>
+                {data.autopayFailed && (
+                  <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                    <p className="font-semibold">Your last automatic payment didn&apos;t go through</p>
+                    <p className="mt-0.5">
+                      The bank said {data.autopayFailed.reason}. Use a different card or bank account below and
+                      we&apos;ll try again within a day — or pay by Zelle.
+                    </p>
+                  </div>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
                   {confirmingOff ? (
                     <>
@@ -258,7 +273,15 @@ export function PayPage({
                         disabled={busy !== null}
                         onClick={() => setUp(parent.autopayMethod ?? "us_bank_account")}
                       >
-                        Change payment method
+                        {parent.autopayMethod === "card" ? "Use a different card" : "Use a different bank account"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={busy !== null}
+                        onClick={() => setUp(parent.autopayMethod === "card" ? "us_bank_account" : "card")}
+                      >
+                        {parent.autopayMethod === "card" ? "Switch to bank (no fee)" : "Switch to card"}
                       </Button>
                       <Button
                         variant="ghost"
@@ -349,7 +372,7 @@ export function PayPage({
         )}
 
         {/* Zelle */}
-        {data.zelleRecipient && parent.autopayStatus !== "active" && (
+        {data.zelleRecipient && (parent.autopayStatus !== "active" || data.autopayFailed) && (
           <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-semibold text-slate-900">
               {data.stripeEnabled ? "Prefer Zelle?" : "Pay with Zelle"}

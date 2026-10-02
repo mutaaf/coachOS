@@ -7,7 +7,7 @@ import { chargeDueAutopay } from "@/lib/autopay";
 import { payLink } from "@/lib/app-url";
 import { toCents } from "@/lib/invoice-status";
 import { emailReminder } from "@/lib/parent-emails";
-import { getStripeClient } from "@/lib/stripe-client";
+import { getStripeClient, getStripeSettings } from "@/lib/stripe-client";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
   // the overdue sweep below leaves alone while it settles.
   const stripe = await getStripeClient();
   if (stripe) {
-    results.autopay = await chargeDueAutopay(supabase, stripe, today);
+    const { mode } = await getStripeSettings();
+    results.autopay = await chargeDueAutopay(supabase, stripe, today, mode);
   }
 
   // Practice reminders for tomorrow's sessions

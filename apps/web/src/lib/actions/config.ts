@@ -21,9 +21,56 @@ export async function updateConfig(key: string, value: string) {
   return { success: true };
 }
 
+/**
+ * What a value has to look like to be saved. A typo in an address isn't
+ * caught by anything downstream — receipts' replies or Zelle alerts would just
+ * go nowhere — so it is caught here. Blank is always allowed.
+ */
+function invalid(item: { label: string; field_type: string; key: string }, raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  switch (item.field_type) {
+    case "email":
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : `${item.label}: "${v}" isn't an email address.`;
+    case "phone":
+      return v.replace(/\D/g, "").length >= 10 ? null : `${item.label}: a phone number needs at least 10 digits.`;
+    case "url":
+      return /^https?:\/\//.test(v) ? null : `${item.label}: a link starts with https://`;
+    case "number": {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0) return `${item.label}: enter a number of 0 or more.`;
+      if (item.key === "card_fee_percent" && n > 10) return `${item.label}: card networks cap surcharges well below ${n}%.`;
+      return null;
+    }
+    default:
+      if (item.key === "zelle_recipient") {
+        const bad = v
+          .split(/\s*(?:,|;|\bor\b)\s*/i)
+          .filter(Boolean)
+          .find((t) => !(t.includes("@") ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) : t.replace(/\D/g, "").length >= 10));
+        return bad ? `${item.label}: "${bad}" isn't a phone number or email address.` : null;
+      }
+      return null;
+  }
+}
+
 export async function updateMultipleConfigs(updates: { key: string; value: string }[]) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
+
+  const { data: items } = await supabase
+    .from("config")
+    .select("key, label, field_type")
+    .in(
+      "key",
+      updates.map((u) => u.key)
+    );
+  const byKey = new Map((items || []).map((i) => [i.key, i]));
+  const problems = updates
+    .map((u) => (byKey.get(u.key) ? invalid(byKey.get(u.key)!, u.value) : null))
+    .filter(Boolean);
+  if (problems.length) return { error: problems.join(" ") };
+
   for (const { key, value } of updates) {
     const { error } = await supabase
       .from("config")

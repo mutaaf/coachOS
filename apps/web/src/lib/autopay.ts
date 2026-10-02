@@ -88,6 +88,7 @@ export async function saveSetupIntent(supabase: OpsClient, si: Stripe.SetupInten
         autopay_payment_method_id: si.payment_method.id,
         autopay_label: described.label,
         autopay_verify_url: null,
+        autopay_mode: si.livemode ? "live" : "test",
         autopay_enabled_at: new Date().toISOString(),
       })
       .eq("id", parentId)
@@ -102,6 +103,7 @@ export async function saveSetupIntent(supabase: OpsClient, si: Stripe.SetupInten
       .from("parents")
       .update({
         autopay_status: "pending",
+        autopay_mode: si.livemode ? "live" : "test",
         autopay_method: described.method,
         autopay_payment_method_id: si.payment_method.id,
         autopay_label: described.label,
@@ -113,14 +115,18 @@ export async function saveSetupIntent(supabase: OpsClient, si: Stripe.SetupInten
 
 /** Students whose fees an autopay parent will cover, and which parent. */
 export async function autopayPayersByStudent(
-  supabase: OpsClient
+  supabase: OpsClient,
+  mode?: "test" | "live"
 ): Promise<Map<string, AutopayParent>> {
-  const { data: parents } = await supabase
+  // A card saved in one Stripe mode cannot be charged in the other.
+  let query = supabase
     .from("parents")
     .select(
       "id, first_name, last_name, phone, pay_token, stripe_customer_id, autopay_method, autopay_payment_method_id, autopay_enabled_at"
     )
     .eq("autopay_status", "active");
+  if (mode) query = query.or(`autopay_mode.eq.${mode},autopay_mode.is.null`);
+  const { data: parents } = await query;
 
   const byStudent = new Map<string, AutopayParent>();
   if (!parents || parents.length === 0) return byStudent;
@@ -350,11 +356,12 @@ export interface ChargeRunResult {
 export async function chargeDueAutopay(
   supabase: OpsClient,
   stripe: Stripe,
-  today: string = businessToday()
+  today: string = businessToday(),
+  mode?: "test" | "live"
 ): Promise<ChargeRunResult> {
   const result: ChargeRunResult = { paid: 0, processing: 0, failed: 0, skipped: 0 };
 
-  const payers = await autopayPayersByStudent(supabase);
+  const payers = await autopayPayersByStudent(supabase, mode);
   if (payers.size === 0) return result;
 
   const { data: invoices } = await supabase

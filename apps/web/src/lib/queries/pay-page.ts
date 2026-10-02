@@ -1,4 +1,5 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { getStripeSettings, stripeReady } from "@/lib/stripe-client";
 import { openInvoicesForFamily, toCents } from "@/lib/invoice-status";
 import type { AutopayMethod } from "@/lib/autopay";
 
@@ -6,6 +7,11 @@ export function maskEmail(email: string | null): string | null {
   if (!email || !email.includes("@")) return null;
   const [user, domain] = email.trim().split("@");
   return `${user.slice(0, 1)}•••@${domain}`;
+}
+
+function friendlyReason(error: string | null): string {
+  const text = (error || "the bank declined it").trim().replace(/\.$/, "");
+  return text.charAt(0).toLowerCase() + text.slice(1);
 }
 
 /** Tokens are 24 URL-safe characters; anything else is not worth a query. */
@@ -40,10 +46,14 @@ export interface PayPageData {
   openCents: number;
   monthlyCents: number;
   stripeEnabled: boolean;
+  /** Stripe is in its sandbox: say so on the page, so nobody mistakes a test for a charge. */
+  testMode: boolean;
   cardFeePercent: number;
   zelleRecipient: string | null;
   businessName: string;
   zelleNames: string[];
+  /** Set when an automatic payment failed and is waiting for a new card or account. */
+  autopayFailed: { reason: string } | null;
 }
 
 /**
@@ -102,17 +112,27 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
     : { data: [] };
   const processing = (inFlight || []).map((inv: any) => toLine(inv, toCents(inv.amount)));
 
+  const stripe = await getStripeSettings();
   const { data: config } = await supabase
     .from("config")
     .select("key, value")
     .in("key", [
-      "stripe_enabled",
-      "stripe_secret_key",
       "card_fee_percent",
       "zelle_recipient",
       "business_name",
     ]);
   const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
+
+  const { data: failed } = studentIds.length
+    ? await supabase
+        .from("invoices")
+        .select("autopay_error")
+        .in("student_id", studentIds)
+        .in("status", ["pending", "overdue"])
+        .eq("autopay_status", "failed")
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
 
   const { data: senders } = await supabase
     .from("zelle_senders")
@@ -134,13 +154,19 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
     processing,
     openCents: open.reduce((s, l) => s + l.balanceCents, 0),
     monthlyCents,
-    stripeEnabled: c.stripe_enabled === "true" && !!c.stripe_secret_key,
+    stripeEnabled: stripeReady(stripe),
+    testMode: stripe.mode === "test",
     cardFeePercent: Number(c.card_fee_percent) > 0 ? Number(c.card_fee_percent) : 0,
     zelleRecipient: c.zelle_recipient?.trim() || null,
     businessName:
       c.business_name && c.business_name !== "CoachOS" ? c.business_name : "Rising Stars Youth Academy",
-    zelleNames: (senders || []).map((s) =>
-      s.sender_key.replace(/\b[a-z]/g, (ch: string) => ch.toUpperCase())
-    ),
+    // First name and an initial: enough for the family to recognise, not a
+    // full name travelling with every forwarded link.
+    zelleNames: (senders || []).map((s) => {
+      const parts = s.sender_key.split(" ");
+      const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
+      return parts.length > 1 ? `${cap(parts[0])} ${parts[parts.length - 1].charAt(0).toUpperCase()}.` : cap(parts[0]);
+    }),
+    autopayFailed: failed ? { reason: friendlyReason(failed.autopay_error) } : null,
   };
 }

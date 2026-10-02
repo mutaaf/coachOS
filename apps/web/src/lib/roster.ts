@@ -29,11 +29,23 @@ export interface RosterRow {
  * Null when there aren't enough digits to be a phone number.
  */
 export function normalizePhone(raw: string | null | undefined): string | null {
-  const digits = (raw ?? "").replace(/\D/g, "");
+  // An extension is not part of the number: "214-555-0101 x12" read as digits
+  // is a 12-digit number belonging to somebody else entirely.
+  const text = (raw ?? "").replace(/\s*(?:x|ext\.?|extension)\s*\d+\s*$/i, "").trim();
+  const digits = text.replace(/\D/g, "");
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-  if (digits.length > 11) return `+${digits}`;
+  // Longer only if written as international ("+44 ..."); otherwise it is a
+  // typo, and a typo must not become a real stranger's number.
+  if (digits.length > 11 && digits.length <= 15 && text.startsWith("+")) return `+${digits}`;
   return null;
+}
+
+/** "Mía" and "mia " are the same child; an accent added on re-import must not make a second one. */
+export function sameName(a: string | null | undefined, b: string | null | undefined): boolean {
+  const norm = (s: string | null | undefined) =>
+    (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  return norm(a) !== "" && norm(a) === norm(b);
 }
 
 /** The last ten digits — how a stored number is compared, whatever format it was saved in. */
@@ -218,7 +230,7 @@ export async function checkRows(
     }
     const sibling = existing?.student_parents
       ?.map((sp: any) => sp.students)
-      .find((s: any) => s && s.first_name.toLowerCase() === clean(row.child_first_name)!.toLowerCase());
+      .find((s: any) => s && sameName(s.first_name, row.child_first_name));
     return {
       ok: true,
       existingParent: existing ? `${existing.first_name} ${existing.last_name}` : null,
@@ -299,7 +311,7 @@ export async function importRows(
       .eq("parent_id", parentId);
     let studentId: string | undefined = (siblings || [])
       .map((s: any) => s.students)
-      .find((s: any) => s && s.first_name.toLowerCase() === childFirst.toLowerCase())?.id;
+      .find((s: any) => s && sameName(s.first_name, childFirst))?.id;
 
     if (!studentId) {
       const { data, error } = await supabase

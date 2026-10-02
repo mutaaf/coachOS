@@ -42,6 +42,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Expected JSON" }, { status: 400 });
   }
 
+  // The script checks in every 15 minutes, with or without emails; this is how
+  // the Payments page can say when it was last heard from.
+  await supabase
+    .from("config")
+    .update({ value: new Date().toISOString() })
+    .eq("key", "zelle_script_last_seen");
+
   const messages: any[] = Array.isArray(payload?.messages) ? payload.messages : [payload];
   if (messages.length > MAX_MESSAGES) {
     return NextResponse.json({ error: `At most ${MAX_MESSAGES} messages per request` }, { status: 413 });

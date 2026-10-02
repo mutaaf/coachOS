@@ -75,8 +75,9 @@ export function parseZelleEmail(subject: string, body: string): ParsedZelle {
   const s = clean(subject || "");
   const text = `${s}\n${clean(body || "")}`;
 
-  if (OUTGOING.test(s)) return { kind: "outgoing" };
-
+  // Incoming wording is looked for first: an alert for money received whose
+  // subject happens to mention a "request" must not be thrown away as one of
+  // her own outgoing payments.
   for (const pattern of INCOMING) {
     const m = text.match(pattern.re);
     if (!m) continue;
@@ -94,6 +95,8 @@ export function parseZelleEmail(subject: string, body: string): ParsedZelle {
 
     return { kind: "incoming", senderName: tidyName(m[pattern.name]), amount, memo };
   }
+
+  if (OUTGOING.test(s)) return { kind: "outgoing" };
 
   // Only the plainest signal is trusted in the body: footers on incoming emails
   // carry links like "Request money", which must not hide one that failed to read.
@@ -273,6 +276,33 @@ export async function ingestZelleEmail(
   if (error) throw new Error(error.message);
   if (!inserted) return { outcome: "duplicate" };
   if (parsed.kind === "unreadable") return { outcome: "unreadable", receiptId: inserted.id };
+
+  // The same alert forwarded twice is two different emails, so the message id
+  // can't catch it. The same sender and the same amount within a week is
+  // treated as a probable repeat and put in front of the owner rather than
+  // recorded a second time; a genuine second payment costs her one tap.
+  const since = new Date(new Date(row.received_at as string).getTime() - 7 * 86_400_000).toISOString();
+  const { data: recent } = await supabase
+    .from("zelle_receipts")
+    .select("id, sender_name, received_at, status, parent_id")
+    .eq("amount", parsed.amount)
+    .gte("received_at", since)
+    .neq("id", inserted.id)
+    .in("status", ["matched", "unmatched"]);
+  const repeat = (recent || []).find((r) => r.sender_name && senderKey(r.sender_name) === senderKey(parsed.senderName));
+  if (repeat) {
+    const when = new Date(repeat.received_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    await supabase
+      .from("zelle_receipts")
+      .update({
+        parent_id: repeat.parent_id,
+        note: `Looks like a repeat of the ${dollars(Math.round(parsed.amount * 100))} from ${repeat.sender_name} on ${when}${
+          repeat.status === "matched" ? ", which is already recorded" : ""
+        }. Record it only if this is a second payment.`,
+      })
+      .eq("id", inserted.id);
+    return { outcome: "unmatched", receiptId: inserted.id };
+  }
 
   const sender = await findSender(supabase, parsed.senderName);
   if (sender.parentId === null) {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Registration } from "@/types/database";
+import { sameName } from "@/lib/roster";
 
 /**
  * Public registration submission.
@@ -40,15 +41,21 @@ export async function submitRegistration(formData: FormData) {
   }
 
   // Same child, same program, twice — usually a double submit rather than twins.
-  const { data: existing } = await supabase
+  // Compared on the phone's digits, not as typed: "(214) 555-0150" and
+  // "2145550150" are one parent, and letting the second through would hold a
+  // second seat for the same child.
+  const digits = (p: string) => p.replace(/\D/g, "").slice(-10);
+  const { data: sameProgram } = await supabase
     .from("registrations")
-    .select("id, status")
+    .select("id, status, parent_phone, child_first_name, child_last_name")
     .eq("program_id", programId)
-    .eq("parent_phone", parentPhone)
-    .ilike("child_first_name", childFirstName)
-    .ilike("child_last_name", childLastName)
-    .not("status", "in", "(cancelled,declined)")
-    .maybeSingle();
+    .not("status", "in", "(cancelled,declined)");
+  const existing = (sameProgram || []).find(
+    (r) =>
+      digits(r.parent_phone) === digits(parentPhone) &&
+      sameName(r.child_first_name, childFirstName) &&
+      sameName(r.child_last_name, childLastName)
+  );
 
   if (existing) {
     return {

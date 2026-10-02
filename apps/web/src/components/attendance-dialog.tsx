@@ -233,7 +233,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
               <div className="flex gap-2">
                 <input
                   className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                  placeholder="Reason (optional)"
+                  placeholder="Reason (required) — e.g. gym closed"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                 />

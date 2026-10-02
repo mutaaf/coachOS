@@ -29,7 +29,8 @@ function reportZellePayments() {
       })
     )
   );
-  if (messages.length === 0) return;
+  // Posts even when there's nothing new, so CoachOS can tell the script is
+  // still running.
   UrlFetchApp.fetch(ENDPOINT, {
     method: "post",
     contentType: "application/json",

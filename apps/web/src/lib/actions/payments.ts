@@ -100,6 +100,26 @@ export async function recordPayment(formData: FormData) {
   const reference = formData.get("reference") as string;
   const notes = formData.get("notes") as string;
 
+  // The books only take money that is real and owed: nothing zero or
+  // negative, and nothing beyond the invoice's balance, which would count
+  // revenue twice or hide an overpayment that should go back.
+  if (!(amount > 0)) return { error: "Enter an amount greater than $0." };
+  const { data: inv } = await supabase
+    .from("invoices")
+    .select("amount, status, payments(amount)")
+    .eq("id", invoiceId)
+    .maybeSingle();
+  if (!inv) return { error: "That invoice no longer exists." };
+  if (inv.status === "waived") return { error: "That invoice was waived; nothing is owed on it." };
+  const balanceCents =
+    Math.round(Number(inv.amount) * 100) -
+    (inv.payments || []).reduce((s: number, p: any) => s + Math.round(Number(p.amount) * 100), 0);
+  if (Math.round(amount * 100) > balanceCents) {
+    return {
+      error: `That's more than the $${(balanceCents / 100).toFixed(2)} still owed. Record the amount owed, and handle any extra separately.`,
+    };
+  }
+
   const { data: payment, error } = await supabase
     .from("payments")
     .insert({
@@ -166,14 +186,18 @@ export async function updateInvoice(id: string, formData: FormData) {
     return { error: "Amount, due date, month, and status are required" };
   }
 
+  // Paid, pending and overdue are worked out from the money, never typed in:
+  // marking an invoice paid by hand would show money received that wasn't.
+  // Waiving is the one status that is a decision, so it is the one honoured.
   const { data, error } = await supabase
     .from("invoices")
-    .update({ amount, due_date, month, status, notes: notes || null })
+    .update({ amount, due_date, month, status: status === "waived" ? "waived" : "pending", notes: notes || null })
     .eq("id", id)
     .select()
     .single();
 
   if (error) return { error: error.message };
+  await recalculateInvoiceStatus(supabase, id);
 
   revalidatePath("/payments");
   revalidatePath("/dashboard");

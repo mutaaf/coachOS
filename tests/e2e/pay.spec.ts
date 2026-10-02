@@ -23,7 +23,7 @@ function today() {
   }).format(new Date());
 }
 
-const SETTINGS = ["stripe_enabled", "stripe_secret_key", "zelle_recipient"];
+const SETTINGS = ["stripe_enabled", "stripe_test_secret_key", "zelle_recipient"];
 let savedSettings: { key: string; value: string }[] = [];
 
 test.beforeAll(async () => {
@@ -32,7 +32,7 @@ test.beforeAll(async () => {
   savedSettings = data || [];
   // A fake key renders the page; nothing calls Stripe until a parent taps through.
   await admin.from("config").update({ value: "true" }).eq("key", "stripe_enabled");
-  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_secret_key");
+  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_test_secret_key");
   await admin.from("config").update({ value: "972-900-0292, anum@example.test" }).eq("key", "zelle_recipient");
 });
 
@@ -121,7 +121,9 @@ test("a parent can say whose Zelle account the money comes from", async ({ page 
   await page.locator("form", { has: zelleName }).getByRole("button", { name: /^save$/i }).click();
 
   await expect(page.getByText("Saved — thank you.")).toBeVisible();
-  await expect(page.getByText(/We.ll recognise: Miguel Garcia/)).toBeVisible();
+  // Shown as first name and initial: the link travels, the full name shouldn't.
+  await expect(page.getByText(/We.ll recognise: Miguel G\./)).toBeVisible();
+  await expect(page.getByText("Miguel Garcia")).toHaveCount(0);
   const { data } = await admin.from("zelle_senders").select("parent_id").eq("sender_key", "miguel garcia");
   expect(data).toEqual([{ parent_id: parentId }]);
 });

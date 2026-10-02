@@ -68,6 +68,16 @@ test("an address changed in Settings is used everywhere at once, no deploy", asy
   ).toBeVisible();
 });
 
+test("an address that isn't one is refused, not saved", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/settings");
+  await page.getByRole("button", { name: /Payments/ }).click();
+  await page.getByLabel("Zelle Alerts Gmail").fill("owner-at-gmail");
+  await page.getByRole("button", { name: /Save/ }).first().click();
+  await expect(page.getByText("Settings weren't saved")).toBeVisible();
+  await expect(page.getByText(/isn't an email address/)).toBeVisible();
+});
+
 test("the WhatsApp bot is gone from Settings", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");

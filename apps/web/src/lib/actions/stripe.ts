@@ -2,12 +2,13 @@
 
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { getStripeClient } from "@/lib/stripe-client";
+import { getStripeClient, getStripeSettings } from "@/lib/stripe-client";
 import { autopayPayersByStudent } from "@/lib/autopay";
 
 export async function getOrCreateStripeCustomer(parentId: string) {
   const stripe = await getStripeClient();
   if (!stripe) return { error: "Stripe is not enabled." };
+  const { mode } = await getStripeSettings();
 
   const supabase = createAdminSupabase();
 
@@ -19,7 +20,9 @@ export async function getOrCreateStripeCustomer(parentId: string) {
 
   if (parentError || !parent) return { error: "Parent not found." };
 
-  if (parent.stripe_customer_id) {
+  // A customer only exists in the mode it was made in; after switching modes
+  // the family gets a new one there.
+  if (parent.stripe_customer_id && (parent.stripe_customer_mode ?? "test") === mode) {
     return { customerId: parent.stripe_customer_id };
   }
 
@@ -32,7 +35,7 @@ export async function getOrCreateStripeCustomer(parentId: string) {
 
   await supabase
     .from("parents")
-    .update({ stripe_customer_id: customer.id })
+    .update({ stripe_customer_id: customer.id, stripe_customer_mode: mode })
     .eq("id", parentId);
 
   return { customerId: customer.id };

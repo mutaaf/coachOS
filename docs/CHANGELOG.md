@@ -5,6 +5,44 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- **Stripe test ↔ live switch** in Settings → Payments. Both modes' keys are
+  kept; "Check connection" asks Stripe whose account a key belongs to and in
+  which mode; switching needs confirmation and refuses unless the target mode's
+  keys and webhook secret check out. Saved cards and Stripe customers record
+  the mode they were made in, nothing is charged across modes, and switching
+  turns off autopay set up in the other mode (and says how many). The webhook
+  accepts both modes, each verified with its own secret. A "Test mode" label
+  shows on families' payment pages and the Payments screen
+- "Reset link" gives a family a new payment link when the old one was shared
+  too widely; the old one stops working
+- The Zelle card shows when the Gmail script last checked in, and warns when it
+  has gone quiet for two hours
+
+### Fixed — found while writing the manual test plan
+- A Zelle alert forwarded twice could be recorded twice; the same sender and
+  amount within a week now waits for the owner as a probable repeat
+- An incoming Zelle alert whose subject mentioned a "request" was dropped as
+  outgoing
+- Overpayment notes were stored but never shown
+- After a declined card, the family's page still said "Autopay is on" with no
+  warning; it now says the payment failed and how to fix it. "Change payment
+  method" offers both card and bank
+- Saved Zelle sender names were shown in full on the payment page; now first
+  name and initial
+- A phone with an extension became a different, longer number
+- The same child could register twice if the phone was typed differently, and
+  a re-imported name with an accent created a second child
+- Settings saved malformed emails, phones and fees without complaint
+- The public sign-up page ignored the business name setting
+- Compose sent parents a literal "{{parent_name}}"; messages the app sends on
+  its own could be renamed or deleted, silently stopping them
+- Payments of $0, negative, or more than owed were accepted; an invoice could
+  be marked paid by hand with no money behind it, and editing its amount didn't
+  recalculate its status
+- The Pending and Overdue cards counted full invoices rather than what is still
+  owed, and "Paid This Month" used the server's UTC month
+
+### Added
 - **First-login onboarding.** A guided tour starts the first time the owner
   signs in: it walks every page, spotlighting each control with what it's for,
   and ends with her weekly routine. On a phone the explanation docks at the

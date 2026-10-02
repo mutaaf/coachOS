@@ -68,10 +68,10 @@ test("a queued message opens WhatsApp with the text written, and is ticked off",
 });
 
 test("preparing payment links lands her in the outbox with one message per family", async ({ page }) => {
-  const keys = ["stripe_enabled", "stripe_secret_key"];
+  const keys = ["stripe_enabled", "stripe_test_secret_key"];
   const { data: before } = await admin.from("config").select("key, value").in("key", keys);
   await admin.from("config").update({ value: "true" }).eq("key", "stripe_enabled");
-  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_secret_key");
+  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_test_secret_key");
   try {
     const { programId } = await seedProgram({});
     const { data: parent } = await admin

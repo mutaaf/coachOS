@@ -20,9 +20,10 @@ export interface CollectPanelProps {
     zelleRecipient: string;
     zelleInbox: string;
     zelleForwardFrom: string;
+    stripeMode: "test" | "live";
   };
   inviteCount: number;
-  zelle: { needsLook: any[]; recent: any[]; connected: boolean };
+  zelle: { needsLook: any[]; recent: any[]; connected: boolean; lastSeen: string | null };
   parents: { id: string; label: string }[];
 }
 
@@ -54,6 +55,28 @@ function ZelleSetupDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * The Gmail script checks in every 15 minutes. Quiet for two hours means it has
+ * probably stopped — a revoked Google permission, a changed key — and Zelle
+ * payments aren't being recorded.
+ */
+function ScriptStatus({ lastSeen }: { lastSeen: string }) {
+  const minutes = Math.round((Date.now() - new Date(lastSeen).getTime()) / 60_000);
+  const ago =
+    minutes < 2 ? "just now" : minutes < 90 ? `${minutes} min ago` : minutes < 48 * 60 ? `${Math.round(minutes / 60)} hours ago` : `${Math.round(minutes / 1440)} days ago`;
+  const quiet = minutes > 120;
+  return (
+    <p
+      data-testid="zelle-script-status"
+      className={`mb-2 rounded-lg px-3 py-1.5 text-xs ${quiet ? "bg-amber-50 font-medium text-amber-900" : "text-muted-foreground"}`}
+    >
+      {quiet
+        ? `The Gmail script last checked in ${ago} — it may have stopped. Open Setup and run install again.`
+        : `Gmail script checked in ${ago}.`}
+    </p>
   );
 }
 
@@ -128,6 +151,15 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
             <Repeat className="h-4 w-4 text-emerald-700" />
           </div>
           <h2 className="font-semibold">Autopay</h2>
+          {autopay.stripeEnabled && (
+            <span
+              className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${
+                autopay.stripeMode === "live" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {autopay.stripeMode === "live" ? "Live" : "Test mode"}
+            </span>
+          )}
         </div>
         {autopay.stripeEnabled ? (
           <>
@@ -199,7 +231,11 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
             Connect the Gmail your bank emails, and Zelle payments are recorded as they arrive —
             no more matching &ldquo;sent it via zelle&rdquo; messages by hand.
           </p>
-        ) : zelle.needsLook.length === 0 ? (
+        ) : null}
+
+        {zelle.lastSeen && <ScriptStatus lastSeen={zelle.lastSeen} />}
+
+        {!zelle.connected ? null : zelle.needsLook.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nothing to check. Payments are being matched automatically.
           </p>
@@ -228,6 +264,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, parents }: C
                         → {r.parents.first_name} {r.parents.last_name}
                       </span>
                     )}
+                    {r.note && <span className="block whitespace-normal text-xs text-amber-700">{r.note}</span>}
                   </span>
                   <Button
                     size="sm"

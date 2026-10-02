@@ -140,6 +140,14 @@ describe("reading bank emails", () => {
     expect(parseZelleEmail(subject, "")).toEqual({ kind: "outgoing" });
   });
 
+  it("reads an incoming alert even when its subject mentions a request", () => {
+    expect(parseZelleEmail("Payment request paid: Raquel Garcia sent you $100.00", "")).toMatchObject({
+      kind: "incoming",
+      senderName: "Raquel Garcia",
+      amount: 100,
+    });
+  });
+
   it("says when it can't read one, rather than guessing", () => {
     expect(parseZelleEmail("Zelle® update", "Your Zelle activity summary")).toEqual({
       kind: "unreadable",
@@ -260,6 +268,37 @@ describe("matching a payment to a family", () => {
   });
 });
 
+describe("an alert forwarded twice", () => {
+  it("is held for the owner instead of being recorded a second time", async () => {
+    // A re-forward is a new email with a new id, so only the sender and amount
+    // can tell it apart from a second payment.
+    const { parentId } = await family({ first: "Raquel", last: "Garcia" }, ["Mia", "Leo"]);
+    await ingestZelleEmail(db, email("Raquel Garcia sent you $100.00"));
+
+    const again = await ingestZelleEmail(db, email("Fwd: Raquel Garcia sent you $100.00"));
+
+    expect(again.outcome).toBe("unmatched");
+    const r = await receipt((again as any).receiptId);
+    expect(r.note).toMatch(/Looks like a repeat of the \$100\.00 from Raquel Garcia.*already recorded/);
+    expect(r.parent_id).toBe(parentId);
+    const paid = (await invoices(parentId)).filter((i) => i.status === "paid");
+    expect(paid).toHaveLength(1);
+  });
+
+  it("still records the same amount from the same family a month later", async () => {
+    const thisMonth = businessMonth();
+    await family({ first: "Raquel", last: "Garcia" }, ["Mia"], [thisMonth, monthAfter(thisMonth)]);
+    await ingestZelleEmail(db, email("Raquel Garcia sent you $100.00"));
+
+    const nextMonth = await ingestZelleEmail(db, {
+      ...email("Raquel Garcia sent you $100.00"),
+      receivedAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+    });
+
+    expect(nextMonth.outcome).toBe("matched");
+  });
+});
+
 describe("the owner confirming who paid", () => {
   it("records it and remembers the sender for next time", async () => {
     const thisMonth = businessMonth();
@@ -276,7 +315,10 @@ describe("the owner confirming who paid", () => {
     expect(confirmed).toMatchObject({ success: true });
 
     // Next month, nobody has to do anything.
-    const second = await ingestZelleEmail(db, email("MIGUEL GARCIA sent you $100.00"));
+    const second = await ingestZelleEmail(db, {
+      ...email("MIGUEL GARCIA sent you $100.00"),
+      receivedAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+    });
     expect(second.outcome).toBe("matched");
 
     expect((await invoices(parentId)).map((i) => i.status)).toEqual(["paid", "paid"]);
@@ -361,6 +403,17 @@ describe("the endpoint the Gmail script posts to", () => {
       }) as any
     );
   }
+
+  it("records each check-in, so a script that stops is noticed", async () => {
+    await admin.from("config").update({ value: "" }).eq("key", "zelle_script_last_seen");
+    const before = Date.now();
+
+    const res = await post({ messages: [] }, await secret());
+
+    expect(res.status).toBe(200);
+    const { data } = await admin.from("config").select("value").eq("key", "zelle_script_last_seen").single();
+    expect(new Date(data!.value).getTime()).toBeGreaterThanOrEqual(before - 1000);
+  });
 
   it("turns away anyone without the key", async () => {
     const res = await post({ messages: [] });

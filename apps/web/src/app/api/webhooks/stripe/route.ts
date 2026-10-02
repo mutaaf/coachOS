@@ -1,29 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { STRIPE_API_VERSION } from "@/lib/stripe-client";
+import { getStripeSettings, stripeFor, type StripeMode } from "@/lib/stripe-client";
 import { recalculateInvoiceStatus } from "@/lib/invoice-status";
 import { emailReceipt } from "@/lib/parent-emails";
 import { chargeSplits, failAutopay, saveSetupIntent, settleAutopay } from "@/lib/autopay";
 
-async function getStripeConfig() {
-  const supabase = createAdminSupabase();
-  const { data } = await supabase
-    .from("config")
-    .select("key, value")
-    .in("key", ["stripe_secret_key", "stripe_webhook_secret"]);
-
-  return Object.fromEntries((data || []).map((c) => [c.key, c.value]));
-}
-
+/**
+ * Stripe sends test-mode and live-mode events to the same address, each signed
+ * with its own mode's webhook secret. Whichever secret verifies the signature
+ * says which mode the event is from, and that mode's key is used to look
+ * anything up — a test event must never be acted on with live keys.
+ */
 export async function POST(request: NextRequest) {
-  const config = await getStripeConfig();
-
-  if (!config.stripe_secret_key || !config.stripe_webhook_secret) {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
-  }
-
-  const stripe = new Stripe(config.stripe_secret_key, { apiVersion: STRIPE_API_VERSION });
+  const settings = await getStripeSettings();
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
 
@@ -31,14 +21,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(body, signature, config.stripe_webhook_secret);
-  } catch (err) {
-    console.error("Stripe webhook signature verification failed:", err);
+  let event: Stripe.Event | null = null;
+  let mode: StripeMode | null = null;
+  for (const m of ["live", "test"] as const) {
+    const { secret, webhook } = settings.keys[m];
+    if (!secret || !webhook) continue;
+    try {
+      event = stripeFor(secret).webhooks.constructEvent(body, signature, webhook);
+      mode = m;
+      break;
+    } catch {
+      // Not this mode's signature; try the other.
+    }
+  }
+
+  if (!event || !mode) {
+    console.error("Stripe webhook signature did not verify for either mode");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  const stripe = stripeFor(settings.keys[mode].secret);
   const supabase = createAdminSupabase();
 
   switch (event.type) {

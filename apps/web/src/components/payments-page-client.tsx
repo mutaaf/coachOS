@@ -11,7 +11,8 @@ import { InvoiceFormDialog } from "@/components/invoice-form-dialog";
 import { formatCurrency } from "@/lib/utils";
 import { sendStripePaymentLink } from "@/lib/actions/stripe";
 import { waiveInvoice, deleteInvoice, deletePayment } from "@/lib/actions/payments";
-import { DollarSign, AlertTriangle, CheckCircle, Clock, Plus, FileText, ExternalLink, Send, Pencil, Trash2, Link2 } from "lucide-react";
+import { resetPayLink } from "@/lib/actions/autopay";
+import { DollarSign, AlertTriangle, CheckCircle, Clock, Plus, FileText, ExternalLink, Send, Pencil, Trash2, Link2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAction } from "@/lib/use-action";
@@ -272,6 +273,31 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
                             >
                               <Link2 className="h-4 w-4 text-blue-500" />
                               <span className="sr-only">Copy payment link</span>
+                            </button>
+                          )}
+                          {inv.parents?.pay_token && (
+                            <button
+                              type="button"
+                              title="Give this family a new payment link (the old one stops working)"
+                              onClick={async () => {
+                                if (
+                                  !window.confirm(
+                                    `Give ${inv.parents.first_name} a new payment link? The old link stops working straight away — send them the new one.`
+                                  )
+                                )
+                                  return;
+                                const r = await resetPayLink(inv.parent_id);
+                                if ("error" in r && r.error) {
+                                  toast.error("Link not reset", { description: r.error });
+                                  return;
+                                }
+                                await navigator.clipboard.writeText((r as { payLink: string }).payLink).catch(() => {});
+                                toast.success(`New link for ${inv.parents.first_name} copied — the old one no longer works`);
+                                router.refresh();
+                              }}
+                            >
+                              <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                              <span className="sr-only">Reset payment link</span>
                             </button>
                           )}
                           {inv.stripe_hosted_invoice_url && (

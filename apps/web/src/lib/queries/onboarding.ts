@@ -1,4 +1,5 @@
 import { createAdminSupabase, createServerSupabase } from "@/lib/supabase/server";
+import { getStripeSettings } from "@/lib/stripe-client";
 
 export interface OnboardingItem {
   id: string;
@@ -22,6 +23,7 @@ export async function getOnboarding(): Promise<{ items: OnboardingItem[]; hidden
   const meta = (auth.user.user_metadata ?? {}) as Record<string, unknown>;
 
   const db = createAdminSupabase();
+  const stripe = await getStripeSettings();
   const count = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
 
   const [enrollments, receipts, handSent, config] = await Promise.all([
@@ -34,8 +36,6 @@ export async function getOnboarding(): Promise<{ items: OnboardingItem[]; hidden
       .in("key", [
         "zelle_recipient",
         "email_reply_to",
-        "stripe_enabled",
-        "stripe_secret_key",
         "zelle_alerts_inbox",
         "zelle_alerts_forward_from",
       ]),
@@ -88,8 +88,8 @@ export async function getOnboarding(): Promise<{ items: OnboardingItem[]; hidden
     {
       id: "live",
       title: "Turn on real card and bank payments",
-      body: "Autopay is in test mode until live Stripe keys are added in Settings.",
-      done: c.stripe_enabled === "true" && (c.stripe_secret_key ?? "").startsWith("sk_live_"),
+      body: "Autopay runs in Stripe's test mode until you switch to Live in Settings → Payments, once everything has been tested.",
+      done: stripe.enabled && stripe.mode === "live" && !!stripe.keys.live.secret,
       href: "/settings",
       action: "Open Settings",
       tourStep: "settings",

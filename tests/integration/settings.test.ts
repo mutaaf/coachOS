@@ -30,8 +30,12 @@ describe("changing settings", () => {
   it("knows which settings are secrets, addresses and links", async () => {
     const { data } = await admin.from("config").select("key, field_type");
     const type = Object.fromEntries(data!.map((r) => [r.key, r.field_type]));
-    expect(type.stripe_secret_key).toBe("secret");
-    expect(type.stripe_webhook_secret).toBe("secret");
+    expect(type.stripe_test_secret_key).toBe("secret");
+    expect(type.stripe_test_webhook_secret).toBe("secret");
+    expect(type.stripe_live_secret_key).toBe("secret");
+    expect(type.stripe_live_webhook_secret).toBe("secret");
+    // Replaced by the per-mode keys.
+    expect(type.stripe_secret_key).toBeUndefined();
     expect(type.zelle_inbound_secret).toBe("secret");
     expect(type.email_reply_to).toBe("email");
     expect(type.zelle_alerts_inbox).toBe("email");

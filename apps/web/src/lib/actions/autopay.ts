@@ -1,6 +1,8 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { NOT_SIGNED_IN, signedIn } from "@/lib/auth-guard";
 import { renderTemplate } from "shared";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { payLink } from "@/lib/app-url";
@@ -89,4 +91,17 @@ export async function inviteFamiliesToAutopay() {
   revalidatePath("/messaging");
   revalidatePath("/payments");
   return { success: true, queued: rows.length };
+}
+
+/**
+ * A new payment link for a family, for when the old one was shared too widely.
+ * The old link stops working at once; nothing else about the family changes.
+ */
+export async function resetPayLink(parentId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
+  const token = randomBytes(18).toString("base64url");
+  const { error } = await createAdminSupabase().from("parents").update({ pay_token: token }).eq("id", parentId);
+  if (error) return { error: error.message };
+  revalidatePath("/payments");
+  return { success: true, payLink: payLink(token) };
 }

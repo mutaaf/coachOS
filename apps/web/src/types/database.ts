@@ -62,6 +62,9 @@ export type Parent = {
   autopay_label: string | null;
   autopay_verify_url: string | null;
   autopay_enabled_at: string | null;
+  /** The Stripe mode the saved payment method belongs to; it can't be charged in the other. */
+  autopay_mode: "test" | "live" | null;
+  stripe_customer_mode: "test" | "live" | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

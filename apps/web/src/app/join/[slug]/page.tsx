@@ -6,18 +6,24 @@ import type { ProgramAvailability } from "@/types/database";
 // Seat counts change as parents register, so never serve this from a cache.
 export const dynamic = "force-dynamic";
 
+async function businessName() {
+  const { data } = await createAdminSupabase().from("config").select("value").eq("key", "business_name").maybeSingle();
+  return (data?.value as string)?.trim() || "Rising Stars Youth Academy";
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const supabase = createAdminSupabase();
+  const brand = await businessName();
   const { data } = await supabase
     .from("program_availability")
     .select("name, school_name")
     .eq("public_slug", params.slug)
     .maybeSingle();
 
-  if (!data) return { title: "Registration — Rising Stars" };
+  if (!data) return { title: `Registration — ${brand}` };
 
   return {
-    title: `${data.name} — Rising Stars`,
+    title: `${data.name} — ${brand}`,
     description: `Register your child for ${data.name} at ${data.school_name}.`,
   };
 }
@@ -46,6 +52,7 @@ export default async function JoinPage({ params }: { params: { slug: string } })
   if (!data) notFound();
 
   const program = data as ProgramAvailability;
+  const brand = await businessName();
   const dateRange = formatDateRange(program.start_date, program.end_date);
   const isFull = program.seats_remaining < 1;
 
@@ -54,7 +61,7 @@ export default async function JoinPage({ params }: { params: { slug: string } })
       <div className="mx-auto max-w-2xl px-5 py-12 sm:py-16">
         <header className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
-            Rising Stars Youth Academy
+            {brand}
           </p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             {program.name}

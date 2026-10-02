@@ -56,7 +56,11 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
     setSending(true);
     try {
       const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined);
-      toast.success(`${result.count} message(s) ready in the Outbox`);
+      if ("error" in result && result.error) {
+        toast.error("Not sent", { description: result.error });
+        return;
+      }
+      toast.success(`${(result as { count: number }).count} message(s) ready in the Outbox`);
       setMessage("");
       setRecipients([]);
     } catch {
@@ -236,12 +240,13 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                   </Button>
                   <Button size="sm" variant="ghost" className="text-red-600" onClick={async () => {
+                    if (!window.confirm(`Delete the "${tmpl.name}" template?`)) return;
                     try {
                       await deleteMessageTemplate(tmpl.id);
                       toast.success("Template deleted");
                       router.refresh();
-                    } catch {
-                      toast.error("Failed to delete template");
+                    } catch (err) {
+                      toast.error("Not deleted", { description: err instanceof Error ? err.message : undefined });
                     }
                   }}>
                     <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete

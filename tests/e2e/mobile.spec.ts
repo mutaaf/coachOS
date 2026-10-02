@@ -205,10 +205,10 @@ async function seedRealisticData() {
  * number. Put back afterwards, since every other test assumes they are off.
  */
 async function withPaymentSettings(fn: () => Promise<void>) {
-  const keys = ["stripe_enabled", "stripe_secret_key", "zelle_recipient"];
+  const keys = ["stripe_enabled", "stripe_test_secret_key", "zelle_recipient"];
   const { data: before } = await admin.from("config").select("key, value").in("key", keys);
   await admin.from("config").update({ value: "true" }).eq("key", "stripe_enabled");
-  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_secret_key");
+  await admin.from("config").update({ value: "sk_test_render_only" }).eq("key", "stripe_test_secret_key");
   await admin.from("config").update({ value: "972-900-0292" }).eq("key", "zelle_recipient");
   try {
     await fn();

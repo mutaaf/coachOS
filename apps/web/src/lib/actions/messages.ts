@@ -2,6 +2,23 @@
 
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { renderTemplate } from "shared";
+
+/**
+ * Templates the app sends on its own, found by name. Renaming or deleting one
+ * would silently stop that message going out, so their names are fixed and
+ * they can be reworded but not removed.
+ */
+const SYSTEM_TEMPLATES = new Set([
+  "practice_reminder_day_before",
+  "practice_reminder_morning",
+  "payment_reminder",
+  "welcome_message",
+  "session_cancelled",
+  "payment_received",
+  "autopay_invite",
+  "autopay_failed",
+]);
 
 export async function createMessageTemplate(formData: FormData) {
   const supabase = createAdminSupabase();
@@ -24,10 +41,13 @@ export async function updateMessageTemplate(id: string, formData: FormData) {
   const body = formData.get("body") as string;
   const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
 
+  const { data: current } = await supabase.from("message_templates").select("name").eq("id", id).maybeSingle();
+  const name = SYSTEM_TEMPLATES.has(current?.name ?? "") ? current!.name : (formData.get("name") as string);
+
   const { error } = await supabase
     .from("message_templates")
     .update({
-      name: formData.get("name") as string,
+      name,
       category: formData.get("category") as string,
       body,
       variables,
@@ -40,6 +60,10 @@ export async function updateMessageTemplate(id: string, formData: FormData) {
 
 export async function deleteMessageTemplate(id: string) {
   const supabase = createAdminSupabase();
+  const { data: current } = await supabase.from("message_templates").select("name").eq("id", id).maybeSingle();
+  if (SYSTEM_TEMPLATES.has(current?.name ?? "")) {
+    throw new Error("This message is sent automatically, so it can be reworded but not deleted.");
+  }
   const { error } = await supabase
     .from("message_templates")
     .update({ is_active: false })
@@ -70,10 +94,23 @@ export async function sendBulkMessages(
   templateId?: string
 ) {
   const supabase = createAdminSupabase();
+
+  // Compose knows each recipient's name and nothing else, so {{parent_name}}
+  // is filled in and anything else is refused — a parent must never receive a
+  // raw "{{student_name}}".
+  const unknown = [...new Set([...message.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]))].filter(
+    (v) => v !== "parent_name"
+  );
+  if (unknown.length) {
+    return {
+      error: `A message to a group can only fill in {{parent_name}}. Remove ${unknown.map((v) => `{{${v}}}`).join(", ")} or write it out.`,
+    };
+  }
+
   const rows = recipients.map((r) => ({
     recipient_phone: r.phone,
     recipient_name: r.name,
-    message,
+    message: renderTemplate(message, { parent_name: (r.name || "").trim().split(/\s+/)[0] || "there" }),
     template_id: templateId || null,
     status: "pending",
     attempts: 0,
