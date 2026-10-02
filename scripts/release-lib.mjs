@@ -98,8 +98,11 @@ export function fallbackNotes(version, commits, newTourSteps = []) {
   // Commits from before conventional messages ("other") read like features.
   const features = commits.filter((c) => c.type === "feat" || c.type === "other");
   const fixes = commits.filter((c) => c.type === "fix");
+  // Without the AI there's no telling which stop shows which feature, so only
+  // the unambiguous case gets a "Show me": one new feature, one new stop.
+  const only = features.length === 1 && newTourSteps.length === 1 ? newTourSteps[0] : null;
   const notes = [
-    ...features.map((c, i) => ({ text: plain(c.subject), ...(newTourSteps[i] ? { tourStep: newTourSteps[i] } : {}) })),
+    ...features.map((c) => ({ text: plain(c.subject), ...(only ? { tourStep: only } : {}) })),
     ...fixes.map((c) => ({ text: `Fixed: ${plain(c.subject)}` })),
   ].slice(0, 8);
   return {
