@@ -36,6 +36,9 @@ export async function updateSession(request: NextRequest) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
+    // Invite and password links land here before anyone is signed in; the
+    // one-time link itself is what lets them in.
+    !request.nextUrl.pathname.startsWith("/welcome") &&
     !request.nextUrl.pathname.startsWith("/api") &&
     // The registration page is deliberately public — parents sign up without an
     // account. It reads and writes only through server actions.

@@ -108,10 +108,10 @@ test("the whole run-book, start to finish", async ({ page }) => {
     await page.getByLabel("Grade").fill("3rd");
     await page.getByLabel("First name").nth(1).fill("Sara");
     await page.getByLabel("Last name").nth(1).fill("Yusuf");
-    await page.getByLabel("WhatsApp number").fill("(214) 555-0123");
+    await page.getByLabel("Mobile number").fill("(214) 555-0123");
     await page.getByRole("button", { name: "Register" }).click();
 
-    await expect(page.getByText("You're in.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /is in! 🎉/ })).toBeVisible();
   });
 
   // ---- The week: registrations -> roster ----------------------------------
@@ -268,10 +268,10 @@ test("the whole run-book, start to finish", async ({ page }) => {
     await page.getByLabel("Last name").first().fill("Ali");
     await page.getByLabel("First name").nth(1).fill("Hana");
     await page.getByLabel("Last name").nth(1).fill("Ali");
-    await page.getByLabel("WhatsApp number").fill("(214) 555-0199");
+    await page.getByLabel("Mobile number").fill("(214) 555-0199");
     await page.getByRole("button", { name: "Join the waitlist" }).click();
 
-    await expect(page.getByText("You're on the waitlist.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /is on the list!/ })).toBeVisible();
     await expect(page.locator("strong")).toHaveText("1");
   });
 

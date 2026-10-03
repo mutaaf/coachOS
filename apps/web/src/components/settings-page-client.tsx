@@ -9,6 +9,9 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AccessCard } from "@/components/access-card";
+import type { Person } from "@/lib/actions/access";
+import { KeyRound } from "lucide-react";
 import { updateMultipleConfigs } from "@/lib/actions/config";
 import { checkStripeConnection, setStripeMode } from "@/lib/actions/stripe-mode";
 import { toast } from "sonner";
@@ -20,6 +23,7 @@ import type { Config } from "@/types/database";
 
 interface SettingsPageClientProps {
   config: Config[];
+  people: Person[];
 }
 
 function toWhatsAppDigits(phone: string) {
@@ -333,7 +337,7 @@ function StripeCard({
   );
 }
 
-export function SettingsPageClient({ config }: SettingsPageClientProps) {
+export function SettingsPageClient({ config, people }: SettingsPageClientProps) {
   const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>(
     Object.fromEntries(config.map((c) => [c.key, c.value]))
@@ -400,7 +404,14 @@ export function SettingsPageClient({ config }: SettingsPageClientProps) {
               </TabsTrigger>
             );
           })}
+          <TabsTrigger value="access" className="gap-2">
+            <KeyRound className="h-4 w-4" />
+            Access
+          </TabsTrigger>
         </TabsList>
+        <TabsContent value="access">
+          <AccessCard people={people} />
+        </TabsContent>
 
         {categories.map((cat) => (
           <TabsContent key={cat} value={cat}>

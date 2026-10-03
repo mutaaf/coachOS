@@ -21,11 +21,11 @@ test("a parent registers and is told they have a seat", async ({ page }) => {
   await page.getByLabel("Grade").fill("3rd");
   await page.getByLabel("First name").nth(1).fill("Sara");
   await page.getByLabel("Last name").nth(1).fill("Yusuf");
-  await page.getByLabel("WhatsApp number").fill("(214) 555-0123");
+  await page.getByLabel("Mobile number").fill("(214) 555-0123");
 
   await page.getByRole("button", { name: "Register" }).click();
 
-  await expect(page.getByText("You're in.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /is in! 🎉/ })).toBeVisible();
 
   const { data } = await admin
     .from("registrations")
@@ -51,11 +51,11 @@ test("a full program offers the waitlist rather than turning a parent away", asy
   await page.getByLabel("Last name").first().fill("Ali");
   await page.getByLabel("First name").nth(1).fill("Hana");
   await page.getByLabel("Last name").nth(1).fill("Ali");
-  await page.getByLabel("WhatsApp number").fill("(214) 555-0199");
+  await page.getByLabel("Mobile number").fill("(214) 555-0199");
 
   await page.getByRole("button", { name: "Join the waitlist" }).click();
 
-  await expect(page.getByText("You're on the waitlist.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /is on the list!/ })).toBeVisible();
   // First in line, since nobody was waiting before them.
   await expect(page.locator("strong")).toHaveText("1");
 
@@ -91,7 +91,7 @@ test("the same child cannot be registered twice by a double submit", async ({ pa
   await page.getByLabel("Last name").first().fill("Yusuf");
   await page.getByLabel("First name").nth(1).fill("Sara");
   await page.getByLabel("Last name").nth(1).fill("Yusuf");
-  await page.getByLabel("WhatsApp number").fill("(214) 555-0123");
+  await page.getByLabel("Mobile number").fill("(214) 555-0123");
 
   await page.getByRole("button", { name: "Register" }).click();
 

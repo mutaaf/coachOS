@@ -86,7 +86,7 @@ export function RegistrationForm({
               {waitlisted ? (
                 <>
                   {programName} is full right now, so we&apos;ve saved a place in line —{" "}
-                  <strong>number {result.waitlistPosition}</strong>. You&apos;ll hear from us first if a spot
+                  number <strong>{result.waitlistPosition}</strong>. You&apos;ll hear from us first if a spot
                   opens. Nothing is owed unless one does.
                 </>
               ) : (

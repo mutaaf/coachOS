@@ -37,6 +37,9 @@ const PUBLIC: Record<string, string[] | "*"> = {
   "pay-page.ts": "*", // /pay/{token}: every action checks the family's token
   "auth.ts": "*", // signing in and out
   "registrations.ts": ["submitRegistration"], // the public /join form
+  // "Forgot your password?" on the sign-in page: answers the same for anyone,
+  // and only emails people who already have access.
+  "access.ts": ["requestPasswordLink"],
 };
 
 const dir = path.resolve(__dirname, "../../apps/web/src/lib/actions");
