@@ -18,17 +18,13 @@ import { toast } from "sonner";
 import { Settings, MessageSquare, CreditCard, Calendar, Eye, EyeOff, Mail, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ZelleSetupSteps } from "@/components/zelle-setup";
+import { toWhatsAppDigits } from "@/lib/outbox";
 import { useRouter } from "next/navigation";
 import type { Config } from "@/types/database";
 
 interface SettingsPageClientProps {
   config: Config[];
   people: Person[];
-}
-
-function toWhatsAppDigits(phone: string) {
-  const d = phone.replace(/\D/g, "");
-  return d.length === 10 ? `1${d}` : d;
 }
 
 /** A key: hidden until asked for, copyable without being shown. */
@@ -144,7 +140,7 @@ function ConfigField({
           ? { href: `mailto:${v}`, label: "Email", icon: Mail }
           : item.field_type === "url" && /^https?:\/\//.test(v)
             ? { href: v, label: "Open", icon: ExternalLink }
-            : item.field_type === "phone" && v.replace(/\D/g, "").length >= 10
+            : item.field_type === "phone" && toWhatsAppDigits(v)
               ? { href: `https://wa.me/${toWhatsAppDigits(v)}`, label: "WhatsApp", icon: MessageSquare }
               : null;
       return (

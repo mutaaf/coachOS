@@ -4,7 +4,8 @@ import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Registration } from "@/types/database";
-import { Directory, mergeIntoChild, sameName, type ChildOnFile } from "@/lib/identity";
+import { Directory, mergeIntoChild, phoneKey, sameName, type ChildOnFile } from "@/lib/identity";
+import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
 import { emailRegistration, emailWelcome } from "@/lib/parent-emails";
 
 /**
@@ -24,7 +25,7 @@ export async function submitRegistration(formData: FormData) {
   const childLastName = (formData.get("child_last_name") as string)?.trim();
   const parentFirstName = (formData.get("parent_first_name") as string)?.trim();
   const parentLastName = (formData.get("parent_last_name") as string)?.trim();
-  const parentPhone = (formData.get("parent_phone") as string)?.trim();
+  const typedPhone = (formData.get("parent_phone") as string)?.trim();
   const parentEmail = (formData.get("parent_email") as string)?.trim() || null;
   const childGrade = (formData.get("child_grade") as string)?.trim() || null;
   const childDob = (formData.get("child_date_of_birth") as string) || null;
@@ -37,16 +38,18 @@ export async function submitRegistration(formData: FormData) {
     !childLastName ||
     !parentFirstName ||
     !parentLastName ||
-    !parentPhone
+    !typedPhone
   ) {
     return { error: "Please fill in your name, your child's name, and a phone number." };
   }
+  // Saved as one number, so the Boss's WhatsApp link reaches them.
+  const parentPhone = normalizePhone(typedPhone);
+  if (!parentPhone) return { error: NOT_A_PHONE };
 
   // Same child, same program, twice — usually a double submit rather than twins.
   // Compared on the phone's digits, not as typed: "(214) 555-0150" and
   // "2145550150" are one parent, and letting the second through would hold a
-  // second seat for the same child.
-  const digits = (p: string) => p.replace(/\D/g, "").slice(-10);
+  // second seat for the same child. Older rows may still be as typed.
   const { data: sameProgram } = await supabase
     .from("registrations")
     .select("id, status, parent_phone, child_first_name, child_last_name")
@@ -54,7 +57,7 @@ export async function submitRegistration(formData: FormData) {
     .not("status", "in", "(cancelled,declined)");
   const existing = (sameProgram || []).find(
     (r) =>
-      digits(r.parent_phone) === digits(parentPhone) &&
+      phoneKey(r.parent_phone) === phoneKey(parentPhone) &&
       sameName(r.child_first_name, childFirstName) &&
       sameName(r.child_last_name, childLastName)
   );
@@ -183,7 +186,7 @@ export async function convertRegistration(
       .insert({
         first_name: reg.parent_first_name,
         last_name: reg.parent_last_name,
-        phone: reg.parent_phone,
+        phone: normalizePhone(reg.parent_phone) ?? reg.parent_phone,
         email: reg.parent_email,
       })
       .select("id")

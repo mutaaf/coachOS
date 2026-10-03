@@ -57,6 +57,19 @@ export function phoneKey(raw: string | null | undefined): string | null {
 }
 
 /**
+ * Does a search box's text find this number? "(214) 555", "214.555.1000" and
+ * "555-1000" all find +12145551000. Only a search made of phone characters,
+ * with at least three digits, is a phone search.
+ */
+export function matchesPhone(phone: string | null | undefined, query: string): boolean {
+  if (!/^[\d\s()+.-]+$/.test(query)) return false;
+  const q = query.replace(/\D/g, "");
+  if (q.length < 3) return false;
+  const digits = (phone ?? "").replace(/\D/g, "");
+  return digits.includes(q) || (q.length === 11 && q.startsWith("1") && digits.endsWith(q.slice(1)));
+}
+
+/**
  * Add a note to the one on file without losing either. A registration's
  * "EpiPen — peanut allergy" must reach the child the coach sees.
  */

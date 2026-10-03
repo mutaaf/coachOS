@@ -17,6 +17,8 @@ import { deleteStudent, deleteParent, archiveStudent, restoreStudent } from "@/l
 import { useAction } from "@/lib/use-action";
 import { toast } from "sonner";
 import type { Student, Parent } from "@/types/database";
+import { matchesPhone } from "@/lib/identity";
+import { formatPhone } from "@/lib/utils";
 import type { StudentEnrollmentInfo, ParentWithStudents } from "@/lib/queries/students";
 
 type StudentWithParents = Student & {
@@ -51,7 +53,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
     const q = search.toLowerCase();
     return (
       `${s.first_name} ${s.last_name}`.toLowerCase().includes(q) ||
-      s.parents.some((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)) ||
+      s.parents.some((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(q) || matchesPhone(p.phone, search)) ||
       s.enrollments.some(
         (e) => e.schoolName.toLowerCase().includes(q) || e.programName.toLowerCase().includes(q)
       )
@@ -61,7 +63,8 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
   const filteredParents = parents.filter(
     (p) =>
       `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
-      p.phone.includes(search) ||
+      // On the digits: "(214) 555" finds a number saved as +12145551000.
+      matchesPhone(p.phone, search) ||
       (p.email && p.email.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -274,7 +277,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                       <td className="p-4 font-medium">{parent.first_name} {parent.last_name}</td>
                       <td className="p-4 hidden sm:table-cell">
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Phone className="h-3.5 w-3.5" /> {parent.phone}
+                          <Phone className="h-3.5 w-3.5" /> {formatPhone(parent.phone)}
                         </div>
                       </td>
                       <td className="p-4 hidden md:table-cell">

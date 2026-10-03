@@ -4,6 +4,7 @@ import { requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { foldName, phoneKey, sameFirstName, sameName } from "@/lib/identity";
+import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
 
 /**
  * Bulk Import never adds someone already on file, or the same row twice: a
@@ -186,20 +187,25 @@ export async function bulkCreateParents(
       errors.push({ row: i, message: "Phone number is required" });
       continue;
     }
-    const key = phoneKey(row.phone);
-    const holder = key ? byPhone.get(key) : undefined;
+    const phone = normalizePhone(row.phone);
+    if (!phone) {
+      errors.push({ row: i, message: `${row.phone.trim()}: ${NOT_A_PHONE}` });
+      continue;
+    }
+    const key = phoneKey(phone)!;
+    const holder = byPhone.get(key);
     if (holder) {
       errors.push({ row: i, message: `${row.phone.trim()} is already on file for ${holder} — not added again` });
       continue;
     }
-    if (key) byPhone.set(key, `${row.first_name.trim()} ${row.last_name.trim()}`);
+    byPhone.set(key, `${row.first_name.trim()} ${row.last_name.trim()}`);
     const payment = row.preferred_payment?.trim().toLowerCase();
     const validPayment =
       payment === "zelle" || payment === "venmo" || payment === "stripe" ? payment : "cash";
     validRows.push({
       first_name: row.first_name.trim(),
       last_name: row.last_name.trim(),
-      phone: row.phone.trim(),
+      phone,
       email: row.email?.trim() || null,
       preferred_payment: validPayment,
     });

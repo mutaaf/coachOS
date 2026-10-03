@@ -4,6 +4,7 @@ import { requireSignedIn } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { findChildrenNamed, findParentByPhone, mergeIntoChild } from "@/lib/identity";
+import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
 
 export async function createStudent(formData: FormData) {
   await requireSignedIn();
@@ -112,16 +113,19 @@ export async function createParent(formData: FormData) {
   const first_name = formData.get("first_name") as string;
   const last_name = formData.get("last_name") as string;
   const email = (formData.get("email") as string) || null;
-  const phone = formData.get("phone") as string;
+  const typedPhone = formData.get("phone") as string;
   const preferred_payment =
     (formData.get("preferred_payment") as "cash" | "zelle" | "venmo" | "stripe") || "cash";
   const venmo_handle = (formData.get("venmo_handle") as string) || null;
   const zelle_identifier = (formData.get("zelle_identifier") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
-  if (!first_name || !last_name || !phone) {
+  if (!first_name || !last_name || !typedPhone) {
     return { error: "First name, last name, and phone are required." };
   }
+  // Saved as one number, not as typed: WhatsApp links and matching rely on it.
+  const phone = normalizePhone(typedPhone);
+  if (!phone) return { error: NOT_A_PHONE };
 
   // The same phone, however it was typed, is the parent already on file.
   if (!formData.get("confirm_new")) {
@@ -159,11 +163,13 @@ export async function updateParent(id: string, formData: FormData) {
 
   const first_name = formData.get("first_name") as string;
   const last_name = formData.get("last_name") as string;
-  const phone = formData.get("phone") as string;
+  const typedPhone = formData.get("phone") as string;
 
-  if (!first_name || !last_name || !phone) {
+  if (!first_name || !last_name || !typedPhone) {
     return { error: "First name, last name, and phone are required." };
   }
+  const phone = normalizePhone(typedPhone);
+  if (!phone) return { error: NOT_A_PHONE };
 
   // Only what the form sent is changed. The Zelle and Venmo fields are shown
   // only for their own method, and nulling them whenever they were hidden

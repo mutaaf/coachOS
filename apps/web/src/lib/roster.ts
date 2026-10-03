@@ -42,6 +42,10 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   return null;
 }
 
+/** What a form says when a phone number won't resolve — a parent on /join reads it too. */
+export const NOT_A_PHONE =
+  "That phone number doesn't look right. Use the 10-digit number, like (214) 555-0150, or + and the country code for a number outside the US.";
+
 // Who counts as the same person is decided in one place, lib/identity.ts.
 export { sameName, phoneKey } from "@/lib/identity";
 
