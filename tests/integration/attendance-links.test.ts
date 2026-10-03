@@ -96,10 +96,15 @@ describe("opening a sheet", () => {
     const link = await createAttendanceLink(sessionId);
 
     const { data } = await open(link.token!, link.passcode!);
-    const payload = JSON.stringify(data);
 
+    // Field names, not the text: ids are hex, and "…4fee…" is just an id.
+    const keys: string[] = [];
+    (function walk(v: unknown) {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) { keys.push(k.toLowerCase()); walk(x); }
+    })(data);
     for (const forbidden of ["phone", "parent", "email", "amount", "fee", "invoice"]) {
-      expect(payload.toLowerCase()).not.toContain(forbidden);
+      expect(keys.filter((k) => k.includes(forbidden)), forbidden).toEqual([]);
     }
     expect(Object.keys(data.roster[0]).sort()).toEqual([
       "first_name",
