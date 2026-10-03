@@ -195,6 +195,19 @@ function buildSteps(ctx: TourContext | null): Step[] {
     body: "Compose writes one message to a whole school or session (it lands in the Outbox to send). Templates are the wording of every automatic message — change them freely. History shows what went out.",
   },
   {
+    id: "website",
+    path: "/website",
+    target: '[data-tour="website-tabs"]',
+    title: "Your website, from here",
+    body: (
+      <>
+        The programs, testimonials and partnerships on risingstars.training. Add a program straight from one in
+        CoachOS and the site shows live open places, with sign-ups landing here. Anything ended or not linked is
+        flagged under <strong>Needs a look</strong>.
+      </>
+    ),
+  },
+  {
     id: "settings",
     path: "/settings",
     target: '[data-tour="settings-tabs"]',

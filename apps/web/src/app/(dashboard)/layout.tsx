@@ -21,6 +21,7 @@ import {
   CreditCard,
   MessageSquare,
   Target,
+  Globe,
   Settings,
   LogOut,
   PlayCircle,
@@ -40,6 +41,7 @@ const navigation = [
   { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Messaging", href: "/messaging", icon: MessageSquare },
   { name: "Marketing", href: "/marketing", icon: Target },
+  { name: "Website", href: "/website", icon: Globe },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Help", href: "/help", icon: LifeBuoy },
 ];
