@@ -8,6 +8,9 @@ import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/
 import { createClient } from "@/lib/supabase/client";
 import { useAction } from "@/lib/use-action";
 import { createAttendanceLink } from "@/lib/actions/attendance-links";
+import { assignCoachToSession } from "@/lib/actions/coaches";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { businessToday, formatBusinessTime, formatDateOnly, sessionDayPhrase } from "@/lib/dates";
 import { toast } from "sonner";
 import { Link2, Copy } from "lucide-react";
@@ -19,6 +22,10 @@ interface AttendanceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session: any;
+  /** Active coaches, for naming who runs this practice. */
+  coaches?: { id: string; first_name: string; last_name: string }[];
+  /** Called once a new coach is saved, so the calendar keeps it. */
+  onCoachChange?: (coachId: string | null) => void;
 }
 
 const statusStyles: Record<AttendanceStatus, { bg: string; text: string; icon: any }> = {
@@ -28,7 +35,7 @@ const statusStyles: Record<AttendanceStatus, { bg: string; text: string; icon: a
   excused: { bg: "bg-gray-100", text: "text-gray-700", icon: AlertCircle },
 };
 
-export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDialogProps) {
+export function AttendanceDialog({ open, onOpenChange, session, coaches = [], onCoachChange }: AttendanceDialogProps) {
   const [students, setStudents] = useState<any[]>([]);
   const [attended, setAttended] = useState<any[]>([]);
   const [records, setRecords] = useState<Record<string, AttendanceStatus>>({});
@@ -140,6 +147,26 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
     toast.success("Link and passcode copied");
   }
 
+  // Who ran this practice is what coach pay counts, so someone covering is
+  // set here rather than on the weekly slot.
+  async function handleCoachChange(value: string) {
+    const coachId = value || null;
+    const ok = await run(() => assignCoachToSession(session.id, coachId), {
+      success: "Coach saved",
+      error: "The coach wasn't saved",
+    });
+    if (ok) onCoachChange?.(coachId);
+  }
+
+  // A coach since made inactive is still who ran it, so keep them in the list.
+  const coachOptions = [
+    { value: "", label: "Not assigned" },
+    ...coaches.map((c) => ({ value: c.id, label: `${c.first_name} ${c.last_name}` })),
+    ...(session?.coach_id && !coaches.some((c) => c.id === session.coach_id)
+      ? [{ value: session.coach_id as string, label: "A coach no longer active" }]
+      : []),
+  ];
+
   // Saves the register and completes in one step. Completing used to be its
   // own button that ignored the register, so pressing it first lost the lot.
   async function handleComplete() {
@@ -181,6 +208,21 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
             </span>
           </div>
         </div>
+
+        {(coaches.length > 0 || session.coach_id) && (
+          <div className="flex items-center gap-3">
+            <Label htmlFor="session_coach" className="shrink-0">Coach</Label>
+            <div className="flex-1">
+              <Select
+                id="session_coach"
+                options={coachOptions}
+                value={session.coach_id ?? ""}
+                onChange={(e) => handleCoachChange(e.target.value)}
+                disabled={pending}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Attendance List — kept on a completed practice so it can be checked and corrected */}
         {session.status !== "cancelled" && (

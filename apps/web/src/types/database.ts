@@ -94,6 +94,7 @@ export type ScheduleTemplate = {
   start_time: string;
   end_time: string;
   location: string | null;
+  coach_id?: string | null;
   created_at: string;
 };
 
@@ -108,6 +109,7 @@ export type Session = {
   cancel_reason: string | null;
   is_makeup: boolean;
   notes: string | null;
+  coach_id?: string | null;
   created_at: string;
 };
 

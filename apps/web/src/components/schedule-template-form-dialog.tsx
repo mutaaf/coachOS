@@ -200,8 +200,13 @@ export function ScheduleTemplateFormDialog({
                     value: c.id,
                     label: `${c.first_name} ${c.last_name}`,
                   })),
+                  // Without this, a coach since made inactive fell back to
+                  // "Not assigned" and saving cleared them.
+                  ...(template?.coach_id && !coaches.some((c) => c.id === template.coach_id)
+                    ? [{ value: template.coach_id, label: "A coach no longer active" }]
+                    : []),
                 ]}
-                defaultValue={(template as { coach_id?: string })?.coach_id ?? ""}
+                defaultValue={template?.coach_id ?? ""}
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
@@ -221,6 +226,23 @@ export function ScheduleTemplateFormDialog({
               disabled={isSubmitting}
             />
           </div>
+
+          {isEditing && (
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="update_future"
+                className="mt-0.5"
+                defaultChecked
+                disabled={isSubmitting}
+              />
+              <span>
+                Also change the practices already on the calendar. Past and
+                cancelled practices stay as they were, and so does anyone
+                covering a practice.
+              </span>
+            </label>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button

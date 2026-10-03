@@ -119,6 +119,8 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
       start_time: t.start_time,
       end_time: t.end_time,
       location: t.location,
+      // Left out, the form opened on "Not assigned" and saving cleared the coach.
+      coach_id: t.coach_id,
       created_at: t.created_at,
     });
     setTemplateFormOpen(true);
@@ -250,6 +252,12 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
           open={showAttendance}
           onOpenChange={(open) => { setShowAttendance(open); if (!open) setSelectedSession(null); }}
           session={selectedSession}
+          coaches={coaches}
+          onCoachChange={(coachId) => {
+            const updated = { ...selectedSession, coach_id: coachId };
+            setSelectedSession(updated);
+            setSessions((all) => all.map((s: any) => (s.id === updated.id ? updated : s)));
+          }}
         />
       )}
 
@@ -292,6 +300,7 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0"
+                      aria-label="Edit template"
                       onClick={() => handleEditTemplate(t)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -300,6 +309,7 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      aria-label="Delete template"
                       onClick={() => handleDeleteTemplate(t.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
