@@ -1849,13 +1849,15 @@
    "From 'Use a template...' choose any template that contains {{parent_name}}, or type 'Hi {{parent_name}}, practice moves to 5pm.' using the variable buttons.",
    "Click 'Send to N recipient(s)'.",
    "Open Outbox and read each new card's text in full.",
-   "Repeat using By School for the test school, and note whether each parent of a child at that school appears once."
+   "Repeat using By School for the test school, and note whether each parent of a child at that school appears once.",
+   "With the test school's parents showing under By School, click By Program. Note the list, the recipient chips and the Send button before picking anything. Then click All Parents, then By School, and note them again."
   ],
   "expected": [
    "Recipients are exactly the parents of active children in the program: both parents of the two-parent child, the siblings' shared parent once, and nobody for the withdrawn child.",
    "The count on the button equals the number of cards created in the Outbox.",
    "Each message greets the parent by their own first name. Compose fills in {{parent_name}} only; a message with any other placeholder (e.g. {{student_name}}) is refused with 'A message to a group can only fill in {{parent_name}}…' and nothing goes to the Outbox. No card ever shows a raw {{…}}.",
-   "By School lists each parent once, even if they have children in several programs at that school."
+   "By School lists each parent once, even if they have children in several programs at that school.",
+   "Every switch between All Parents, By School and By Program clears the recipients: the list shows 'Select a school' or 'Select a program', no chips show, and Send is greyed out until you pick one. The chips never belong to a different school or program from the one shown."
   ],
   "evidence": "Your expected recipient list, a screenshot of the recipient chips and count, and screenshots of every resulting Outbox card.",
   "phone": false
