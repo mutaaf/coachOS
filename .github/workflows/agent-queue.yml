@@ -1,0 +1,61 @@
+name: Agent queue
+
+# Hands queued issues to the agents one at a time, so two of them never
+# rewrite the same files at once. The next issue in line (lowest number with
+# the `queued` label) gets the `agent` label — which starts Agents — only when
+# no issue is in progress and no agent pull request is open. A finished PR
+# closes its issue ("Fixes #N"), which runs this again.
+#
+# An issue in progress for 3 hours with no open pull request (the agent
+# stopped, or decided code couldn't fix it) is marked `needs-human` and the
+# queue moves on.
+#
+# Labels are changed with BOT_TOKEN: a label added with the workflow's own
+# token would not start Agents.
+
+on:
+  issues:
+    types: [closed, unlabeled]
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: agent-queue
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  next:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.BOT_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Move the queue on
+        run: |
+          set -euo pipefail
+          [ -n "$GH_TOKEN" ] || { echo "::warning::BOT_TOKEN isn't set"; exit 0; }
+
+          open_prs=$(gh pr list -R "$REPO" --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("claude/"))] | length')
+          now=$(date -u +%s)
+          busy=0
+          for row in $(gh issue list -R "$REPO" --state open --label agent --json number,updatedAt --jq '.[] | "\(.number)|\(.updatedAt)"'); do
+            n=${row%%|*}; updated=$(date -u -d "${row#*|}" +%s)
+            if [ "$open_prs" = 0 ] && [ $((now - updated)) -gt 10800 ]; then
+              gh issue edit "$n" -R "$REPO" --remove-label agent --add-label needs-human
+              gh issue comment "$n" -R "$REPO" --body "No pull request after 3 hours, so this is back with a person. The agent queue has moved on."
+            else
+              busy=1
+            fi
+          done
+          if [ "$busy" = 1 ] || [ "$open_prs" != 0 ]; then echo "An agent is working; waiting."; exit 0; fi
+
+          next=$(gh issue list -R "$REPO" --state open --label queued --json number --jq 'sort_by(.number) | .[0].number // empty')
+          [ -n "$next" ] || { echo "Queue is empty."; exit 0; }
+          gh issue edit "$next" -R "$REPO" --remove-label queued --add-label agent
+          echo "Started #$next"

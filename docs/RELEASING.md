@@ -62,3 +62,12 @@ a person can add the `destructive-ok` label to let one through.
 | Vercel env | `GITHUB_ISSUES_TOKEN` | Filing her reports as issues (the same token as `BOT_TOKEN` works) |
 | GitHub variable | `APP_URL`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | |
 | GitHub variable | `SHIP_DEPLOYS` | `true` once the above are set: Ship deploys, and Vercel's own deploy of main is off (`vercel.json` → `git.deploymentEnabled.main`) |
+
+## The agent queue
+
+Issues labelled `queued` are worked one at a time, lowest number first
+(`.github/workflows/agent-queue.yml`): when nothing is in progress, the next
+gets the `agent` label and Agents picks it up; its merged PR closes the issue
+and the next starts. Reorder by renumbering — or take `queued` off an issue to
+hold it. Something stuck for three hours with no PR is labelled `needs-human`
+and skipped.
