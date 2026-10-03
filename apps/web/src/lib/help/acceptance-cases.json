@@ -654,6 +654,36 @@
   "phone": false
  },
  {
+  "id": "REG-05",
+  "area": "Registration",
+  "title": "Registrations bills who it adds, takes off who it cancels, and serves the waitlist in order",
+  "risk": "A child shows Paid with no money behind it, a cancelled child is still billed every month, or the family first in line loses their place to someone newer.",
+  "severity": "high",
+  "preconditions": [
+   "A test program with a monthly fee and 1 seat. Register one test child (they get the seat), then three more so they are #1, #2 and #3 on the waitlist."
+  ],
+  "steps": [
+   "On Registrations, tap Add to roster on the child with the seat. Open Payments.",
+   "Back on Registrations, look for a Mark paid button.",
+   "Tap the X on that child. Read the question, tap Keep it, then tap the X again and tap Cancel registration with “Also take … off the roster” ticked.",
+   "Open Payments again, then tap Restore on the cancelled child.",
+   "Cancel them again the same way. Tap the waitlisted filter and read the order.",
+   "Tap Give a seat on #2.",
+   "Tap Cancel on the question, then tap Give a seat to next in line on the program's seat card."
+  ],
+  "expected": [
+   "Add to roster makes this month's bill for the program's fee, due a week from today.",
+   "There is no Mark paid button. Paid shows only once a payment is recorded on Payments.",
+   "Cancel asks first. Keep it changes nothing. After cancelling, the card shows Cancelled without Enrolled, and the unpaid bill is gone from Payments.",
+   "Restore says the child has a seat, shows Enrolled again, and the bill is back.",
+   "The waitlist reads #1, #2, #3 from the top.",
+   "Give a seat on #2 asks whether to skip the child who is #1 in line; saying no changes nothing.",
+   "Give a seat to next in line gives the seat to #1, and the others become #1 and #2."
+  ],
+  "evidence": "Screenshots of the cancel question, the waitlist order, the skip question, and Payments before and after cancelling.",
+  "phone": false
+ },
+ {
   "id": "PAY-01",
   "area": "Autopay & Stripe",
   "title": "Set up card autopay and confirm the first charge, card fee included, is exact",

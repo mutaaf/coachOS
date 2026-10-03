@@ -216,7 +216,9 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Registrations**, copy the session's sign-up link." },
       { text: "Share it however you like — WhatsApp, Instagram, a flyer. Parents register themselves and get a celebration and a \"you're in\" email; when full, they join a waitlist automatically." },
-      { text: "Add each confirmed child to the roster with one tap. They get a welcome email with the first practice and their payment page." },
+      { text: "Add each confirmed child to the roster with one tap. They get a welcome email with the first practice and their payment page, and this month's bill is made — due a week later. It shows **Paid** once the money is recorded on Payments." },
+      { text: "When a place opens, tap **Give a seat to next in line** on the program. The waitlist reads #1 first; giving a seat to anyone else asks before skipping the family ahead of them." },
+      { text: "The ✕ cancels a registration after asking. For a child on the roster, leave “Also take them off the roster” ticked so they aren't billed again. Changed your mind? Tap **Restore**.", tip: "Restore gives back the seat if one is free; if the program has filled, the child goes to the back of the waitlist." },
     ],
   },
   {
