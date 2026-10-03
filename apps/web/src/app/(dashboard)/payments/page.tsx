@@ -15,7 +15,7 @@ import { PaymentsPageClient } from "@/components/payments-page-client";
 // page keeps serving whatever the database held when it was deployed.
 export const dynamic = "force-dynamic";
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({ searchParams }: { searchParams: { status?: string } }) {
   // Update overdue status first
   await getOverdueInvoices();
 
@@ -35,6 +35,7 @@ export default async function PaymentsPage() {
       invoices={invoices}
       payments={payments}
       collect={{ zelle, assign, autopay, inviteCount }}
+      initialStatus={searchParams.status}
     />
   );
 }

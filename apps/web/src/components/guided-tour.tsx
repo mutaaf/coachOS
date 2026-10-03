@@ -64,7 +64,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/dashboard",
     target: '[data-tour="dashboard-stats"]',
     title: "Today at a glance",
-    body: "Active students, money in this month, what's overdue, and the sessions coming up. Below are today's sessions and anything that needs you.",
+    body: "Active students, money in this month, how many payments are overdue and what they add up to, and the sessions coming up. Below are today's sessions and anything that needs you — tap See all to open every overdue payment.",
   },
   {
     id: "schools-import",

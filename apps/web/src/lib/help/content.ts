@@ -191,6 +191,20 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "behind",
+    title: "See who's behind on payments",
+    when: "Any time",
+    keywords: "overdue late behind owe owed unpaid chase dashboard see all",
+    href: "/payments?status=overdue",
+    hrefLabel: "Open overdue payments",
+    tourStep: "dashboard-stats",
+    steps: [
+      { text: "On the Dashboard, **Overdue Payments** shows how many invoices are past due and how much they add up to." },
+      { text: "**Recent Alerts** lists the five oldest. Tap **See all** to open Payments with every {overdue} invoice showing." },
+      { text: "A reminder has already gone out once by itself. Record a payment from its row, or send them their payment link from the Outbox." },
+    ],
+  },
+  {
     id: "join",
     title: "Let new families sign up",
     when: "To fill a session",
