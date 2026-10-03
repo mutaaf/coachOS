@@ -32,6 +32,8 @@ interface PaymentsPageClientProps {
   invoices: any[];
   payments: any[];
   collect: CollectPanelProps;
+  /** Families who paid ahead or paid extra: spent by the next invoice run. */
+  credits: { parentId: string; name: string; cents: number }[];
   /** From the address: the dashboard's "See all" opens on overdue. */
   initialStatus?: string;
 }
@@ -49,7 +51,7 @@ const statusBadge = (status: string) => {
 
 const STATUSES = ["all", "pending", "processing", "overdue", "paid", "waived"];
 
-export function PaymentsPageClient({ summary, invoices, payments, collect, initialStatus }: PaymentsPageClientProps) {
+export function PaymentsPageClient({ summary, invoices, payments, collect, credits, initialStatus }: PaymentsPageClientProps) {
   const router = useRouter();
   const { run } = useAction();
   const [statusFilter, setStatusFilter] = useState(
@@ -192,6 +194,23 @@ export function PaymentsPageClient({ summary, invoices, payments, collect, initi
           <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.paidThisMonth)}</p>
         </div>
       </div>
+
+      {credits.length > 0 && (
+        <div className="rounded-2xl border bg-card p-4 mb-6" data-testid="family-credits">
+          <h2 className="font-semibold">Credit on file</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            Money families paid ahead, or paid over what they owed. It goes on their next invoice by itself.
+          </p>
+          <ul className="divide-y">
+            {credits.map((c) => (
+              <li key={c.parentId} className="flex items-center justify-between py-2">
+                <span>{c.name}</span>
+                <span className="font-semibold tabular-nums text-green-700">{formatCurrency(c.cents / 100)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Tabs defaultValue="invoices">
         <TabsList>

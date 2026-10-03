@@ -149,6 +149,21 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "paid-ahead",
+    title: "A family paid ahead, or paid too much",
+    when: "Money comes in that nothing is owed for yet",
+    keywords: "credit ahead advance early extra overpaid overpayment too much paid up next month balance",
+    href: "/payments",
+    hrefLabel: "Open Payments",
+    tourStep: "record-payment",
+    steps: [
+      { text: "Record it as usual: [[Who paid this?]] on a Zelle, or [[Record Payment]] at the top right of Payments for cash or Venmo. Tap the family." },
+      { text: "The summary says how much goes on what they owe, and that the rest is **kept as credit**. Tap [[Record]]." },
+      { text: "**Credit on file** on Payments lists every family with credit. Their payment page shows it too, and doesn't ask them to send anything while they owe nothing." },
+      { text: "When next month's invoices are made, the credit pays them first, by itself. Nothing for you to do.", tip: "Total Revenue counts the money once, when it came in — not again when the credit is used." },
+    ],
+  },
+  {
     id: "cash",
     title: "A parent paid cash (or another way)",
     when: "Whenever it happens",
@@ -159,7 +174,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Payments**, find the family's invoice and tap **Record Payment** on its row." },
       { text: "The amount still owed is filled in — change it if they paid part. Pick the method and tap [[Record Payment]]." },
-      { text: "It turns {paid} when fully paid, and a receipt is emailed if they have an email.", tip: "CoachOS won't take $0, a negative amount or more than they owe — that keeps your books right." },
+      { text: "It turns {paid} when fully paid, and a receipt is emailed if they have an email.", tip: "CoachOS won't take $0, a negative amount or more than this invoice is for. If they paid extra, record it with Record Payment at the top right instead — the rest is kept as their credit." },
       { text: "Typed it wrong? Open **Payment History** and tap the pencil on that payment. The same rule applies: more than $0, and no more than the invoice is for once its other payments are counted." },
     ],
   },

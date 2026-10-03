@@ -52,11 +52,17 @@ export async function createStripeInvoice(invoiceId: string) {
 
   const { data: invoice, error: invError } = await supabase
     .from("invoices")
-    .select("*, parents(*), students(*), programs(*)")
+    .select("*, parents(*), students(*), programs(*), payments(amount)")
     .eq("id", invoiceId)
     .single();
 
   if (invError || !invoice) return { error: "Invoice not found." };
+
+  // What is still owed: part may already be paid, from credit on file.
+  const owedCents =
+    Math.round(Number(invoice.amount) * 100) -
+    ((invoice.payments as any[]) || []).reduce((s, p) => s + Math.round(Number(p.amount) * 100), 0);
+  if (owedCents <= 0) return { error: "Nothing is owed on this invoice." };
 
   if (invoice.stripe_invoice_id) {
     return { error: "Stripe invoice already exists for this invoice." };
@@ -80,7 +86,7 @@ export async function createStripeInvoice(invoiceId: string) {
   await stripe.invoiceItems.create({
     invoice: stripeInvoice.id,
     customer: customerResult.customerId,
-    amount: Math.round(Number(invoice.amount) * 100),
+    amount: owedCents,
     currency: "usd",
     description: `${program?.name} — ${student?.first_name} ${student?.last_name} (${invoice.month})`,
   });

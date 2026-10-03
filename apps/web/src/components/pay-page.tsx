@@ -142,7 +142,9 @@ export function PayPage({
     }
   }
 
-  const zelleAmount = data.openCents > 0 ? data.openCents : data.monthlyCents;
+  // Only what is owed. A family who has paid is never told to send a month's
+  // fee again; if they choose to pay ahead, it is kept as credit.
+  const zelleAmount = data.openCents;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -219,6 +221,11 @@ export function PayPage({
                 ))}
               </ul>
             </>
+          )}
+          {data.creditCents > 0 && (
+            <p className="mt-2 border-t border-slate-100 pt-3 text-sm text-emerald-800">
+              You have {money(data.creditCents)} in credit. It goes toward your next fee.
+            </p>
           )}
         </section>
 
@@ -379,7 +386,7 @@ export function PayPage({
               {data.stripeEnabled ? "Prefer Zelle?" : "Pay with Zelle"}
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              {zelleAmount > 0 ? <>Send {money(zelleAmount)} to</> : <>Send to</>}
+              {zelleAmount > 0 ? <>Send {money(zelleAmount)} to</> : <>Nothing is owed right now. To pay ahead, send to</>}
               {zelleTargets.length > 1 ? " either of these" : ""}
             </p>
             <div className="mt-2 space-y-2">

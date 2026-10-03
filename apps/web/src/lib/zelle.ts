@@ -5,6 +5,7 @@ import {
   type OpenInvoice,
 } from "@/lib/invoice-status";
 import { emailReceipt } from "@/lib/parent-emails";
+import { addFamilyCredit, dollars } from "@/lib/family-credit";
 
 /**
  * Zelle has no API. What it does have is the email every bank sends when money
@@ -213,16 +214,33 @@ export function allocateGreedily(open: OpenInvoice[], cents: number) {
   return { picked, leftoverCents: remaining };
 }
 
-const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
-/** Record a receipt's money against invoices and mark it matched. */
+/**
+ * Record a receipt's money against invoices and mark it matched. Whatever is
+ * left over is kept as the family's credit, for the next invoice run.
+ */
 export async function applyReceipt(
   supabase: OpsClient,
   receipt: { id: string; sender_name: string | null; received_at: string; memo: string | null },
   parentId: string,
   allocations: Allocation[],
-  note: string | null = null
+  creditCents = 0
 ) {
+  let note: string | null = null;
+  if (creditCents > 0) {
+    const credited = await addFamilyCredit(supabase, {
+      parentId,
+      cents: creditCents,
+      method: "zelle",
+      zelleReceiptId: receipt.id,
+      note: receipt.memo,
+    });
+    if ("error" in credited) return { error: credited.error };
+    note =
+      allocations.length > 0
+        ? `${dollars(creditCents)} more than was owed — kept as credit for their next invoice.`
+        : `Nothing was owed — ${dollars(creditCents)} kept as credit for their next invoice.`;
+  }
+
   const paymentIds: string[] = [];
   for (const { invoice, cents } of allocations) {
     const { data: inserted, error } = await supabase.from("payments").insert({
@@ -351,7 +369,7 @@ export async function ingestZelleEmail(
     const owed = open.reduce((s, i) => s + i.balanceCents, 0);
     const reason =
       open.length === 0
-        ? "This family has nothing open to pay."
+        ? "This family has nothing open to pay. Record it and it's kept as credit for their next invoice."
         : `${dollars(cents)} doesn't match what this family owes (${dollars(owed)} open).`;
     await supabase
       .from("zelle_receipts")

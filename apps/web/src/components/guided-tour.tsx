@@ -151,7 +151,8 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         Cash, Venmo, or a Zelle from someone not set up yet? <strong>Record Payment</strong> (top right) (or{" "}
         <strong>Who paid this?</strong> on a Zelle) asks who paid — and if they&apos;re new, adds the family, child,
-        school and program as you go, then records the money. It shows you everything before saving.
+        school and program as you go, then records the money. It shows you everything before saving. Paid ahead, or
+        more than they owe? The extra is kept as their <strong>credit</strong> and pays their next invoice by itself.
       </>
     ),
   },

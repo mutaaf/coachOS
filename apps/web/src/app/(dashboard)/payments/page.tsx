@@ -5,6 +5,7 @@ import {
   getOverdueInvoices,
   getZelleInbox,
   getAutopaySummary,
+  getFamilyCredits,
 } from "@/lib/queries/payments";
 import { countFamiliesToInvite } from "@/lib/actions/autopay";
 import { getAssignOptions } from "@/lib/queries/payment-assign";
@@ -19,7 +20,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: { s
   // Update overdue status first
   await getOverdueInvoices();
 
-  const [summary, invoices, payments, zelle, assign, autopay, inviteCount] = await Promise.all([
+  const [summary, invoices, payments, zelle, assign, autopay, inviteCount, credits] = await Promise.all([
     getPaymentSummary(),
     getInvoices(),
     getPayments(),
@@ -27,6 +28,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: { s
     getAssignOptions(),
     getAutopaySummary(),
     countFamiliesToInvite(),
+    getFamilyCredits(),
   ]);
 
   return (
@@ -34,6 +36,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: { s
       summary={summary}
       invoices={invoices}
       payments={payments}
+      credits={credits}
       collect={{ zelle, assign, autopay, inviteCount }}
       initialStatus={searchParams.status}
     />
