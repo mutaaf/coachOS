@@ -129,29 +129,28 @@ export async function updateParent(id: string, formData: FormData) {
 
   const first_name = formData.get("first_name") as string;
   const last_name = formData.get("last_name") as string;
-  const email = (formData.get("email") as string) || null;
   const phone = formData.get("phone") as string;
-  const preferred_payment =
-    (formData.get("preferred_payment") as "cash" | "zelle" | "venmo" | "stripe") || "cash";
-  const venmo_handle = (formData.get("venmo_handle") as string) || null;
-  const zelle_identifier = (formData.get("zelle_identifier") as string) || null;
-  const notes = (formData.get("notes") as string) || null;
 
   if (!first_name || !last_name || !phone) {
     return { error: "First name, last name, and phone are required." };
   }
+
+  // Only what the form sent is changed. The Zelle and Venmo fields are shown
+  // only for their own method, and nulling them whenever they were hidden
+  // broke Zelle matching for a family whose phone number was being fixed.
+  const optional: Record<string, string | null> = {};
+  for (const field of ["email", "preferred_payment", "venmo_handle", "zelle_identifier", "notes"]) {
+    if (formData.has(field)) optional[field] = (formData.get(field) as string) || null;
+  }
+  if ("preferred_payment" in optional) optional.preferred_payment ??= "cash";
 
   const { data, error } = await supabase
     .from("parents")
     .update({
       first_name,
       last_name,
-      email,
       phone,
-      preferred_payment,
-      venmo_handle,
-      zelle_identifier,
-      notes,
+      ...optional,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

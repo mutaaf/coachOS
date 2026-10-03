@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,13 @@ interface ParentFormDialogProps {
 export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialogProps) {
   const { run, pending } = useAction();
   const [paymentMethod, setPaymentMethod] = useState<string>(parent?.preferred_payment || "cash");
+
+  // The dialog stays mounted, empty, until a parent is chosen, so state set
+  // only on mount opened every edit on "Cash" with no Zelle field — and saving
+  // a new phone number switched a Zelle family to cash. Set it on each opening.
+  useEffect(() => {
+    if (open) setPaymentMethod(parent?.preferred_payment || "cash");
+  }, [open, parent]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

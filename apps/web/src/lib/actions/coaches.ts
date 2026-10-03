@@ -49,7 +49,13 @@ export async function updateCoach(id: string, formData: FormData) {
     return { error: "A coach needs a first name, last name, and phone number." };
   }
 
-  const { error } = await supabase.from("coaches").update(fields).eq("id", id);
+  // Only what the form sent is changed, so a save can't reset how a coach is
+  // paid to the defaults just because those fields weren't in it.
+  const sent = Object.fromEntries(
+    Object.entries(fields).filter(([field]) => formData.has(field))
+  );
+
+  const { error } = await supabase.from("coaches").update(sent).eq("id", id);
   if (error) return { error: error.message };
 
   revalidatePath("/coaches");

@@ -168,7 +168,12 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
               </div>
 
               <div className="flex items-center gap-1">
-                <Button size="sm" variant="ghost" onClick={() => openEdit(coach)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Edit ${coach.first_name} ${coach.last_name}`}
+                  onClick={() => openEdit(coach)}
+                >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button

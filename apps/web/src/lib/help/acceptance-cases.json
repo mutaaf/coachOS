@@ -2435,6 +2435,27 @@
   "phone": true
  },
  {
+  "id": "PAY-23",
+  "area": "Payments",
+  "title": "Editing a parent or coach keeps how they pay and are paid",
+  "risk": "Fixing a phone number quietly switches a Zelle family to cash, so their Zelle payments stop matching, or turns an hourly coach's rate into a per-session one.",
+  "severity": "high",
+  "preconditions": [
+   "A test parent whose preferred payment is Zelle, with a Zelle email or phone filled in.",
+   "A test coach paid hourly, and a second test coach paid per session."
+  ],
+  "steps": [
+   "On Students & Parents, open Parents and tap the pencil on the Zelle parent. Look at Preferred Payment, change only the phone number, and tap Update. Open the same parent again.",
+   "On Coaches, tap the pencil on the per-session coach, then Cancel. Tap the pencil on the hourly coach and look at Paid and the rate. Change only the notes and tap Save Changes. Open the same coach again."
+  ],
+  "expected": [
+   "The parent opens on Zelle with their Zelle email or phone showing, both before and after the save, and the new phone number is kept.",
+   "The hourly coach opens on Hourly with 'Rate per hour' and their rate, both before and after the save — never on Per session."
+  ],
+  "evidence": "Screenshots of the parent and coach dialogs reopened after saving.",
+  "phone": false
+ },
+ {
   "id": "WEB-01",
   "area": "Website",
   "title": "A program added from CoachOS appears on risingstars.training with live places, and sign-ups land in CoachOS",
