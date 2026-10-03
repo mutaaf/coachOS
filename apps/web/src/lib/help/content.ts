@@ -55,6 +55,7 @@ export const TASKS: HelpTask[] = [
       { text: "Pick the school and session — or type new ones and the monthly fee — then tap [[Next]]." },
       { text: "Add a **screenshot** of the list: the WhatsApp group's member list, your spreadsheet or a sign-up sheet. A CSV or pasted text works too. Tap [[Read roster]].", tip: "Screenshots take about 30 seconds to read." },
       { text: "Check every child. Orange boxes are ones CoachOS wasn't sure about — check those carefully. A WhatsApp member list only has parents, so type each child's name.", tip: "Nothing is saved until you tap Import, and importing the same list twice never makes duplicates." },
+      { text: "A child you **withdrew** from the session is marked, and left off so their family isn't invoiced again. Tick **Put them back on this session** only if they're really coming back." },
       { text: "Tap [[Import 12 children]]. Next, send their payment links." },
     ],
   },

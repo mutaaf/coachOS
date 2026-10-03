@@ -75,7 +75,8 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         One session at a time. Pick the school and session (or type new ones and the monthly fee), then add a{" "}
         <strong>screenshot</strong> — the WhatsApp group&apos;s member list, your spreadsheet, a sign-up sheet — or a
-        CSV. You check every child before anything is saved, and importing the same list twice never makes duplicates.
+        CSV. You check every child before anything is saved, and importing the same list twice never makes duplicates
+        — or puts back a child you withdrew, unless you tick them.
       </>
     ),
   },

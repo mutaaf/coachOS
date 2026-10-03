@@ -22,6 +22,12 @@ export interface RosterRow {
   parent_email: string | null;
   /** Fields the reader could not make out clearly, for the review screen to flag. */
   uncertain?: string[];
+  /**
+   * The owner ticked to put back a child she withdrew from this session. Off
+   * by default: an old list still has the families who left, and putting them
+   * back on starts their invoices again.
+   */
+  rejoin?: boolean;
 }
 
 /**
@@ -187,7 +193,7 @@ export function rowsFromCsv(text: string): RosterRow[] | null {
 // ---------------------------------------------------------------------------
 
 export type RowCheck =
-  | { ok: true; existingParent: string | null; alreadyEnrolled: boolean }
+  | { ok: true; existingParent: string | null; alreadyEnrolled: boolean; withdrawn: boolean }
   | { ok: false; problem: string };
 
 /** Who this row's family is on file as, if anyone. */
@@ -210,13 +216,17 @@ export async function checkRows(
   const directory = await Directory.load(supabase);
 
   let enrolledStudentIds = new Set<string>();
+  let withdrawnStudentIds = new Set<string>();
   if (programId) {
     const { data } = await supabase
       .from("enrollments")
-      .select("student_id")
+      .select("student_id, status")
       .eq("program_id", programId)
-      .eq("status", "active");
-    enrolledStudentIds = new Set((data || []).map((e) => e.student_id));
+      .in("status", ["active", "withdrawn"]);
+    const of = (status: string) =>
+      new Set((data || []).filter((e) => e.status === status).map((e) => e.student_id as string));
+    enrolledStudentIds = of("active");
+    withdrawnStudentIds = of("withdrawn");
   }
 
   return rows.map((row) => {
@@ -233,6 +243,7 @@ export async function checkRows(
       ok: true,
       existingParent: parent ? `${parent.first_name} ${parent.last_name}` : null,
       alreadyEnrolled: !!child && enrolledStudentIds.has(child.id),
+      withdrawn: !!child && withdrawnStudentIds.has(child.id),
     };
   });
 }
@@ -241,6 +252,8 @@ export interface ImportResult {
   enrolled: number;
   alreadyEnrolled: number;
   newParents: number;
+  /** Rows whose child she withdrew from this session, left withdrawn because she didn't tick them. */
+  keptWithdrawn: number[];
   skipped: { row: number; problem: string }[];
 }
 
@@ -260,7 +273,7 @@ export async function importRows(
   programId: string,
   rows: RosterRow[]
 ): Promise<ImportResult> {
-  const result: ImportResult = { enrolled: 0, alreadyEnrolled: 0, newParents: 0, skipped: [] };
+  const result: ImportResult = { enrolled: 0, alreadyEnrolled: 0, newParents: 0, keptWithdrawn: [], skipped: [] };
   const checks = await checkRows(supabase, programId, rows);
   const directory = await Directory.load(supabase);
 
@@ -326,6 +339,12 @@ export async function importRows(
 
     if (existing?.status === "active") {
       result.alreadyEnrolled++;
+      continue;
+    }
+    // She took this child off the session; a list from before they left must
+    // not quietly put them back and start billing the family again.
+    if (existing?.status === "withdrawn" && !row.rejoin) {
+      result.keptWithdrawn.push(i);
       continue;
     }
 

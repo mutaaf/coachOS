@@ -166,8 +166,50 @@ describe("importing a roster", () => {
 
     const checks = await checkRows(db, programId, [row(), row({ child_first_name: "Leo" })]);
 
-    expect(checks[0]).toEqual({ ok: true, existingParent: "Raquel Garcia", alreadyEnrolled: true });
-    expect(checks[1]).toEqual({ ok: true, existingParent: "Raquel Garcia", alreadyEnrolled: false });
+    expect(checks[0]).toEqual({ ok: true, existingParent: "Raquel Garcia", alreadyEnrolled: true, withdrawn: false });
+    expect(checks[1]).toEqual({ ok: true, existingParent: "Raquel Garcia", alreadyEnrolled: false, withdrawn: false });
+  });
+});
+
+describe("a child she withdrew, on a list imported again", () => {
+  async function withdrawn() {
+    const { programId } = await seedProgram({});
+    await importRows(db, programId, [row(), row({ child_first_name: "Leo" })]);
+    const { data: mia } = await admin.from("students").select("id").eq("first_name", "Mia").single();
+    await admin.from("enrollments").update({ status: "withdrawn" }).eq("student_id", mia!.id);
+    return { programId, miaId: mia!.id as string };
+  }
+
+  async function miaStatus(miaId: string) {
+    const { data } = await admin.from("enrollments").select("status").eq("student_id", miaId).single();
+    return data!.status;
+  }
+
+  it("is flagged on the review screen, not shown as ready", async () => {
+    const { programId } = await withdrawn();
+
+    const checks = await checkRows(db, programId, [row(), row({ child_first_name: "Leo" })]);
+
+    expect(checks[0]).toEqual({ ok: true, existingParent: "Raquel Garcia", alreadyEnrolled: false, withdrawn: true });
+    expect(checks[1]).toMatchObject({ ok: true, alreadyEnrolled: true, withdrawn: false });
+  });
+
+  it("stays withdrawn, and is listed apart, unless she ticks to bring them back", async () => {
+    const { programId, miaId } = await withdrawn();
+
+    const result = await importRows(db, programId, [row(), row({ child_first_name: "Leo" })]);
+
+    expect(await miaStatus(miaId)).toBe("withdrawn");
+    expect(result).toMatchObject({ enrolled: 0, alreadyEnrolled: 1, keptWithdrawn: [0], skipped: [] });
+  });
+
+  it("goes back on the session when she ticks it", async () => {
+    const { programId, miaId } = await withdrawn();
+
+    const result = await importRows(db, programId, [row({ rejoin: true })]);
+
+    expect(await miaStatus(miaId)).toBe("active");
+    expect(result).toMatchObject({ enrolled: 1, keptWithdrawn: [] });
   });
 });
 

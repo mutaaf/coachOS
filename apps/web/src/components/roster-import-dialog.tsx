@@ -194,8 +194,14 @@ export function RosterImportDialog({
     router.refresh();
   }
 
-  const ready = checks.filter((c) => c?.ok).length;
-  const needsLook = rows.length - ready;
+  // A child she withdrew is left off unless she ticks them, so isn't counted
+  // as ready — or as needing a fix.
+  const leftOff = rows.filter((r, i) => {
+    const check = checks[i];
+    return check?.ok && check.withdrawn && !r.rejoin;
+  }).length;
+  const ready = checks.filter((c) => c?.ok).length - leftOff;
+  const needsLook = rows.length - ready - leftOff;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -399,7 +405,25 @@ export function RosterImportDialog({
                         <p className="truncate text-sm font-medium">
                           {[row.child_first_name, row.child_last_name].filter(Boolean).join(" ") || "Unnamed child"}
                         </p>
-                        {check?.ok ? (
+                        {check?.ok && check.withdrawn ? (
+                          <div className="mt-0.5 space-y-1 text-xs">
+                            <p className="flex items-start gap-1 text-amber-800">
+                              <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" /> You withdrew this child from this
+                              session. They won&apos;t be added back.
+                            </p>
+                            <label className="flex items-center gap-2 text-foreground">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4"
+                                checked={!!row.rejoin}
+                                onChange={(e) =>
+                                  setRows((prev) => prev.map((r, j) => (j === i ? { ...r, rejoin: e.target.checked } : r)))
+                                }
+                              />
+                              Put them back on this session (their invoices start again)
+                            </label>
+                          </div>
+                        ) : check?.ok ? (
                           <p className="mt-0.5 flex items-center gap-1 text-xs text-emerald-700">
                             <Check className="h-3.5 w-3.5 shrink-0" />
                             {check.alreadyEnrolled
@@ -483,6 +507,21 @@ export function RosterImportDialog({
                 {result.alreadyEnrolled > 0 && ` · ${result.alreadyEnrolled} were already on the roster`}
               </p>
             </div>
+            {result.keptWithdrawn?.length > 0 && (
+              <div className="rounded-xl border p-4 text-sm">
+                <p className="font-medium">
+                  {result.keptWithdrawn.length} you withdrew {result.keptWithdrawn.length === 1 ? "was" : "were"} left off,
+                  and won&apos;t be invoiced:
+                </p>
+                <ul className="mt-1 list-disc pl-5">
+                  {result.keptWithdrawn.map((i: number) => (
+                    <li key={i}>
+                      {[rows[i]?.child_first_name, rows[i]?.child_last_name].filter(Boolean).join(" ") || `Row ${i + 1}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {result.skipped?.length > 0 && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 <p className="font-medium">{result.skipped.length} not added:</p>
