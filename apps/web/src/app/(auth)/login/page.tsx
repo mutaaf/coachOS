@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isAdmin } from "@/lib/admin";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,13 +28,19 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         toast.error(error.message);
+        return;
+      }
+      // An account isn't access: the dashboard would turn it away anyway.
+      if (!isAdmin(data.user)) {
+        await supabase.auth.signOut();
+        toast.error("This account doesn't have access to CoachOS. Ask Mutaaf to give it access.");
         return;
       }
 

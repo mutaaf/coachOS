@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/admin";
 
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string;
@@ -13,13 +14,17 @@ export async function signIn(formData: FormData) {
 
   const supabase = createServerSupabase();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
     return { error: error.message };
+  }
+  if (!isAdmin(data.user)) {
+    await supabase.auth.signOut();
+    return { error: "This account doesn't have access to CoachOS. Ask Mutaaf to give it access." };
   }
 
   redirect("/dashboard");

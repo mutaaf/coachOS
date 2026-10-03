@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdmin } from "@/lib/admin";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -26,8 +27,11 @@ export async function updateSession(request: NextRequest) {
   );
 
   const {
-    data: { user },
+    data: { user: account },
   } = await supabase.auth.getUser();
+  // An account without the admin role is treated as nobody: it can't open the
+  // dashboard, which renders every family's details. See lib/admin.ts.
+  const user = isAdmin(account) ? account : null;
 
   if (
     !user &&
