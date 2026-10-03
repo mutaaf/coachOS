@@ -126,7 +126,7 @@ export async function requestPasswordLink(email: string) {
       await sendStaffEmail(supabase, {
         to: address,
         subject: "Your CoachOS password link",
-        heading: "Let's get you back in ⚽",
+        heading: "Let's get you back in 🏀",
         body: "Here's your link to choose a new password.",
         button: { href: link, label: "Choose a new password" },
         text: `Choose a new password here (works once, for 24 hours): ${link}`,

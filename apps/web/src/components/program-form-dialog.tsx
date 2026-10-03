@@ -154,7 +154,7 @@ export function ProgramFormDialog({
             <Input
               id="name"
               name="name"
-              placeholder="e.g. After-School Soccer"
+              placeholder="e.g. After-School Basketball"
               defaultValue={defaults?.name ?? ""}
               required
               disabled={isSubmitting}

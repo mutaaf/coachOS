@@ -90,7 +90,7 @@ export default function LoginPage() {
         {forgot ? (
           linkSent ? (
             <div className="space-y-3 text-center" data-testid="link-sent">
-              <p>If {email} has access, a link to choose a new password is on its way. ⚽</p>
+              <p>If {email} has access, a link to choose a new password is on its way. 🏀</p>
               <Button variant="ghost" onClick={() => { setForgot(false); setLinkSent(false); }}>Back to sign in</Button>
             </div>
           ) : (

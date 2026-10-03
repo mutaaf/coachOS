@@ -66,23 +66,23 @@ export function tourStepIdsFromSource(source) {
 }
 
 const PUNS = [
-  "A Whole New Ball Game",
-  "Goal-den Updates",
-  "Kicking It Up a Notch",
-  "Net Gains",
-  "Ahead of the Game",
-  "Field Day",
-  "Back of the Net",
-  "Pitch Perfect",
-  "Bench-marked and Better",
-  "A Ball-anced Update",
-  "Team Effort",
-  "Raising the Bar (and the Crossbar)",
+  "Nothing But Net",
+  "Swish!",
+  "Full-Court Press",
+  "A Slam-Dunk Update",
+  "Buckets of Fixes",
+  "Off the Backboard",
+  "Fast Break",
+  "Rebound and Ready",
+  "Assist Mode: On",
+  "Hoop Dreams, Delivered",
+  "Courtside Upgrades",
+  "Dribble, Drive, Deploy",
+  "Alley-Oop Improvements",
   "No Foul Play",
-  "On the Ball",
-  "Fresh Off the Bench",
-  "Penalty-Free Upgrades",
-];
+  "Triple-Double Trouble-Free",
+  "Shot Clock Beaten",
+]
 
 /** A punny title that's the same for the same version, so a re-run doesn't change it. */
 export function fallbackTitle(version) {
