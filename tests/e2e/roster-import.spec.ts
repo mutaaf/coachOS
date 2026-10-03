@@ -69,6 +69,59 @@ test("from an empty dashboard to a session's roster, from a spreadsheet", async 
   expect(program).toMatchObject({ name: "Lil Dribblers", monthly_fee: 100, schools: { name: "FCA" } });
 });
 
+test("importing the list again leaves a child she withdrew off, unless she ticks them", async ({ page }) => {
+  const { data: school } = await admin.from("schools").insert({ name: "FCA", status: "active" }).select("id").single();
+  const { data: program } = await admin
+    .from("programs")
+    .insert({ school_id: school!.id, name: "Lil Dribblers", monthly_fee: 100, status: "active", capacity: 12 })
+    .select("id")
+    .single();
+  const { data: parent } = await admin
+    .from("parents")
+    .insert({ first_name: "Raquel", last_name: "Garcia", phone: "+19155002487" })
+    .select("id")
+    .single();
+  const { data: kids } = await admin
+    .from("students")
+    .insert([
+      { first_name: "Mia", last_name: "Garcia" },
+      { first_name: "Leo", last_name: "Garcia" },
+    ])
+    .select("id, first_name");
+  await admin.from("student_parents").insert(kids!.map((k) => ({ student_id: k.id, parent_id: parent!.id, relationship: "parent" })));
+  const mia = kids!.find((k) => k.first_name === "Mia")!;
+  const leo = kids!.find((k) => k.first_name === "Leo")!;
+  await admin.from("enrollments").insert([
+    { student_id: mia.id, program_id: program!.id, status: "withdrawn" },
+    { student_id: leo.id, program_id: program!.id, status: "withdrawn" },
+  ]);
+  const status = async (id: string) =>
+    (await admin.from("enrollments").select("status").eq("student_id", id).single()).data!.status;
+
+  await signIn(page);
+  await page.goto("/schools");
+  await page.getByRole("button", { name: "Import a roster" }).first().click();
+  await page.getByLabel("School", { exact: true }).selectOption({ label: "FCA" });
+  await page.getByLabel("Session", { exact: true }).selectOption({ label: "Lil Dribblers ($100/mo)" });
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByLabel("Or paste it").fill(CSV.split("\n").slice(0, 3).join("\n"));
+  await page.getByRole("button", { name: "Read roster" }).click();
+
+  // Both are flagged, not a green tick, and neither counts towards the import.
+  await expect(page.getByText("You withdrew this child from this session.", { exact: false })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Import 0 children" })).toBeDisabled();
+
+  // She brings Leo back on purpose; Mia stays off.
+  await page.getByTestId("roster-row").nth(1).getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Import 1 child" }).click();
+
+  await expect(page.getByText("1 child added to FCA · Lil Dribblers.")).toBeVisible();
+  await expect(page.getByText("1 you withdrew was left off")).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: /^Mia Garcia$/ })).toBeVisible();
+  expect(await status(mia.id)).toBe("withdrawn");
+  expect(await status(leo.id)).toBe("active");
+});
+
 test("a screenshot needs the reader switched on, and says so plainly", async ({ page }) => {
   // The test server runs without an Anthropic key, as production does until one is added.
   await signIn(page);

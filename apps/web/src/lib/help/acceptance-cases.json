@@ -255,6 +255,32 @@
   "phone": false
  },
  {
+  "id": "ROS-10",
+  "area": "Roster import",
+  "title": "Importing a list again does not put back a child you withdrew",
+  "risk": "A family who left is quietly put back on the session and invoiced again on the 1st.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "A test session has two test children on it, “Mia Test” and “Leo Test”, imported from a list you still have."
+  ],
+  "steps": [
+   "Open the school, and Withdraw both children from the session.",
+   "Go to Schools → “Import a roster”, pick the same school and session, and import the same list again.",
+   "On the review screen, read what each of the two rows says.",
+   "Tick “Put them back on this session” on Leo's row only, and press “Import 1 child”.",
+   "Open the school again."
+  ],
+  "expected": [
+   "Neither row shows a green tick. Each says “You withdrew this child from this session. They won't be added back.” with a box to tick.",
+   "Before ticking, the button reads “Import 0 children” and can't be pressed.",
+   "The done screen says “1 child added” and lists Mia Test under “1 you withdrew was left off, and won't be invoiced”.",
+   "On the school, Leo is active on the session and Mia is still withdrawn."
+  ],
+  "evidence": "The review screen with both rows flagged, the done screen, and the school's roster afterwards.",
+  "phone": false
+ },
+ {
   "id": "ONB-01",
   "area": "Onboarding",
   "title": "The first-login tour starts once, can be skipped, can be replayed from the menu, and doesn’t restart on another device",
