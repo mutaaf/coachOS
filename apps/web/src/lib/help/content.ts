@@ -246,6 +246,20 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "session-ends",
+    title: "A session is free, ends, or a school stops",
+    when: "Scholarships, end of season, losing a school",
+    keywords: "free scholarship zero end season finished completed cancelled stop billing archive school dates",
+    href: "/schools",
+    hrefLabel: "Open Schools",
+    tourStep: "schools",
+    steps: [
+      { text: "Free session: open the school, tap ✎ on the session and set the monthly fee to **0**. It shows “Free – no invoices”." },
+      { text: "Session over: set its status to **Completed** or **Cancelled**, or give it an end date. No month after it is invoiced.", tip: "A program's end date can't be before its start date." },
+      { text: "School stopping: open it and tap [[Archive]]. Its families get no more invoices, and you can end the children's places there at the same time.", careful: true },
+    ],
+  },
+  {
     id: "archive",
     title: "A child has left",
     when: "To tidy the Students list",
@@ -319,7 +333,7 @@ export const TASKS: HelpTask[] = [
 
 /** Things CoachOS does by itself, so she knows what not to do. */
 export const AUTOMATIC: { when: string; what: string; detail: string }[] = [
-  { when: "On the 1st", what: "Every family is invoiced for the month.", detail: "One invoice per child, for the session's monthly fee." },
+  { when: "On the 1st", what: "Every family is invoiced for the month.", detail: "One invoice per child, for the session's monthly fee. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are skipped. A child who joins mid-month has a week to pay." },
   { when: "About 1 pm", what: "Autopay families are charged.", detail: "Once a day; siblings are one charge. Bank payments show {processing} for a few days." },
   { when: "Within 15 min", what: "Forwarded Zelle payments are recorded.", detail: "Matched to the family and marked paid. If CoachOS isn't sure, it asks you." },
   { when: "Each payment", what: "A receipt is emailed", detail: "to families who've given an email. Their replies come to your inbox." },

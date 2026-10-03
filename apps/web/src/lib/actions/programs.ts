@@ -62,6 +62,27 @@ async function linkWebsiteListing(programId: string, listingId: string | null) {
   }
 }
 
+/**
+ * The monthly fee, read strictly. It used to be `parseFloat(...) || 120`, so a
+ * scholarship program entered as $0 — or a fee left blank — was billed $120.
+ * 0 is a real answer: the program is free and is never invoiced.
+ */
+function readMonthlyFee(formData: FormData): { fee: number } | { error: string } {
+  const raw = String(formData.get("monthly_fee") ?? "").trim().replace(/^\$/, "");
+  const fee = Number(raw);
+  if (raw === "" || !Number.isFinite(fee) || fee < 0) {
+    return { error: "What does this program cost per month? Enter 0 if it's free." };
+  }
+  return { fee: Math.round(fee * 100) / 100 };
+}
+
+/** An end date before the start date leaves the program no months to bill. */
+function datesInOrder(startDate: string | null, endDate: string | null) {
+  return !startDate || !endDate || endDate >= startDate;
+}
+
+const DATES_OUT_OF_ORDER = "The end date is before the start date.";
+
 /** Fields shared by create and update, read off the form. */
 function readRegistrationFields(formData: FormData) {
   const capacityRaw = parseInt(formData.get("capacity") as string, 10);
@@ -85,7 +106,7 @@ export async function createProgram(formData: FormData) {
   const season = formData.get("season") as string | null;
   const startDate = formData.get("start_date") as string | null;
   const endDate = formData.get("end_date") as string | null;
-  const monthlyFee = parseFloat(formData.get("monthly_fee") as string) || 120;
+  const fee = readMonthlyFee(formData);
   const status = formData.get("status") as string;
   const notes = formData.get("notes") as string | null;
   const registration = readRegistrationFields(formData);
@@ -96,6 +117,9 @@ export async function createProgram(formData: FormData) {
   if (!schoolId || !name) {
     return { error: "School and program name are required." };
   }
+  if ("error" in fee) return { error: fee.error };
+  if (!datesInOrder(startDate || null, endDate || null)) return { error: DATES_OUT_OF_ORDER };
+  const monthlyFee = fee.fee;
 
   const { data: created, error } = await supabase
     .from("programs")
@@ -140,7 +164,7 @@ export async function updateProgram(id: string, formData: FormData) {
   const season = formData.get("season") as string | null;
   const startDate = formData.get("start_date") as string | null;
   const endDate = formData.get("end_date") as string | null;
-  const monthlyFee = parseFloat(formData.get("monthly_fee") as string) || 120;
+  const fee = readMonthlyFee(formData);
   const status = formData.get("status") as string;
   const notes = formData.get("notes") as string | null;
   const registration = readRegistrationFields(formData);
@@ -151,6 +175,9 @@ export async function updateProgram(id: string, formData: FormData) {
   if (!schoolId || !name) {
     return { error: "School and program name are required." };
   }
+  if ("error" in fee) return { error: fee.error };
+  if (!datesInOrder(startDate || null, endDate || null)) return { error: DATES_OUT_OF_ORDER };
+  const monthlyFee = fee.fee;
 
   // Keep an existing link stable — it may already be in WhatsApp groups.
   const { data: existing } = await supabase

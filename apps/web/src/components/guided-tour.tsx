@@ -84,7 +84,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schools",
     target: "main h1",
     title: "Schools and sessions",
-    body: "Each school holds its sessions. Open a school to change a session's monthly fee, set its weekly schedule, import more children, or share its registration link.",
+    body: "Each school holds its sessions. Open a school to change a session's monthly fee (0 makes it free, with no invoices), set its weekly schedule, import more children, or share its registration link. Archiving a school stops its invoices, and can end its children's places too.",
   },
   {
     id: "students",
@@ -172,7 +172,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/payments",
     target: '[data-tour="generate-invoices"]',
     title: "Monthly invoices make themselves",
-    body: "Every family is invoiced on the 1st automatically. Use this only to bill a month early, or to catch up a child who joined after the 1st.",
+    body: "Every family is invoiced on the 1st automatically. Use this only to bill a month early, or to catch up a child who joined after the 1st — they get a week to pay. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are never invoiced.",
   },
   {
     id: "outbox",

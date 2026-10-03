@@ -209,8 +209,10 @@ export function ProgramFormDialog({
                 step="0.01"
                 placeholder="120.00"
                 defaultValue={defaults?.monthly_fee ?? 120}
+                required
                 disabled={isSubmitting}
               />
+              <p className="text-xs text-muted-foreground">0 if it&apos;s free — no invoices are sent.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>

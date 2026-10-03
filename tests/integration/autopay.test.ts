@@ -26,6 +26,10 @@ import type { OpsClient } from "@/lib/supabase/types";
 
 const db = admin as unknown as OpsClient;
 
+// These families joined long ago, so their invoices fall due on the 1st. A
+// child who joins mid-month gets a week's grace instead (billing-rules.test.ts).
+const LONG_AGO = "2025-01-01T12:00:00Z";
+
 afterEach(truncateAll);
 
 type Behaviour = "succeeded" | "processing" | "requires_action" | { decline: string };
@@ -117,7 +121,7 @@ async function family(opts: {
     await admin.from("student_parents").insert({ student_id: student!.id, parent_id: p!.id });
   }
 
-  await admin.from("enrollments").insert({ student_id: student!.id, program_id: programId, status: "active" });
+  await admin.from("enrollments").insert({ student_id: student!.id, program_id: programId, status: "active", enrolled_at: LONG_AGO });
   const month = businessMonth();
   await generateMonthlyInvoices(month);
 
@@ -467,7 +471,7 @@ describe("a family with more than one invoice due", () => {
         .select("id")
         .single();
       await admin.from("student_parents").insert({ student_id: s!.id, parent_id: parent!.id });
-      await admin.from("enrollments").insert({ student_id: s!.id, program_id: programId, status: "active" });
+      await admin.from("enrollments").insert({ student_id: s!.id, program_id: programId, status: "active", enrolled_at: LONG_AGO });
     }
     const month = businessMonth();
     await generateMonthlyInvoices(month);

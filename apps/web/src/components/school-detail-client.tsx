@@ -40,7 +40,7 @@ import { RecordPaymentDialog } from "@/components/record-payment-dialog";
 import { LinkParentDialog } from "@/components/link-parent-dialog";
 import { RosterImportDialog } from "@/components/roster-import-dialog";
 import { deleteScheduleTemplate } from "@/lib/actions/schedule";
-import { archiveSchool } from "@/lib/actions/schools";
+import { ArchiveSchoolDialog } from "@/components/archive-school-dialog";
 import { withdrawEnrollment } from "@/lib/actions/students";
 import { waiveInvoice } from "@/lib/actions/payments";
 import type { School, Program, ScheduleTemplate, Parent } from "@/types/database";
@@ -167,7 +167,12 @@ export function SchoolDetailClient({
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | undefined>();
   const [linkingStudentId, setLinkingStudentId] = useState<string | null>(null);
 
+  const [archiveOpen, setArchiveOpen] = useState(false);
+
   const uniqueStudentCount = new Set(students.map((s) => s.id)).size;
+  const activeStudentCount = new Set(
+    students.filter((s) => s.enrollment_status === "active").map((s) => s.id)
+  ).size;
 
   // Payment summary calculations
   const pendingTotal = invoices
@@ -296,12 +301,7 @@ export function SchoolDetailClient({
               <Button
                 variant="outline"
                 className="gap-2 text-destructive hover:text-destructive"
-                onClick={async () => {
-                  if (!window.confirm("Archive this school? This cannot be easily undone.")) return;
-                  const result = await archiveSchool(school.id);
-                  if (result.error) toast.error(result.error);
-                  else router.push("/schools");
-                }}
+                onClick={() => setArchiveOpen(true)}
               >
                 <Archive className="h-4 w-4" />
                 Archive
@@ -468,7 +468,9 @@ export function SchoolDetailClient({
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium">
-                        {formatCurrency(program.monthly_fee)}/mo
+                        {Number(program.monthly_fee) > 0
+                          ? `${formatCurrency(program.monthly_fee)}/mo`
+                          : "Free – no invoices"}
                       </span>
                       <Badge variant={getProgramStatusVariant(program.status)}>
                         {program.status}
@@ -966,6 +968,14 @@ export function SchoolDetailClient({
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         school={school}
+      />
+
+      <ArchiveSchoolDialog
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
+        schoolId={school.id}
+        schoolName={school.name}
+        activeStudents={activeStudentCount}
       />
 
       <ProgramFormDialog

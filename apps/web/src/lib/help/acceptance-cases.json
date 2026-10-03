@@ -113,7 +113,7 @@
    "Open “Import a roster” again and check whether your earlier file and edits are still there."
   ],
   "expected": [
-   "The messages appear in this order: “Type the school's name.”, “Name the session — e.g. “Lil Dribblers, Tue 4pm”.”, “Enter the monthly fee.”",
+   "The messages appear in this order: “Type the school's name.”, “Name the session — e.g. “Lil Dribblers, Tue 4pm”.”, “Enter the monthly fee (0 if it's free).”",
    "After closing without importing, there is no “AUDIT NOSAVE” school or session, and the student count has not changed.",
    "The dialog reopens empty at the first step, so nothing was kept."
   ],
@@ -2103,6 +2103,53 @@
    "A child with no invoices at all can still be deleted."
   ],
   "evidence": "Screenshots of both refusal messages, the archived child, and the invoice and payment afterwards.",
+  "phone": false
+ },
+ {
+  "id": "INV-09",
+  "area": "Invoicing & books",
+  "title": "Only programs that are running, and cost something, are invoiced",
+  "risk": "Scholarship families are charged $120, and families keep being invoiced (and charged by autopay) after a program has ended, been cancelled, or its school archived.",
+  "severity": "critical",
+  "preconditions": [
+   "A test school with four test programs, each with one test child whose parent is linked: “AUDIT FREE” with a monthly fee of 0, “AUDIT DONE” marked Completed, “AUDIT ENDED” with dates 2026-09-01 to 2026-12-15, and “AUDIT RUNNING” at $100 with no dates."
+  ],
+  "steps": [
+   "Open the school. Read the fee shown beside each program.",
+   "Add a program with a start date of 2026-12-01 and an end date of 2026-09-01 and press “Create Program”. Read the message.",
+   "Go to Payments → Generate invoices, choose February 2027 and generate.",
+   "Choose November 2026 and generate again."
+  ],
+  "expected": [
+   "“AUDIT FREE” shows “Free – no invoices” instead of a price.",
+   "The backwards program is refused with “The end date is before the start date.” and nothing is saved.",
+   "February 2027 creates one invoice only, for “AUDIT RUNNING”.",
+   "November 2026 creates one more, for “AUDIT ENDED”. “AUDIT FREE” and “AUDIT DONE” never get an invoice."
+  ],
+  "evidence": "Screenshot of the program list with the free program, the refusal message, and the Payments list after each run.",
+  "phone": false
+ },
+ {
+  "id": "INV-10",
+  "area": "Invoicing & books",
+  "title": "A child who joins mid-month, and a school that is archived",
+  "risk": "A new family's first invoice is overdue the day it is made, or an archived school's families go on being billed.",
+  "severity": "high",
+  "preconditions": [
+   "A test school with a $100 program, and the date is after the 1st of the month."
+  ],
+  "steps": [
+   "Add a test child to the program today, with a parent linked.",
+   "Go to Payments → Generate invoices for this month. Note the new invoice's due date and status.",
+   "Open the school and press “Archive”. Read the box that opens, leave “End … place here too” switched on, and press “Archive school”.",
+   "Generate invoices for next month."
+  ],
+  "expected": [
+   "The new child's invoice is due one week from today and shows pending, not overdue.",
+   "The archive box says families there are not sent any more invoices, and offers to end the children's places.",
+   "After archiving, the child is no longer enrolled there, and next month's run creates no invoice for them. Their earlier invoice is still in Payments."
+  ],
+  "evidence": "Screenshots of the invoice with its due date, the archive box, and Payments after next month's run.",
   "phone": false
  },
  {

@@ -129,7 +129,7 @@ export function RosterImportDialog({
   function whereProblem() {
     if (schoolId === NEW && !newSchool.trim()) return "Type the school's name.";
     if (programId === NEW && !newProgram.trim()) return "Name the session — e.g. “Lil Dribblers, Tue 4pm”.";
-    if (programId === NEW && !(Number(fee) > 0)) return "Enter the monthly fee.";
+    if (programId === NEW && (fee.trim() === "" || !(Number(fee) >= 0))) return "Enter the monthly fee (0 if it's free).";
     return null;
   }
 
