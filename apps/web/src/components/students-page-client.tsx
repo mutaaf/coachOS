@@ -10,10 +10,11 @@ import { StudentFormDialog } from "@/components/student-form-dialog";
 import { ParentFormDialog } from "@/components/parent-form-dialog";
 import { EnrollStudentDialog } from "@/components/enroll-student-dialog";
 import type { EnrollableProgram } from "@/components/enroll-student-dialog";
-import { Users, UserPlus, Search, Phone, Mail, GraduationCap, Plus, Upload, Pencil, Link2, Trash2 } from "lucide-react";
+import { Users, UserPlus, Search, Phone, Mail, GraduationCap, Plus, Upload, Pencil, Link2, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { BulkImportDialog } from "@/components/bulk-import-dialog";
 import { LinkParentDialog } from "@/components/link-parent-dialog";
-import { deleteStudent, deleteParent } from "@/lib/actions/students";
+import { deleteStudent, deleteParent, archiveStudent, restoreStudent } from "@/lib/actions/students";
+import { useAction } from "@/lib/use-action";
 import { toast } from "sonner";
 import type { Student, Parent } from "@/types/database";
 import type { StudentEnrollmentInfo, ParentWithStudents } from "@/lib/queries/students";
@@ -40,8 +41,13 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
   const [editingStudent, setEditingStudent] = useState<StudentWithParents | undefined>();
   const [editingParent, setEditingParent] = useState<ParentWithStudents | undefined>();
   const [linkingStudent, setLinkingStudent] = useState<StudentWithParents | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const { run } = useAction();
+
+  const archivedCount = students.filter((s) => s.status === "inactive").length;
 
   const filteredStudents = students.filter((s) => {
+    if (!showArchived && s.status === "inactive") return false;
     const q = search.toLowerCase();
     return (
       `${s.first_name} ${s.last_name}`.toLowerCase().includes(q) ||
@@ -96,6 +102,13 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
         </TabsList>
 
         <TabsContent value="students">
+          {archivedCount > 0 && (
+            <div className="flex justify-end mb-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowArchived(!showArchived)}>
+                {showArchived ? "Hide archived" : `Show archived (${archivedCount})`}
+              </Button>
+            </div>
+          )}
           {filteredStudents.length === 0 ? (
             <div className="text-center py-16">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -158,7 +171,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                       </td>
                       <td className="p-4">
                         <Badge variant={student.status === "active" ? "success" : "secondary"}>
-                          {student.status}
+                          {student.status === "inactive" ? "archived" : student.status}
                         </Badge>
                       </td>
                       <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
@@ -185,6 +198,25 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                         >
                           Enroll
                         </Button>
+                        {student.status === "inactive" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Restore student"
+                            onClick={() => run(() => restoreStudent(student.id), { success: "Student restored" })}
+                          >
+                            <ArchiveRestore className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Archive student"
+                            onClick={() => run(() => archiveStudent(student.id), { success: "Student archived" })}
+                          >
+                            <Archive className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -193,7 +225,12 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                           onClick={async () => {
                             if (!window.confirm(`Delete ${student.first_name} ${student.last_name}?`)) return;
                             const result = await deleteStudent(student.id);
-                            if (result.error) toast.error(result.error);
+                            if ("canArchive" in result && result.canArchive) {
+                              // Their payment history stays, so offer the tidy-up that keeps it.
+                              if (window.confirm(`${result.error}\n\nArchive ${student.first_name} ${student.last_name} now?`)) {
+                                await run(() => archiveStudent(student.id), { success: "Student archived" });
+                              }
+                            } else if (result.error) toast.error(result.error);
                             else { toast.success("Student deleted"); router.refresh(); }
                           }}
                         >

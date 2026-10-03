@@ -91,7 +91,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/students",
     target: "main h1",
     title: "Students and parents",
-    body: "Every child and the parents linked to them. Fix a phone number here, add a parent, or move a child between sessions. Siblings share one parent, so a family gets one link and one charge.",
+    body: "Every child and the parents linked to them. Fix a phone number here, add a parent, or move a child between sessions. Siblings share one parent, so a family gets one link and one charge. A child who has left can be archived: off the list, with every payment kept.",
   },
   {
     id: "registrations",

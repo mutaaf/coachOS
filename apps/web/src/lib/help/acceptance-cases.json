@@ -2079,6 +2079,33 @@
   "phone": false
  },
  {
+  "id": "INV-08",
+  "area": "Invoicing & books",
+  "title": "Deleting a child or parent never erases their payments",
+  "risk": "Tidying the Students list deletes paid invoices and payments for good, so the books stop adding up.",
+  "severity": "critical",
+  "preconditions": [
+   "A test child, withdrawn from every session, with at least one invoice that has a payment recorded (for example a $1 cash payment)."
+  ],
+  "steps": [
+   "Note the child's invoice and payment in Payments.",
+   "On Students, press the red bin on the child's row and confirm.",
+   "Read the message, then press OK to archive them.",
+   "Press “Show archived” and find the child; press the arrow on their row to bring them back, then archive them again.",
+   "On the Parents tab, unlink the parent from the child if needed, then press the red bin on the parent's row and confirm.",
+   "Go back to Payments."
+  ],
+  "expected": [
+   "Deleting the child says they have payment history and offers to archive them instead. After archiving they are gone from the list and “Show archived” shows them marked “archived”.",
+   "Restoring brings them back as “active”.",
+   "Deleting the parent is refused because they have payment history.",
+   "The invoice and the payment are still in Payments, unchanged.",
+   "A child with no invoices at all can still be deleted."
+  ],
+  "evidence": "Screenshots of both refusal messages, the archived child, and the invoice and payment afterwards.",
+  "phone": false
+ },
+ {
   "id": "SCH-01",
   "area": "Schedule & attendance",
   "title": "Generate weekly sessions and confirm no week is missing or duplicated",

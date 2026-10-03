@@ -277,6 +277,14 @@ export async function deleteStudent(studentId: string) {
     return { error: "Cannot delete student with active enrollments. Withdraw them first." };
   }
 
+  // Invoices and payments are the family's history; deleting would erase it.
+  if (await hasInvoices(supabase, "student_id", studentId)) {
+    return {
+      error: "This child has payment history, so they can't be deleted. Archive them instead to take them off your list.",
+      canArchive: true,
+    };
+  }
+
   // Delete student_parents links
   await supabase.from("student_parents").delete().eq("student_id", studentId);
 
@@ -306,6 +314,10 @@ export async function deleteParent(parentId: string) {
     return { error: "Cannot delete parent linked to students. Unlink them first." };
   }
 
+  if (await hasInvoices(supabase, "parent_id", parentId)) {
+    return { error: "This parent has payment history, so they can't be deleted. Their invoices and payments stay on file." };
+  }
+
   const { error } = await supabase.from("parents").delete().eq("id", parentId);
 
   if (error) {
@@ -315,6 +327,60 @@ export async function deleteParent(parentId: string) {
 
   revalidatePath("/students");
   return { success: true };
+}
+
+async function hasInvoices(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  column: "student_id" | "parent_id",
+  id: string
+) {
+  const { data } = await supabase.from("invoices").select("id").eq(column, id).limit(1);
+  return !!data && data.length > 0;
+}
+
+/** Takes a child off the list without touching their history. */
+export async function archiveStudent(studentId: string) {
+  await requireSignedIn();
+  const supabase = createAdminSupabase();
+
+  const { data: activeEnrollments } = await supabase
+    .from("enrollments")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("status", "active");
+
+  if (activeEnrollments && activeEnrollments.length > 0) {
+    return { error: "This child is still in a session and would keep being invoiced. Withdraw them first." };
+  }
+
+  return setStudentStatus(supabase, studentId, "inactive");
+}
+
+export async function restoreStudent(studentId: string) {
+  await requireSignedIn();
+  return setStudentStatus(createAdminSupabase(), studentId, "active");
+}
+
+async function setStudentStatus(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  studentId: string,
+  status: "active" | "inactive"
+) {
+  const { data, error } = await supabase
+    .from("students")
+    .update({ status })
+    .eq("id", studentId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating student status:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/students");
+  revalidatePath(`/students/${studentId}`);
+  return { data };
 }
 
 export async function withdrawEnrollment(enrollmentId: string) {
