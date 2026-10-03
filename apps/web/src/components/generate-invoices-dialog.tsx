@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { generateMonthlyInvoices } from "@/lib/actions/payments";
 import { toast } from "sonner";
+import { businessMonth } from "@/lib/dates";
 
 interface GenerateInvoicesDialogProps {
   open: boolean;
@@ -15,8 +16,7 @@ interface GenerateInvoicesDialogProps {
 
 export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const now = new Date();
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultMonth = businessMonth();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

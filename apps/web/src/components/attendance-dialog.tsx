@@ -8,6 +8,7 @@ import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/
 import { createClient } from "@/lib/supabase/client";
 import { useAction } from "@/lib/use-action";
 import { createAttendanceLink } from "@/lib/actions/attendance-links";
+import { formatDateOnly, sessionDayPhrase } from "@/lib/dates";
 import { toast } from "sonner";
 import { Link2, Copy } from "lucide-react";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
@@ -114,7 +115,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
   function copyCoachLink() {
     if (!coachLink) return;
     navigator.clipboard.writeText(
-      `Register for today's session:\n${coachLink.url}\nPasscode: ${coachLink.passcode}`
+      `Register for ${sessionDayPhrase(session.date)}:\n${coachLink.url}\nPasscode: ${coachLink.passcode}`
     );
     toast.success("Link and passcode copied");
   }
@@ -143,7 +144,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
           <div className="font-medium">{program?.name}</div>
           <div className="text-muted-foreground">{school?.name}</div>
           <div className="text-muted-foreground">
-            {new Date(session.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            {formatDateOnly(session.date, { weekday: "long", month: "long", day: "numeric" })}
             {" "}at {session.start_time?.slice(0, 5)} — {session.end_time?.slice(0, 5)}
           </div>
           <div className="flex items-center gap-2 pt-1">

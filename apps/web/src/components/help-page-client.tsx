@@ -11,6 +11,7 @@ import { AUTOMATIC, GLOSSARY, PRACTICE, TASKS, TEST_CARDS, type HelpStep } from 
 import cases from "@/lib/help/acceptance-cases.json";
 import type { TestResult } from "@/lib/queries/onboarding";
 import type { Release } from "@/lib/releases";
+import { businessToday } from "@/lib/dates";
 import { ReleaseNotes } from "@/components/whats-new";
 import { Check, ChevronRight, Download, ExternalLink, PlayCircle, Search } from "lucide-react";
 
@@ -335,7 +336,7 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
     const blob = new Blob([rows.map((r) => r.map(cell).join(",")).join("\r\n")], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `coachos-test-results-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `coachos-test-results-${businessToday()}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   }

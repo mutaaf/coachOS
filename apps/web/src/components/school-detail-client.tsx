@@ -51,6 +51,7 @@ import type {
   SchoolInvoice,
 } from "@/lib/queries/schools";
 import { formatCurrency } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/dates";
 
 interface SchoolDetailClientProps {
   school: School;
@@ -457,11 +458,9 @@ export function SchoolDetailClient({
                           {program.start_date && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {new Date(
-                                program.start_date
-                              ).toLocaleDateString()}
+                              {formatDateOnly(program.start_date)}
                               {program.end_date &&
-                                ` - ${new Date(program.end_date).toLocaleDateString()}`}
+                                ` - ${formatDateOnly(program.end_date)}`}
                             </span>
                           )}
                         </div>
@@ -776,14 +775,11 @@ export function SchoolDetailClient({
                           >
                             <td className="px-6 py-4">
                               <span className="text-sm font-medium">
-                                {new Date(session.date).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                  }
-                                )}
+                                {formatDateOnly(session.date, {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
                               </span>
                             </td>
                             <td className="px-6 py-4">

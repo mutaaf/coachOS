@@ -214,7 +214,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Schedule**, tap the session." },
       { text: "Tap each child to mark them present, absent, late or excused, then tap [[Save Attendance]]." },
-      { text: "For a coach instead: tap [[Coach link]], then [[Copy link and passcode]], and send it to them. It stops working after 12 hours." },
+      { text: "For a coach instead: tap [[Coach link]], then [[Copy link and passcode]], and send it to them. The message says which day's session it is. It stops working after 12 hours." },
     ],
   },
   {
