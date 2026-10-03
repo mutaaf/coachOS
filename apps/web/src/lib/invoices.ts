@@ -5,16 +5,48 @@
  */
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { businessMonth } from "@/lib/dates";
+import { addDays, businessMonth, businessToday } from "@/lib/dates";
+
+/** Days a child who joins mid-month has to pay their first invoice. */
+export const JOINING_GRACE_DAYS = 7;
+
+/**
+ * Whether a program owes anything for the month. A free program never does,
+ * nor one that is over, at an archived school, or outside its own dates —
+ * each of those used to be billed, and charged by autopay.
+ */
+export function billableMonth(
+  program: { monthly_fee: number | string; status: string; start_date: string | null; end_date: string | null },
+  schoolStatus: string | null | undefined,
+  month: string
+): boolean {
+  if (!(Number(program.monthly_fee) > 0)) return false;
+  if (program.status === "completed" || program.status === "cancelled") return false;
+  if (schoolStatus === "archived") return false;
+  if (program.start_date && program.start_date.slice(0, 7) > month) return false;
+  if (program.end_date && program.end_date.slice(0, 7) < month) return false;
+  return true;
+}
+
+/**
+ * The 1st of the month, or a week after the child joined if that is later. A
+ * child enrolled on the 2nd was billed a month that was overdue the day it
+ * was made. The joining day is counted in Dallas, not UTC.
+ */
+export function invoiceDueDate(month: string, enrolledAt: string | null | undefined): string {
+  const first = `${month}-01`;
+  if (!enrolledAt) return first;
+  const due = addDays(businessToday(new Date(enrolledAt)), JOINING_GRACE_DAYS);
+  return due > first ? due : first;
+}
 
 export async function createMonthlyInvoices(month?: string) {
   const supabase = createAdminSupabase();
   const targetMonth = month || businessMonth();
-  const dueDate = `${targetMonth}-01`;
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("*, programs(*), students(*, student_parents(parent_id))")
+    .select("*, programs(*, schools(status)), students(*, student_parents(parent_id))")
     .eq("status", "active");
 
   if (!enrollments) return { created: 0, skipped: 0, total: 0 };
@@ -39,6 +71,8 @@ export async function createMonthlyInvoices(month?: string) {
     const program = enrollment.programs as any;
     const student = enrollment.students as any;
     const parentLinks = student?.student_parents as any[];
+
+    if (!program || !billableMonth(program, program.schools?.status, targetMonth)) continue;
 
     if (!parentLinks || parentLinks.length === 0) {
       noParent++;
@@ -65,7 +99,7 @@ export async function createMonthlyInvoices(month?: string) {
       program_id: enrollment.program_id,
       amount: program.monthly_fee,
       month: targetMonth,
-      due_date: dueDate,
+      due_date: invoiceDueDate(targetMonth, enrollment.enrolled_at),
       status: "pending",
     });
 

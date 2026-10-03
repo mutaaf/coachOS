@@ -32,7 +32,7 @@ export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesD
       } else if (result.skipped > 0) {
         toast.info(`All ${result.skipped} invoice(s) already exist for this month`);
       } else {
-        toast.info("No active enrollments found to invoice");
+        toast.info("Nothing to invoice for that month");
       }
       if (result.noParent && result.noParent > 0) {
         toast.warning(`${result.noParent} enrollment(s) skipped — no parent linked to student`);
@@ -53,7 +53,7 @@ export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesD
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <p className="text-sm text-muted-foreground">
-            This will create invoices for all active enrollments for the selected month. Already-existing invoices will be skipped.
+            Creates an invoice for every child in a program that runs that month. Free programs, programs that are finished or cancelled, archived schools, and invoices that already exist are left out.
           </p>
           <div className="space-y-2">
             <Label htmlFor="month">Month</Label>

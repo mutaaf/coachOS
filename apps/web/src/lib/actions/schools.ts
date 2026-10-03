@@ -82,9 +82,29 @@ export async function updateSchool(id: string, formData: FormData) {
   return { data };
 }
 
-export async function archiveSchool(id: string) {
+/**
+ * Archived schools are never billed. With `endEnrollments`, the children's
+ * places there are ended too, so they leave the rosters as well.
+ */
+export async function archiveSchool(id: string, options: { endEnrollments?: boolean } = {}) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
+
+  if (options.endEnrollments) {
+    const { data: programs } = await supabase.from("programs").select("id").eq("school_id", id);
+    const programIds = (programs ?? []).map((p) => p.id as string);
+    if (programIds.length) {
+      const { error } = await supabase
+        .from("enrollments")
+        .update({ status: "completed" })
+        .in("program_id", programIds)
+        .eq("status", "active");
+      if (error) {
+        console.error("Error ending enrollments:", error);
+        return { error: "Failed to end the school's enrollments. Please try again." };
+      }
+    }
+  }
 
   const { error } = await supabase
     .from("schools")

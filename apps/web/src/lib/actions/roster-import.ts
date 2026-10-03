@@ -110,7 +110,8 @@ export async function importRoster(target: ImportTarget, rows: RosterRow[]) {
     const name = target.newProgram?.name?.trim();
     const fee = Number(target.newProgram?.monthlyFee);
     if (!name) return { error: "Pick a session, or name a new one." };
-    if (!(fee > 0)) return { error: "What does this session cost per month?" };
+    // 0 is allowed: a free session, which is never invoiced.
+    if (!(fee >= 0)) return { error: "What does this session cost per month? Enter 0 if it's free." };
     const { data, error } = await supabase
       .from("programs")
       .insert({
