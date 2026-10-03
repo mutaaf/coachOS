@@ -185,8 +185,22 @@ export const TASKS: HelpTask[] = [
     tourStep: "registrations",
     steps: [
       { text: "On **Registrations**, copy the session's sign-up link." },
-      { text: "Post it in the WhatsApp group. Parents register themselves; when full, they join a waitlist automatically." },
-      { text: "Add each confirmed child to the roster with one tap, then send them their payment link." },
+      { text: "Share it however you like — WhatsApp, Instagram, a flyer. Parents register themselves and get a celebration and a \"you're in\" email; when full, they join a waitlist automatically." },
+      { text: "Add each confirmed child to the roster with one tap. They get a welcome email with the first practice and their payment page." },
+    ],
+  },
+  {
+    id: "whatsapp-group",
+    title: "Give a program its WhatsApp group",
+    when: "So new families land in the right group chat",
+    keywords: "whatsapp group chat invite link program session welcome email",
+    href: "/schools",
+    hrefLabel: "Open Schools",
+    tourStep: "schools",
+    steps: [
+      { text: "In WhatsApp, open the program's group, tap its name, then **Invite via link** → **Copy link**." },
+      { text: "In CoachOS, open the school, then **Edit** on the program, and paste it into **WhatsApp group invite link**. Save." },
+      { text: "From then on, families who get a place see a [[💬 Join the team group chat]] button when they sign up, and in their welcome email.", tip: "No link? Nobody is sent to WhatsApp — they get email and texts instead. The waitlist never gets the link." },
     ],
   },
   {

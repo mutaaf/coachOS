@@ -2,6 +2,7 @@
 
 import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
+import { WHATSAPP_GROUP } from "@/lib/whatsapp";
 import { createAdminSupabase, createAdminPublicSupabase } from "@/lib/supabase/server";
 
 /** URL-safe identifier for a program's public registration link. */
@@ -71,6 +72,7 @@ function readRegistrationFields(formData: FormData) {
     publicDescription:
       ((formData.get("public_description") as string) || "").trim() || null,
     websiteListingId: ((formData.get("website_listing_id") as string) || "").trim() || null,
+    whatsappGroupUrl: ((formData.get("whatsapp_group_url") as string) || "").trim() || null,
   };
 }
 
@@ -87,6 +89,9 @@ export async function createProgram(formData: FormData) {
   const status = formData.get("status") as string;
   const notes = formData.get("notes") as string | null;
   const registration = readRegistrationFields(formData);
+  if (registration.whatsappGroupUrl && !WHATSAPP_GROUP.test(registration.whatsappGroupUrl)) {
+    return { error: "That isn't a WhatsApp group invite link. In the group, tap its name → Invite via link → Copy link. It starts with https://chat.whatsapp.com/" };
+  }
 
   if (!schoolId || !name) {
     return { error: "School and program name are required." };
@@ -107,6 +112,7 @@ export async function createProgram(formData: FormData) {
       registration_open: registration.registrationOpen,
       location: registration.location,
       public_description: registration.publicDescription,
+      whatsapp_group_url: registration.whatsappGroupUrl,
       public_slug: await uniqueSlug(supabase, schoolId, name),
     })
     .select("id, public_slug")
@@ -138,6 +144,9 @@ export async function updateProgram(id: string, formData: FormData) {
   const status = formData.get("status") as string;
   const notes = formData.get("notes") as string | null;
   const registration = readRegistrationFields(formData);
+  if (registration.whatsappGroupUrl && !WHATSAPP_GROUP.test(registration.whatsappGroupUrl)) {
+    return { error: "That isn't a WhatsApp group invite link. In the group, tap its name → Invite via link → Copy link. It starts with https://chat.whatsapp.com/" };
+  }
 
   if (!schoolId || !name) {
     return { error: "School and program name are required." };
@@ -165,6 +174,7 @@ export async function updateProgram(id: string, formData: FormData) {
       registration_open: registration.registrationOpen,
       location: registration.location,
       public_description: registration.publicDescription,
+      whatsapp_group_url: registration.whatsappGroupUrl,
       public_slug:
         existing?.public_slug ?? (await uniqueSlug(supabase, schoolId, name, id)),
     })

@@ -4,6 +4,18 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Added
+- **A WhatsApp group per program**: paste its invite link on the program.
+  Families who get a place see "Join the team group chat" and get it in their
+  welcome email; with no link, nobody is pointed at WhatsApp, and the
+  waitlist never gets it
+- **Festive emails**: a confetti-and-soccer-ball header, playful type and
+  buttons across parent emails (calm on a failed payment). New: "you're in"
+  on signing up (from CoachOS or the website, via /api/registrations/notify,
+  with a daily sweep), and "Welcome to the team" with the first practice when
+  a child goes on the roster
+- **Sign-ups are celebrated** with confetti and a bouncing ball
+
 ### Fixed
 - A Chase Zelle alert forwarded from Yahoo Mail couldn't be read: the table
   arrives as "| Amount | $100.00 |". Read now — and an email stored as

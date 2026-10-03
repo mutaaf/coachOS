@@ -280,6 +280,23 @@ export function ProgramFormDialog({
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp_group_url">WhatsApp group invite link</Label>
+              <Input
+                id="whatsapp_group_url"
+                name="whatsapp_group_url"
+                type="url"
+                inputMode="url"
+                placeholder="https://chat.whatsapp.com/…"
+                defaultValue={(defaults as any)?.whatsapp_group_url ?? ""}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                In the group: tap its name → Invite via link → Copy link. Families who sign up get it in their
+                welcome email. Leave empty if this program has no group — nobody will be sent to WhatsApp.
+              </p>
+            </div>
+
             {websiteListings.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="website_listing_id">Show as website listing</Label>

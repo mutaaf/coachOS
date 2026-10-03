@@ -553,6 +553,52 @@
   "phone": true
  },
  {
+  "id": "REG-03",
+  "area": "Registration",
+  "title": "Signing up is celebrated, emailed once, and points to WhatsApp only when the program has a group",
+  "risk": "Families are told to wait for a WhatsApp message that never comes, or a group link reaches people without a place.",
+  "severity": "high",
+  "preconditions": [
+   "Two test programs with open places: one with a WhatsApp group invite link set (Edit program → WhatsApp group invite link), one without.",
+   "A test email address you can open."
+  ],
+  "steps": [
+   "On a phone, open the first program's sign-up link and register a test child with your email.",
+   "Look at the confirmation screen, then open the email.",
+   "Repeat on the second program (no group link).",
+   "Fill the first program, then register one more child so they land on the waitlist."
+  ],
+  "expected": [
+   "The confirmation shows confetti, a bouncing ball and '<child> is in! 🎉'.",
+   "With a group link: a green 'Join the team group chat' button opens the right WhatsApp group; the email has the same button.",
+   "Without one: no mention of WhatsApp anywhere — the screen says the details were emailed (or will be texted).",
+   "The email arrives once, with the program, school, schedule and first practice.",
+   "The waitlisted family sees 'on the list', no confetti and no group link — in the screen or the email."
+  ],
+  "evidence": "Screenshots of both confirmation screens and both emails.",
+  "phone": true
+ },
+ {
+  "id": "REG-04",
+  "area": "Registration",
+  "title": "Adding a registered child to the roster sends one welcome email",
+  "risk": "A family on the roster never learns when the first practice is or how to pay.",
+  "severity": "medium",
+  "preconditions": [
+   "REG-03 done, with a confirmed test registration that has an email."
+  ],
+  "steps": [
+   "On Registrations, add the test child to the roster.",
+   "Open the email. Then try adding them again."
+  ],
+  "expected": [
+   "'Welcome to the team, <child>! ⭐' arrives with the first practice, the game-day checklist, a 'Set up payments' button to their payment page, and the group chat button if the program has one.",
+   "Adding again sends nothing more."
+  ],
+  "evidence": "Screenshot of the welcome email.",
+  "phone": false
+ },
+ {
   "id": "PAY-01",
   "area": "Autopay & Stripe",
   "title": "Set up card autopay and confirm the first charge, card fee included, is exact",
