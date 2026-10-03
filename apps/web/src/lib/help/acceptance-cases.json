@@ -2516,6 +2516,31 @@
   "phone": false
  },
  {
+  "id": "SCH-09",
+  "area": "Schedule & attendance",
+  "title": "Change a weekly practice's time and coach without doubling practices or losing the coach",
+  "risk": "Changing 9:00 to 9:15 put two practices on every Saturday, and practices never carried the coach, so the calendar was wrong and coach pay came up short.",
+  "severity": "high",
+  "preconditions": [
+   "A test program with a weekly template (e.g. Saturday 9:00 – 10:00) with a test coach set, and its next 4 weeks generated.",
+   "A second active test coach."
+  ],
+  "steps": [
+   "Click one of the generated practices and read the Coach box.",
+   "Open Manage Templates and click the pencil next to the test template. Read the Coach box.",
+   "Change the start time to 9:15 and the end time to 10:15, leave 'Also change the practices already on the calendar' ticked, and click Save Changes.",
+   "Click Generate Sessions, then step through the next 4 weeks.",
+   "Click one upcoming test practice and pick the second test coach under Coach. Close it, reopen it, then open Coaches."
+  ],
+  "expected": [
+   "The practice shows the template's coach, and the template's edit form shows its coach rather than 'Not assigned'.",
+   "Each week has exactly one test practice, now at 9:15. Past and cancelled practices keep their old time.",
+   "The reopened practice shows the second coach, and once it has happened it counts towards that coach on Coaches."
+  ],
+  "evidence": "Screenshots of the edit form, the 4 weeks after generating again, and the practice's Coach box.",
+  "phone": false
+ },
+ {
   "id": "SEC-04",
   "area": "Access & security",
   "title": "Reset a family's payment link after it has been shared too widely",

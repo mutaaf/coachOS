@@ -280,6 +280,20 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "weekly-time",
+    title: "Change a weekly practice time or coach",
+    when: "A practice moves to 9:15, or a new coach takes over",
+    keywords: "change time day weekly template schedule coach covering substitute move practice duplicate",
+    href: "/schedule",
+    hrefLabel: "Open Schedule",
+    tourStep: "schedule",
+    steps: [
+      { text: "On **Schedule**, tap [[Manage Templates]], then the pencil next to the weekly practice." },
+      { text: "Change the day, time or coach. Leave **Also change the practices already on the calendar** ticked and tap [[Save Changes]].", tip: "Past and cancelled practices stay as they were. Generating again never makes a second practice on the same day." },
+      { text: "Just one practice covered by someone else? Tap that practice and pick them under **Coach**. That's who it counts towards on Coaches." },
+    ],
+  },
+  {
     id: "waive",
     title: "Let a family off a fee",
     when: "Scholarship, sibling discount, goodwill",

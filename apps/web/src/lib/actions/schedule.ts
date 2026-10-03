@@ -2,7 +2,7 @@
 
 import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { businessToday, toISODate } from "@/lib/dates";
+import { addDays, businessToday, toISODate } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
 import { getScheduleTemplates } from "@/lib/queries/schedule";
 import { getSessions } from "@/lib/queries/schedule";
@@ -74,9 +74,17 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
   const location = formData.get("location") as string | null;
   const coach_id = ((formData.get("coach_id") as string) || "").trim() || null;
 
+  const update_future = ["on", "true"].includes(formData.get("update_future") as string);
+
   if (!program_id || isNaN(day_of_week) || !start_time || !end_time) {
     return { error: "Program, day of week, start time, and end time are required." };
   }
+
+  const { data: before } = await supabase
+    .from("schedule_templates")
+    .select("day_of_week, coach_id")
+    .eq("id", id)
+    .maybeSingle();
 
   const { data, error } = await supabase
     .from("schedule_templates")
@@ -97,9 +105,73 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
     return { error: "Failed to update schedule template. Please try again." };
   }
 
+  if (update_future && before) {
+    const moved = await updateUpcomingPractices(supabase, id, before, {
+      day_of_week,
+      start_time,
+      end_time,
+      coach_id,
+    });
+    if (moved.error) return { error: moved.error };
+  }
+
   revalidatePath("/schedule");
   revalidatePath("/schools");
   return { data };
+}
+
+/**
+ * Carries a change to the weekly slot onto the practices already generated
+ * from it. Only upcoming, scheduled ones: a practice that has happened or was
+ * cancelled is a record of what took place. A coach covering one practice
+ * keeps it — only practices still with the slot's old coach (or none) move to
+ * the new one.
+ */
+async function updateUpcomingPractices(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  templateId: string,
+  before: { day_of_week: number; coach_id: string | null },
+  after: { day_of_week: number; start_time: string; end_time: string; coach_id: string | null }
+): Promise<{ error?: string }> {
+  const today = businessToday();
+  const { data: upcoming, error } = await supabase
+    .from("sessions")
+    .select("id, date, coach_id")
+    .eq("schedule_template_id", templateId)
+    .eq("status", "scheduled")
+    .gte("date", today);
+
+  if (error) {
+    console.error("Error fetching upcoming practices:", error);
+    return { error: "The weekly slot was saved, but the practices on the calendar weren't changed." };
+  }
+
+  const shift = after.day_of_week - before.day_of_week;
+
+  for (const session of upcoming ?? []) {
+    let date = addDays(session.date, shift);
+    // Moving to an earlier weekday mustn't put a practice in the past.
+    if (date < today) date = addDays(date, 7);
+
+    const keepsCover = session.coach_id !== null && session.coach_id !== before.coach_id;
+
+    const { error: updateError } = await supabase
+      .from("sessions")
+      .update({
+        date,
+        start_time: after.start_time,
+        end_time: after.end_time,
+        coach_id: keepsCover ? session.coach_id : after.coach_id,
+      })
+      .eq("id", session.id);
+
+    if (updateError) {
+      console.error("Error updating practice:", updateError);
+      return { error: "The weekly slot was saved, but some practices on the calendar weren't changed." };
+    }
+  }
+
+  return {};
 }
 
 export async function deleteScheduleTemplate(id: string) {
@@ -176,24 +248,30 @@ export async function generateSessions(programId: string | null, weeksAhead: num
       if (program?.start_date && dateStr < program.start_date) continue;
       if (program?.end_date && dateStr > program.end_date) continue;
 
-      // Check if session already exists for this program + date + start_time
+      // One practice per weekly slot per day. Matching on the start time
+      // alone meant changing 9:00 to 9:15 and generating again put a second
+      // practice on every Saturday. The time check still catches one added
+      // by hand at the same time.
       const { data: existing } = await supabase
         .from("sessions")
         .select("id")
-        .eq("program_id", template.program_id)
         .eq("date", dateStr)
-        .eq("start_time", template.start_time)
+        .or(
+          `schedule_template_id.eq.${template.id},and(program_id.eq.${template.program_id},start_time.eq.${template.start_time})`
+        )
         .limit(1);
 
       if (existing && existing.length > 0) continue;
 
-      // Create the session
+      // Create the session, with the slot's coach — without it a generated
+      // practice counted towards nobody's pay.
       const { error: insertError } = await supabase.from("sessions").insert({
         schedule_template_id: template.id,
         program_id: template.program_id,
         date: dateStr,
         start_time: template.start_time,
         end_time: template.end_time,
+        coach_id: template.coach_id ?? null,
         status: "scheduled",
         is_makeup: false,
       });
