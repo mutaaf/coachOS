@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,12 @@ export function CoachFormDialog({
   const { run, pending } = useAction();
   const isEditing = !!coach;
   const [payType, setPayType] = useState<string>(coach?.pay_type ?? "per_session");
+
+  // Set on each opening, not just the first: the dialog stays mounted, so an
+  // hourly coach opened on "Per session" and saving made $25/hour $25/session.
+  useEffect(() => {
+    if (open) setPayType(coach?.pay_type ?? "per_session");
+  }, [open, coach]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

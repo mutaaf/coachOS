@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createProgram, updateProgram } from "@/lib/actions/programs";
@@ -59,6 +59,11 @@ export function ProgramFormDialog({
   const [registrationOpen, setRegistrationOpen] = useState(
     defaults?.registration_open ?? false
   );
+
+  // The dialog stays mounted between programs, so this is set on each opening.
+  useEffect(() => {
+    if (open) setRegistrationOpen(defaults?.registration_open ?? false);
+  }, [open, defaults]);
 
   // The listing currently pointing at this program, if any.
   const linkedListingId =
