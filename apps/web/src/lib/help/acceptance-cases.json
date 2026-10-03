@@ -2532,6 +2532,28 @@
   "phone": false
  },
  {
+  "id": "PAY-24",
+  "area": "Payments",
+  "title": "The dashboard counts every overdue payment",
+  "risk": "The home screen says 5 overdue when far more families are behind, so money owed is missed.",
+  "severity": "high",
+  "preconditions": [
+   "At least seven test invoices showing as overdue on Payments."
+  ],
+  "steps": [
+   "On Payments, tap Overdue and count the invoices. Note the amount on the Overdue card.",
+   "Open the Dashboard and read the Overdue Payments card.",
+   "In Recent Alerts, count the Overdue Payment rows, then tap See all."
+  ],
+  "expected": [
+   "The Overdue Payments card shows the same number of invoices as Payments, and the same amount owed, never stuck at 5.",
+   "Recent Alerts lists five, oldest first, with See all and the full number.",
+   "See all opens Payments with Overdue already picked, showing every overdue invoice."
+  ],
+  "evidence": "Screenshots of the Payments Overdue card, the Dashboard card and alerts, and the page See all opens.",
+  "phone": true
+ },
+ {
   "id": "WEB-01",
   "area": "Website",
   "title": "A program added from CoachOS appears on risingstars.training with live places, and sign-ups land in CoachOS",

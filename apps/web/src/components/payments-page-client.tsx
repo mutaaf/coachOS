@@ -32,6 +32,8 @@ interface PaymentsPageClientProps {
   invoices: any[];
   payments: any[];
   collect: CollectPanelProps;
+  /** From the address: the dashboard's "See all" opens on overdue. */
+  initialStatus?: string;
 }
 
 const statusBadge = (status: string) => {
@@ -45,10 +47,14 @@ const statusBadge = (status: string) => {
   return <Badge variant={map[status] || "secondary"}>{status}</Badge>;
 };
 
-export function PaymentsPageClient({ summary, invoices, payments, collect }: PaymentsPageClientProps) {
+const STATUSES = ["all", "pending", "processing", "overdue", "paid", "waived"];
+
+export function PaymentsPageClient({ summary, invoices, payments, collect, initialStatus }: PaymentsPageClientProps) {
   const router = useRouter();
   const { run } = useAction();
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(
+    initialStatus && STATUSES.includes(initialStatus) ? initialStatus : "all"
+  );
   const [showRecordPayment, setShowRecordPayment] = useState(false);
   const [recording, setRecording] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
@@ -196,7 +202,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
         <TabsContent value="invoices">
           {/* Status Filter Bar */}
           <div data-tour="invoice-statuses" className="flex gap-2 mb-4 flex-wrap">
-            {["all", "pending", "processing", "overdue", "paid", "waived"].map((s) => (
+            {STATUSES.map((s) => (
               <Button
                 key={s}
                 variant={statusFilter === s ? "default" : "outline"}

@@ -4,6 +4,7 @@ import { businessToday, dayLabel, greeting } from "@/lib/dates";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { getOnboarding } from "@/lib/queries/onboarding";
+import { getOverdueSummary } from "@/lib/queries/payments";
 import { GettingStarted } from "@/components/getting-started";
 import {
   Card,
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
     schoolsResult,
     studentsResult,
     invoicesResult,
-    overdueResult,
+    overdue,
     sessionsResult,
     unreadMessagesResult,
   ] = await Promise.all([
@@ -74,13 +75,8 @@ export default async function DashboardPage() {
       .gte("month", today.slice(0, 7))
       .lte("month", today.slice(0, 7)),
 
-    // Overdue invoices
-    supabase
-      .from("invoices")
-      .select("id, amount, parent_id, student_id, due_date, students(first_name, last_name)")
-      .eq("status", "overdue")
-      .order("due_date", { ascending: true })
-      .limit(5),
+    // Overdue invoices: all of them counted, the oldest five listed
+    getOverdueSummary(),
 
     // Upcoming sessions
     supabase
@@ -105,8 +101,8 @@ export default async function DashboardPage() {
     (sum, inv) => sum + (inv.amount ?? 0),
     0
   );
-  const overdueInvoices = overdueResult.data ?? [];
-  const overdueCount = overdueInvoices.length;
+  const overdueInvoices = overdue.preview;
+  const overdueCount = overdue.count;
   const upcomingSessions = sessionsResult.data ?? [];
   const pendingMessages = unreadMessagesResult.count ?? 0;
 
@@ -164,7 +160,11 @@ export default async function DashboardPage() {
       {/* Stat Cards */}
       <div data-tour="dashboard-stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <Card key={stat.label} className="border-0 shadow-sm">
+          <Card
+            key={stat.label}
+            data-testid={`stat-${stat.label.toLowerCase().replace(/ /g, "-")}`}
+            className="border-0 shadow-sm"
+          >
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
                   >
                     {stat.trend === "up"
                       ? "Revenue this month"
-                      : `${overdueCount} need attention`}
+                      : `${formatCurrency(overdue.amount)} owed`}
                   </span>
                 </div>
               )}
@@ -311,6 +311,15 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                 ))}
+
+                {overdueCount > overdueInvoices.length && (
+                  <Link
+                    href="/payments?status=overdue"
+                    className="block text-center text-xs font-medium text-red-600 hover:underline"
+                  >
+                    See all {overdueCount}
+                  </Link>
+                )}
 
                 {pendingMessages > 0 && (
                   <div className="flex items-start gap-3 rounded-xl bg-amber-50/60 p-3">

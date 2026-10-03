@@ -86,6 +86,31 @@ export async function getPaymentSummary() {
   return { totalRevenue, pendingAmount, overdueAmount, overdueCount: overdue.length, paidThisMonth };
 }
 
+/**
+ * The dashboard's Overdue Payments tile and its alerts list. The count and the
+ * money still owed cover every overdue invoice; only the preview stops at five,
+ * oldest first. Counting the preview once told her 5 when 21 were overdue.
+ */
+export async function getOverdueSummary() {
+  const supabase = createAdminSupabase();
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("id, amount, due_date, students(first_name, last_name), payments(amount)")
+    .eq("status", "overdue")
+    .order("due_date", { ascending: true });
+  if (error) throw error;
+
+  const invoices = (data || []) as any[];
+  const owed = (i: any) =>
+    Number(i.amount) - (i.payments || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+
+  return {
+    count: invoices.length,
+    amount: invoices.reduce((sum, i) => sum + owed(i), 0),
+    preview: invoices.slice(0, 5),
+  };
+}
+
 export async function getOverdueInvoices() {
   const supabase = createAdminSupabase();
   const today = businessToday();
