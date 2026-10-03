@@ -246,6 +246,20 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "archive",
+    title: "A child has left",
+    when: "To tidy the Students list",
+    keywords: "archive remove delete left quit withdraw tidy hide student child parent restore",
+    href: "/students",
+    hrefLabel: "Open Students",
+    tourStep: "students",
+    steps: [
+      { text: "Withdraw them from their session first, so they're not invoiced on the 1st." },
+      { text: "On **Students**, tap the archive box on their row. They leave the list, and every invoice and payment stays.", tip: "Tap **Show archived** to see them again, and the arrow on their row to bring them back." },
+      { text: "Delete only works for someone with no payment history. For anyone else it offers to archive instead, so your books never lose a payment.", careful: true },
+    ],
+  },
+  {
     id: "reset",
     title: "A family's link was shared too widely",
     when: "If someone forwards it around",
