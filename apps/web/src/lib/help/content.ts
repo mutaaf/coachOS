@@ -145,6 +145,7 @@ export const TASKS: HelpTask[] = [
       { text: "On **Payments**, find the family's invoice and tap **Record Payment** on its row." },
       { text: "The amount still owed is filled in — change it if they paid part. Pick the method and tap [[Record Payment]]." },
       { text: "It turns {paid} when fully paid, and a receipt is emailed if they have an email.", tip: "CoachOS won't take $0, a negative amount or more than they owe — that keeps your books right." },
+      { text: "Typed it wrong? Open **Payment History** and tap the pencil on that payment. The same rule applies: more than $0, and no more than the invoice is for once its other payments are counted." },
     ],
   },
   {

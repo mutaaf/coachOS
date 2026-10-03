@@ -22,11 +22,15 @@ export async function recordPayment(formData: FormData) {
   const method = formData.get("method") as string;
   const reference = formData.get("reference") as string;
   const notes = formData.get("notes") as string;
+  // Made when the dialog opened: the same form sent twice (a double tap, a
+  // retry) is one payment, not two.
+  const clientKey = (formData.get("client_key") as string) || null;
 
   // The books only take money that is real and owed: nothing zero or
   // negative, and nothing beyond the invoice's balance, which would count
   // revenue twice or hide an overpayment that should go back.
   if (!(amount > 0)) return { error: "Enter an amount greater than $0." };
+  if (clientKey && (await alreadyRecorded(supabase, clientKey))) return { success: true };
   const { data: inv } = await supabase
     .from("invoices")
     .select("amount, status, payments(amount)")
@@ -51,10 +55,13 @@ export async function recordPayment(formData: FormData) {
       method,
       reference: reference || null,
       notes: notes || null,
+      client_key: clientKey,
     })
     .select("id")
     .single();
 
+  // 23505 on the key: the same form, sent at the same moment, already saved it.
+  if (error?.code === "23505" && clientKey) return { success: true };
   if (error) throw error;
 
   await recalculateInvoiceStatus(supabase, invoiceId);
@@ -62,6 +69,12 @@ export async function recordPayment(formData: FormData) {
 
   revalidatePath("/payments");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+async function alreadyRecorded(supabase: ReturnType<typeof createAdminSupabase>, clientKey: string) {
+  const { data } = await supabase.from("payments").select("id").eq("client_key", clientKey).limit(1);
+  return (data?.length ?? 0) > 0;
 }
 
 export async function fetchPendingInvoices() {
@@ -162,8 +175,30 @@ export async function updatePayment(id: string, formData: FormData) {
   const reference = formData.get("reference") as string;
   const notes = formData.get("notes") as string;
 
-  if (!amount || !method) {
-    return { error: "Amount and method are required" };
+  if (!method) return { error: "Pick how it was paid." };
+
+  // The same rules as recording it: more than $0, and no more than the
+  // invoice leaves room for once its other payments are counted. An edit to
+  // $500 used to raise revenue by money never received.
+  if (!(amount > 0)) return { error: "Enter an amount greater than $0." };
+  const { data: current } = await supabase
+    .from("payments")
+    .select("invoice_id, invoices(amount, payments(id, amount))")
+    .eq("id", id)
+    .maybeSingle();
+  if (!current) return { error: "That payment no longer exists." };
+  const inv = current.invoices as unknown as { amount: number; payments: { id: string; amount: number }[] } | null;
+  if (inv) {
+    const roomCents =
+      Math.round(Number(inv.amount) * 100) -
+      (inv.payments || [])
+        .filter((p) => p.id !== id)
+        .reduce((s, p) => s + Math.round(Number(p.amount) * 100), 0);
+    if (Math.round(amount * 100) > roomCents) {
+      return {
+        error: `That's more than the $${(Math.max(roomCents, 0) / 100).toFixed(2)} this invoice leaves for this payment. Change the invoice first if the amount owed was wrong.`,
+      };
+    }
   }
 
   const { data, error } = await supabase

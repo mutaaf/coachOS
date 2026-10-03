@@ -154,6 +154,8 @@ export type Payment = {
   zelle_receipt_id: string | null;
   /** Card fee collected on top of `amount`. */
   fee: number;
+  /** Sent by the form that recorded it; unique, so a double tap records nothing more. */
+  client_key: string | null;
   created_at: string;
 };
 

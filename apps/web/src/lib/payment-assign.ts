@@ -36,6 +36,8 @@ export interface AssignInput {
   parent: ParentChoice;
   /** Required when the family has nothing open to pay. */
   placement?: Placement;
+  /** Made when the dialog opened, so a double tap records the money once. */
+  key?: string;
 }
 
 export interface AssignResult {
@@ -47,6 +49,8 @@ export interface AssignResult {
   reusedParent: string | null;
   appliedCents: number;
   leftoverCents: number;
+  /** The same form was already recorded; nothing more was. */
+  duplicate?: true;
 }
 
 const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -76,6 +80,10 @@ export async function assignPayment(
     cents = Math.round(Number(input.source.amount) * 100);
     if (!Number.isFinite(cents) || cents <= 0) return { error: "Enter the amount that was paid." };
     if (!["cash", "zelle", "venmo"].includes(input.source.method)) return { error: "Pick how it was paid." };
+    if (input.key) {
+      const done = await recordedWithKey(supabase, input.key);
+      if (done) return done;
+    }
   }
 
   // Who --------------------------------------------------------------------
@@ -158,7 +166,7 @@ export async function assignPayment(
   } else {
     const src = input.source as Extract<PaymentSource, { kind: "manual" }>;
     const paymentIds: string[] = [];
-    for (const { invoice, cents: c } of picked) {
+    for (const [i, { invoice, cents: c }] of picked.entries()) {
       const { data, error } = await supabase
         .from("payments")
         .insert({
@@ -167,9 +175,16 @@ export async function assignPayment(
           method: src.method,
           received_at: src.receivedAt || new Date().toISOString(),
           notes: [s(src.note), note].filter(Boolean).join(" ") || null,
+          // On the first only: it is the one a second copy of the form collides with.
+          client_key: i === 0 ? s(input.key) || null : null,
         })
         .select("id")
         .single();
+      // 23505 on the key: the same form, sent at the same moment, got there first.
+      if (error?.code === "23505" && i === 0 && input.key) {
+        const done = await recordedWithKey(supabase, input.key);
+        if (done) return done;
+      }
       if (error) return { error: error.message };
       paymentIds.push(data.id);
       await recalculateInvoiceStatus(supabase, invoice.id);
@@ -189,5 +204,24 @@ export async function assignPayment(
     reusedParent,
     appliedCents: cents - leftoverCents,
     leftoverCents,
+  };
+}
+
+/** What a form with this key already recorded, so sending it again changes nothing. */
+async function recordedWithKey(supabase: OpsClient, key: string): Promise<AssignResult | null> {
+  const { data } = await supabase
+    .from("payments")
+    .select("invoices(parent_id)")
+    .eq("client_key", key)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    success: true,
+    parentId: (data.invoices as any)?.parent_id,
+    created: [],
+    reusedParent: null,
+    appliedCents: 0,
+    leftoverCents: 0,
+    duplicate: true,
   };
 }

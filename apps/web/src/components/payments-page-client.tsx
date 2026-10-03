@@ -440,6 +440,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect }: Pay
                           <Button
                             size="sm"
                             variant="ghost"
+                            aria-label="Edit payment"
                             onClick={() => setEditingPayment(p)}
                           >
                             <Pencil className="h-4 w-4" />
