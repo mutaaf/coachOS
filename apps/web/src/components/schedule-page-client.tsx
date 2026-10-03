@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ScheduleTemplate } from "@/types/database";
+import { businessToday, businessWeek, dayOfWeek, formatDateOnly } from "@/lib/dates";
 
 const SCHOOL_COLORS = ["#007AFF", "#34C759", "#FF9500", "#FF3B30", "#5856D6", "#FF2D55", "#AF52DE", "#00C7BE"];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -38,26 +39,6 @@ interface SchedulePageClientProps {
   initialSessions: any[];
   programs: any[];
   coaches?: { id: string; first_name: string; last_name: string }[];
-}
-
-function getWeekDates(offset: number): Date[] {
-  const now = new Date();
-  const start = new Date(now);
-  start.setDate(now.getDate() - now.getDay() + offset * 7);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    return d;
-  });
-}
-
-function formatDate(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
-
-function isToday(d: Date): boolean {
-  const now = new Date();
-  return formatDate(d) === formatDate(now);
 }
 
 function formatTime(time: string): string {
@@ -84,7 +65,10 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
   const [templateFormOpen, setTemplateFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | undefined>();
 
-  const weekDates = getWeekDates(weekOffset);
+  // Days as YYYY-MM-DD from Dallas's date, so neither the browser's timezone
+  // nor 7pm in Dallas (midnight UTC) slides practices into the wrong column.
+  const today = businessToday();
+  const weekDates = businessWeek(weekOffset);
   const schoolColorMap = new Map<string, string>();
   programs.forEach((p: any, i: number) => {
     if (p.school && !schoolColorMap.has(p.school.id)) {
@@ -93,9 +77,7 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
   });
 
   useEffect(() => {
-    const start = formatDate(weekDates[0]);
-    const end = formatDate(weekDates[6]);
-    fetchSessionsForWeek(start, end).then((data) => {
+    fetchSessionsForWeek(weekDates[0], weekDates[6]).then((data) => {
       if (data) setSessions(data);
     });
   }, [weekOffset]);
@@ -161,7 +143,7 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
     }
   }
 
-  const weekLabel = `${weekDates[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${weekDates[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  const weekLabel = `${formatDateOnly(weekDates[0], { month: "short", day: "numeric" })} — ${formatDateOnly(weekDates[6], { month: "short", day: "numeric", year: "numeric" })}`;
 
   return (
     <div>
@@ -183,11 +165,11 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
       {/* Navigation — stacks on mobile */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setWeekOffset((w) => w - 1)}>
+          <Button variant="outline" size="icon" aria-label="Previous week" onClick={() => setWeekOffset((w) => w - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)}>Today</Button>
-          <Button variant="outline" size="icon" onClick={() => setWeekOffset((w) => w + 1)}>
+          <Button variant="outline" size="icon" aria-label="Next week" onClick={() => setWeekOffset((w) => w + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium ml-2">{weekLabel}</span>
@@ -206,15 +188,21 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
       {/* Week Grid — scrollable on mobile */}
       <div className="overflow-x-auto -mx-4 px-4 pb-2 sm:mx-0 sm:px-0">
         <div className="grid grid-cols-7 gap-2" style={{ minWidth: "700px" }}>
-          {weekDates.map((date, i) => {
-            const dateStr = formatDate(date);
+          {weekDates.map((dateStr) => {
             const daySessions = filteredSessions.filter((s: any) => s.date === dateStr);
+            const isToday = dateStr === today;
 
             return (
-              <div key={i} className="min-h-[200px]">
-                <div className={`text-center py-2 rounded-xl mb-2 ${isToday(date) ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                  <div className="text-xs font-medium">{DAY_NAMES[date.getDay()]}</div>
-                  <div className="text-lg font-bold">{date.getDate()}</div>
+              <div
+                key={dateStr}
+                className="min-h-[200px]"
+                data-testid="schedule-day"
+                data-date={dateStr}
+                aria-current={isToday ? "date" : undefined}
+              >
+                <div className={`text-center py-2 rounded-xl mb-2 ${isToday ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                  <div className="text-xs font-medium">{DAY_NAMES[dayOfWeek(dateStr)]}</div>
+                  <div className="text-lg font-bold">{Number(dateStr.slice(8))}</div>
                 </div>
                 <div className="space-y-2">
                   {daySessions.map((session: any) => {

@@ -2200,7 +2200,7 @@
    "On the computer, reopen the session and check the statuses."
   ],
   "expected": [
-   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Valid for 12 hours. The passcode isn't shown again — copy it now.' The copied text includes the link and the passcode.",
+   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Valid for 12 hours. The passcode isn't shown again — copy it now.' The copied text names the session's day ('today's session', 'tomorrow's session', or 'the session on' its date) and includes the link and the passcode.",
    "After reopening, the passcode is not shown again.",
    "On the phone, before the passcode is entered, the page shows only 'Take the register' and a passcode box, with no child names. Open register stays disabled until 6 digits are entered.",
    "After unlocking, the page shows the program, school, date and time, 'N of M here', the active children, their medical notes, and Here/Away/Late/Excused buttons.",
@@ -2268,6 +2268,34 @@
   ],
   "evidence": "Full-length screenshots of the unlocked register, and of the login page reached when trying other addresses.",
   "phone": true
+ },
+ {
+  "id": "SCH-08",
+  "area": "Schedule & attendance",
+  "title": "Check practices, program dates and follow-ups show on their own day, including after 7pm",
+  "risk": "A Tuesday practice shows as Monday, or after 7pm the week slides a day, so she tells parents and coaches the wrong day.",
+  "severity": "high",
+  "preconditions": [
+   "A test program with a start date of the 1st of a month, and test sessions today, tomorrow and on a Tuesday.",
+   "A test lead on Marketing with a follow-up date of today, and another of yesterday.",
+   "Best done after 7pm Dallas time, when the mistake used to show."
+  ],
+  "steps": [
+   "Open Schedule. Find today's column and tomorrow's column.",
+   "Click the Tuesday session and read the date at the top of the dialog. Click Coach link, then 'Copy link and passcode', and paste it somewhere to read it.",
+   "Open the test program's school and read the program's dates, then the Schedule tab's upcoming sessions.",
+   "Open the Dashboard and read the greeting and the labels next to upcoming sessions.",
+   "Open Marketing and read the two test leads' follow-up dates."
+  ],
+  "expected": [
+   "Today's column is highlighted and holds today's session; tomorrow's session is in the next column.",
+   "The dialog says Tuesday and the right date. The copied text says 'today's session', 'tomorrow's session', or 'the session on' the day, matching the session.",
+   "The program starts on the 1st, not the last day of the month before. Upcoming sessions show the right weekday.",
+   "The greeting matches the time of day in Dallas. Today's session says Today and tomorrow's says Tomorrow.",
+   "Today's follow-up shows today's date in blue. Yesterday's shows yesterday's date in red."
+  ],
+  "evidence": "Screenshots of the Schedule week, the session dialog, the school's program and sessions, the dashboard, and the two leads, with the time they were taken.",
+  "phone": false
  },
  {
   "id": "SEC-04",

@@ -1,10 +1,22 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import {
   businessToday,
   businessMonth,
   businessDaysAgo,
+  businessTomorrow,
+  businessHour,
+  businessWeek,
   isPastDue,
   toISODate,
+  parseDateOnly,
+  formatDateOnly,
+  addDays,
+  dayOfWeek,
+  dayLabel,
+  greeting,
+  sessionDayPhrase,
 } from "@/lib/dates";
 
 /**
@@ -57,5 +69,122 @@ describe("dates in the timezone the business runs in", () => {
     expect(businessToday(midday)).toBe("2026-09-01");
     expect(isPastDue("2026-09-01", midday)).toBe(false);
     expect(isPastDue("2026-09-02", midday)).toBe(false);
+  });
+});
+
+/**
+ * Stored days ("2026-10-06") are calendar days, not moments. Reading them with
+ * `new Date("2026-10-06")` lands on midnight in London — the evening before in
+ * Dallas — which showed Tuesday practices as Monday, program dates a day early,
+ * and today's lead follow-ups as overdue. And the dashboard and the Schedule
+ * grid took the hour and the week from whichever clock they ran on: the
+ * server's is UTC.
+ */
+describe("stored days and the business's clock", () => {
+  // Tuesday 2026-10-06, 7:30pm in Dallas; UTC has already reached Wednesday.
+  const tuesdayEvening = new Date("2026-10-07T00:30:00Z");
+  // Tuesday 2026-10-06, 9am in Dallas.
+  const tuesdayMorning = new Date("2026-10-06T14:00:00Z");
+
+  it("reads a stored day as that day, wherever the machine is", () => {
+    const d = parseDateOnly("2026-10-06");
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getDay()]).toEqual([2026, 9, 6, 2]);
+    expect(toISODate(d)).toBe("2026-10-06");
+  });
+
+  it("shows a Tuesday practice as Tuesday", () => {
+    expect(formatDateOnly("2026-10-06", { weekday: "long", month: "long", day: "numeric" })).toBe(
+      "Tuesday, October 6"
+    );
+    expect(formatDateOnly("2026-09-01")).toBe("9/1/2026");
+    expect(dayOfWeek("2026-10-06")).toBe(2);
+  });
+
+  it("counts days across months and years", () => {
+    expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
+    expect(addDays("2027-01-01", -1)).toBe("2026-12-31");
+    // Across the clocks going back, which a 24-hour step would trip on.
+    expect(addDays("2026-11-01", 1)).toBe("2026-11-02");
+  });
+
+  it("keeps tomorrow tomorrow at half past seven", () => {
+    expect(businessTomorrow(tuesdayEvening)).toBe("2026-10-07");
+  });
+
+  it("builds the Schedule week from Dallas's date, not UTC's", () => {
+    expect(businessWeek(0, tuesdayEvening)).toEqual([
+      "2026-10-04",
+      "2026-10-05",
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-10",
+    ]);
+    expect(businessWeek(1, tuesdayEvening)[0]).toBe("2026-10-11");
+    expect(businessWeek(-1, tuesdayEvening)[6]).toBe("2026-10-03");
+  });
+
+  it("says good evening in Dallas when the server's clock says midnight", () => {
+    expect(businessHour(tuesdayEvening)).toBe(19);
+    expect(greeting(tuesdayEvening)).toBe("Good evening");
+    expect(greeting(tuesdayMorning)).toBe("Good morning");
+  });
+
+  it("labels today's and tomorrow's sessions by Dallas's date", () => {
+    expect(dayLabel("2026-10-06", tuesdayEvening)).toBe("Today");
+    expect(dayLabel("2026-10-07", tuesdayEvening)).toBe("Tomorrow");
+    expect(dayLabel("2026-10-09", tuesdayEvening)).toBe("Fri, Oct 9");
+  });
+
+  it("does not call tomorrow's practice today's in the coach's message", () => {
+    expect(sessionDayPhrase("2026-10-06", tuesdayMorning)).toBe("today's session");
+    expect(sessionDayPhrase("2026-10-07", tuesdayMorning)).toBe("tomorrow's session");
+    expect(sessionDayPhrase("2026-10-09", tuesdayMorning)).toBe("the session on Friday, October 9");
+  });
+});
+
+/**
+ * The same mistake kept coming back in new places, so the source is checked
+ * for it. Timestamps (created_at and the like) are moments and may use Date
+ * freely; it is stored days and "today" that must go through lib/dates.ts.
+ */
+describe("no date is read or written the UTC way", () => {
+  const root = join(__dirname, "../../apps/web/src");
+
+  function files(dir: string): string[] {
+    return readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) return files(path);
+      return /\.(ts|tsx)$/.test(name) ? [path] : [];
+    });
+  }
+
+  const RULES: [RegExp, string][] = [
+    [
+      /toISOString\(\)\s*\.\s*(split\(\s*["']T["']\s*\)|slice\(\s*0\s*,\s*10\s*\))/,
+      "today from toISOString() — use businessToday()",
+    ],
+    [
+      /new Date\(\s*[\w.?!]*(date|Date|_follow_up|dateStr)\s*\)/,
+      "a stored day read as a moment — use parseDateOnly() or formatDateOnly()",
+    ],
+    [/new Date\(\)\.getHours\(\)/, "the server's hour — use businessHour()"],
+  ];
+
+  it("lib/dates.ts is the only way in", () => {
+    const offences: string[] = [];
+    for (const file of files(root)) {
+      if (file.endsWith("lib/dates.ts")) continue;
+      const source = readFileSync(file, "utf8");
+      for (const [pattern, why] of RULES) {
+        // Whole-file, so a call broken across lines is still caught.
+        for (const match of source.matchAll(new RegExp(pattern, "g"))) {
+          const line = source.slice(0, match.index).split("\n").length;
+          offences.push(`${relative(root, file)}:${line} ${why}`);
+        }
+      }
+    }
+    expect(offences).toEqual([]);
   });
 });

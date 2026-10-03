@@ -1,7 +1,7 @@
 import { getSessions } from "@/lib/queries/schedule";
 import { getActivePrograms } from "@/lib/queries/programs";
 import { getAssignableCoaches } from "@/lib/queries/coaches";
-import { toISODate } from "@/lib/dates";
+import { businessWeek } from "@/lib/dates";
 import { SchedulePageClient } from "@/components/schedule-page-client";
 
 // Every dashboard page reads live business data behind a login, so it must be
@@ -10,16 +10,13 @@ import { SchedulePageClient } from "@/components/schedule-page-client";
 export const dynamic = "force-dynamic";
 
 export default async function SchedulePage() {
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  // This week in Dallas — the server's clock is UTC.
+  const week = businessWeek();
 
   const [sessions, programs, coaches] = await Promise.all([
     getSessions({
-      startDate: toISODate(startOfWeek),
-      endDate: toISODate(endOfWeek),
+      startDate: week[0],
+      endDate: week[6],
     }),
     getActivePrograms(),
     getAssignableCoaches(),

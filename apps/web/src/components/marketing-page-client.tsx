@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Target, Plus, Phone, Mail, MapPin, Users, ArrowRight, MessageSquare, CheckCircle, Pencil, Trash2 } from "lucide-react";
 import type { Lead } from "@/types/database";
+import { formatDateOnly, isPastDue } from "@/lib/dates";
 
 const STAGES = [
   { value: "identified", label: "Identified", color: "bg-gray-100 text-gray-700" },
@@ -156,8 +157,8 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                   )}
                   {lead.next_follow_up && (
                     <div className="text-xs mt-2">
-                      <span className={`px-1.5 py-0.5 rounded ${new Date(lead.next_follow_up) < new Date() ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>
-                        Follow up: {new Date(lead.next_follow_up).toLocaleDateString()}
+                      <span className={`px-1.5 py-0.5 rounded ${isPastDue(lead.next_follow_up) ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>
+                        Follow up: {formatDateOnly(lead.next_follow_up)}
                       </span>
                     </div>
                   )}

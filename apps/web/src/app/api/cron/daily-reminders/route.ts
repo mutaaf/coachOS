@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { businessDaysAgo, businessToday } from "@/lib/dates";
+import { businessDaysAgo, businessToday, businessTomorrow } from "@/lib/dates";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { renderTemplate } from "shared";
 import { createMonthlyInvoices } from "@/lib/invoices";
@@ -58,9 +58,7 @@ export async function GET(request: NextRequest) {
   // Practice reminders for tomorrow's sessions
   const practiceEnabled = await getConfigValue("practice_reminders_enabled");
   if (practiceEnabled === "true") {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split("T")[0];
+    const tomorrowStr = businessTomorrow();
 
     const { data: sessions } = await supabase
       .from("sessions")

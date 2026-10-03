@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { businessToday } from "@/lib/dates";
+// The server's clock is UTC; the greeting and "Today"/"Tomorrow" go by Dallas.
+import { businessToday, dayLabel, greeting } from "@/lib/dates";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { getOnboarding } from "@/lib/queries/onboarding";
@@ -31,35 +32,12 @@ import {
 // page keeps serving whatever the database held when it was deployed.
 export const dynamic = "force-dynamic";
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
-
 function formatSessionTime(time: string): string {
   const [hours, minutes] = time.split(":");
   const h = parseInt(hours, 10);
   const ampm = h >= 12 ? "PM" : "AM";
   const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${displayHour}:${minutes} ${ampm}`;
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + "T00:00:00");
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  if (date.toDateString() === today.toDateString()) return "Today";
-  if (date.toDateString() === tomorrow.toDateString()) return "Tomorrow";
-
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export default async function DashboardPage() {
@@ -174,7 +152,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {getGreeting()}, Boss
+          {greeting()}, Boss
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Here&apos;s what&apos;s happening with your programs today.
@@ -280,7 +258,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        {formatDate(session.date)}
+                        {dayLabel(session.date)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatSessionTime(session.start_time)} -{" "}
