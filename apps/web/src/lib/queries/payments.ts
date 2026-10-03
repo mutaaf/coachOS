@@ -64,26 +64,47 @@ export async function getPaymentSummary() {
   const supabase = createAdminSupabase();
   const currentMonth = businessMonth();
 
-  const [invoicesRes, paymentsRes] = await Promise.all([
+  // Money received: payments, and money kept as a family's credit — counted
+  // when it came in. A payment made from that credit is the same money, so it
+  // is not counted again.
+  const [invoicesRes, paymentsRes, creditsRes] = await Promise.all([
     supabase.from("invoices").select("amount, status, payments(amount)"),
-    supabase.from("payments").select("amount, received_at"),
+    supabase.from("payments").select("amount, received_at").neq("method", "credit"),
+    supabase.from("family_credits").select("amount, received_at:created_at").gt("amount", 0),
   ]);
+  const received = [...(paymentsRes.data || []), ...(creditsRes.data || [])];
 
   const owed = (i: any) =>
     Number(i.amount) - (i.payments || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
   const invoices = (invoicesRes.data || []) as any[];
 
-  const totalRevenue = (paymentsRes.data || []).reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalRevenue = received.reduce((sum, p) => sum + Number(p.amount), 0);
   const pendingAmount = invoices
     .filter((i) => i.status === "pending" || i.status === "processing")
     .reduce((sum, i) => sum + owed(i), 0);
   const overdue = invoices.filter((i) => i.status === "overdue");
   const overdueAmount = overdue.reduce((sum, i) => sum + owed(i), 0);
-  const paidThisMonth = (paymentsRes.data || [])
+  const paidThisMonth = received
     .filter((p) => businessMonth(new Date(p.received_at)) === currentMonth)
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
   return { totalRevenue, pendingAmount, overdueAmount, overdueCount: overdue.length, paidThisMonth };
+}
+
+/** Families with money on file that nothing is owed for yet, most first. */
+export async function getFamilyCredits(): Promise<{ parentId: string; name: string; cents: number }[]> {
+  const supabase = createAdminSupabase();
+  const { data, error } = await supabase.from("family_credits").select("amount, parents(id, first_name, last_name)");
+  if (error) throw error;
+  const byParent = new Map<string, { parentId: string; name: string; cents: number }>();
+  for (const row of (data || []) as any[]) {
+    const p = row.parents;
+    if (!p) continue;
+    const entry = byParent.get(p.id) ?? { parentId: p.id, name: `${p.first_name} ${p.last_name ?? ""}`.trim(), cents: 0 };
+    entry.cents += Math.round(Number(row.amount) * 100);
+    byParent.set(p.id, entry);
+  }
+  return [...byParent.values()].filter((c) => c.cents > 0).sort((a, b) => b.cents - a.cents);
 }
 
 /**

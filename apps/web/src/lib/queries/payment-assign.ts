@@ -1,5 +1,6 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { toCents } from "@/lib/invoice-status";
+import { businessMonth } from "@/lib/dates";
 
 export interface AssignFamily {
   id: string;
@@ -8,6 +9,8 @@ export interface AssignFamily {
   children: { id: string; first_name: string; last_name: string; programs: { id: string; name: string }[] }[];
   /** Everything the family still owes. */
   owedCents: number;
+  /** A child of theirs has this month's invoice: owing nothing, they are paid up, and more is credit. */
+  billedThisMonth: boolean;
 }
 
 export interface AssignSchool {
@@ -19,7 +22,7 @@ export interface AssignSchool {
 /** What "Who paid this?" offers: every family, and every school's open programs. */
 export async function getAssignOptions(): Promise<{ families: AssignFamily[]; schools: AssignSchool[] }> {
   const supabase = createAdminSupabase();
-  const [parents, schools, open] = await Promise.all([
+  const [parents, schools, open, thisMonth] = await Promise.all([
     supabase
       .from("parents")
       .select(
@@ -35,7 +38,9 @@ export async function getAssignOptions(): Promise<{ families: AssignFamily[]; sc
       .from("invoices")
       .select("student_id, amount, payments(amount)")
       .in("status", ["pending", "overdue"]),
+    supabase.from("invoices").select("student_id").eq("month", businessMonth()),
   ]);
+  const billed = new Set((thisMonth.data || []).map((i) => i.student_id));
 
   const owedByStudent = new Map<string, number>();
   for (const inv of (open.data || []) as any[]) {
@@ -62,6 +67,7 @@ export async function getAssignOptions(): Promise<{ families: AssignFamily[]; sc
         phone: p.phone,
         children,
         owedCents: children.reduce((s: number, c: any) => s + Math.max(0, owedByStudent.get(c.id) ?? 0), 0),
+        billedThisMonth: children.some((c: any) => billed.has(c.id)),
       };
     }),
     schools: ((schools.data || []) as any[]).map((s) => ({

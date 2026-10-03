@@ -3,7 +3,8 @@
 import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { openInvoicesForFamily, recalculateInvoiceStatus } from "@/lib/invoice-status";
+import { openInvoicesForFamily, recalculateInvoiceStatus, toCents } from "@/lib/invoice-status";
+import { familyCreditCents } from "@/lib/family-credit";
 import { allocateGreedily, applyReceipt, rememberableKey, senderKey } from "@/lib/zelle";
 
 function refresh() {
@@ -33,18 +34,12 @@ export async function matchZelleReceipt(receiptId: string, parentId: string) {
     return { error: "This email couldn't be read. Record the payment by hand instead." };
   }
 
+  // Whatever isn't owed yet — all of it, for a family who has paid — is kept
+  // as their credit and spent by the next invoice run.
   const open = await openInvoicesForFamily(supabase, parentId);
-  if (open.length === 0) {
-    return { error: "That family has nothing open to pay. Generate this month's invoices first, or ignore this one." };
-  }
-
   const { picked, leftoverCents } = allocateGreedily(open, Math.round(Number(receipt.amount) * 100));
-  const note =
-    leftoverCents > 0
-      ? `$${(leftoverCents / 100).toFixed(2)} more than was owed — not applied to anything.`
-      : null;
 
-  const applied = await applyReceipt(supabase, receipt, parentId, picked, note);
+  const applied = await applyReceipt(supabase, receipt, parentId, picked, leftoverCents);
   if ("error" in applied) return applied;
 
   const key = rememberableKey(receipt.sender_name);
@@ -55,7 +50,7 @@ export async function matchZelleReceipt(receiptId: string, parentId: string) {
   }
 
   refresh();
-  return { success: true, leftover: leftoverCents / 100 };
+  return { success: true, credit: leftoverCents / 100 };
 }
 
 /** Not a family paying — a refund, a friend, something unrelated. */
@@ -86,6 +81,23 @@ export async function undoZelleMatch(receiptId: string) {
     .eq("id", receiptId)
     .maybeSingle();
   if (!receipt || receipt.status !== "matched") return { error: "That payment isn't matched." };
+
+  // What it left as credit comes off too — unless the family has spent it.
+  const { data: credit } = await supabase
+    .from("family_credits")
+    .select("id, parent_id, amount")
+    .eq("zelle_receipt_id", receiptId)
+    .maybeSingle();
+  if (credit) {
+    if ((await familyCreditCents(supabase, credit.parent_id)) < toCents(credit.amount)) {
+      return {
+        error:
+          "Some of this payment has already gone toward a later invoice as credit. Delete that credit payment from Payment History first, then undo this.",
+      };
+    }
+    const { error } = await supabase.from("family_credits").delete().eq("id", credit.id);
+    if (error) return { error: error.message };
+  }
 
   const { data: payments } = await supabase
     .from("payments")

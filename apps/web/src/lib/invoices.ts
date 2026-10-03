@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { addDays, businessMonth, businessToday } from "@/lib/dates";
 import type { OpsClient } from "@/lib/supabase/types";
+import { applyAllFamilyCredits } from "@/lib/family-credit";
 
 /** Days a child who joins mid-month has to pay their first invoice. */
 export const JOINING_GRACE_DAYS = 7;
@@ -98,6 +99,15 @@ export async function billFirstMonth(
     .single();
   if (error) throw error;
 
+  // Money they paid ahead goes on it first — and if that pays it, no link.
+  await applyAllFamilyCredits(supabase);
+  const { data: fresh } = await supabase.from("invoices").select("status").eq("id", invoice.id).single();
+  if (fresh?.status === "paid") {
+    revalidatePath("/payments");
+    revalidatePath("/dashboard");
+    return { invoiceId: invoice.id };
+  }
+
   // With Stripe on, the family gets the same payment link the monthly run
   // makes — unless autopay charges them, when a link would let them pay twice.
   try {
@@ -186,6 +196,10 @@ export async function createMonthlyInvoices(month?: string) {
     }
   }
 
+  // Families who paid ahead, or paid more than was owed, are paid from their
+  // credit before anyone is asked for money — or charged by autopay.
+  const paidFromCredit = await applyAllFamilyCredits(supabase);
+
   // If Stripe is enabled, create Stripe invoices for the new batch
   const { data: stripeConfig } = await supabase
     .from("config")
@@ -200,5 +214,5 @@ export async function createMonthlyInvoices(month?: string) {
 
   revalidatePath("/payments");
   revalidatePath("/dashboard");
-  return { created, skipped, noParent, total: created + skipped };
+  return { created, skipped, noParent, paidFromCredit, total: created + skipped };
 }

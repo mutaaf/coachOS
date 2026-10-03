@@ -176,13 +176,10 @@ describe("a family already on file", () => {
     expect(inv.payments.map((p: any) => p.amount).sort()).toEqual([40, 60]);
   });
 
-  it("with nothing owed, says to add what it's for — then bills and records it", async () => {
+  it("with nothing owed, bills the child and program it's for, and keeps the rest as credit", async () => {
     const { programId } = await seedProgram({ monthlyFee: 100 });
     const { data: p } = await admin.from("parents").insert({ first_name: "Ana", last_name: "Lopez", phone: "+12145550199" }).select("id").single();
     const receiptId = await zelle(150, "ANA LOPEZ");
-
-    const refused: any = await assignUnrecognisedPayment({ source: { kind: "zelle", receiptId }, parent: { id: p!.id } });
-    expect(refused.error).toMatch(/nothing to pay/);
 
     const result: any = await assignUnrecognisedPayment({
       source: { kind: "zelle", receiptId },
@@ -192,7 +189,7 @@ describe("a family already on file", () => {
     expect(result.error).toBeUndefined();
     expect(result.leftoverCents).toBe(5000);
     const { data: receipt } = await admin.from("zelle_receipts").select("note").eq("id", receiptId).single();
-    expect(receipt!.note).toMatch(/\$50\.00 more than was owed/);
+    expect(receipt!.note).toMatch(/\$50\.00 more than was owed — kept as credit/);
   });
 
   it("a payment already recorded can't be recorded again", async () => {
@@ -224,6 +221,7 @@ describe("the choices offered", () => {
         name: "Ana Lopez",
         children: [expect.objectContaining({ first_name: "Leo" })],
         owedCents: 7000,
+        billedThisMonth: true,
       }),
     ]);
     expect(options.schools).toEqual([

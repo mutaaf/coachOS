@@ -43,7 +43,7 @@ export async function recordPayment(formData: FormData) {
     (inv.payments || []).reduce((s: number, p: any) => s + Math.round(Number(p.amount) * 100), 0);
   if (Math.round(amount * 100) > balanceCents) {
     return {
-      error: `That's more than the $${(balanceCents / 100).toFixed(2)} still owed. Record the amount owed, and handle any extra separately.`,
+      error: `That's more than the $${(balanceCents / 100).toFixed(2)} still owed. If they paid extra, use Record Payment at the top of Payments — the rest is kept as their credit.`,
     };
   }
 

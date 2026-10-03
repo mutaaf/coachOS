@@ -1391,9 +1391,9 @@
   "expected": [
    "Neither payment is recorded automatically. Payment History has no new rows until you act.",
    "The first entry shows the note '$1.00 doesn't match what this family owes ($2.00 open).', and the family is already pre-selected in the dropdown as a suggestion.",
-   "The second entry shows 'This family has nothing open to pay.'",
+   "The second entry shows 'This family has nothing open to pay. Record it and it's kept as credit for their next invoice.'",
    "After Record, the $1.00 is applied to the $2.00 invoice and the invoice is not marked Paid. It shows the $1.00 still owing (partial payment).",
-   "If you try Record for the family with nothing open, you see 'That family has nothing open to pay. Generate this month's invoices first, or ignore this one.'"
+   "If you Record the second entry for the family with nothing open, the summary says it's kept as credit, and Credit on file on Payments then lists that family with $1.00."
   ],
   "evidence": "Screenshots of both to-check entries with their notes, Payment History before and after, and the invoice balance after the manual record.",
   "phone": true
@@ -1471,7 +1471,7 @@
  {
   "id": "ZEL-09",
   "area": "Zelle",
-  "title": "An overpayment is noted, not lost",
+  "title": "An overpayment is kept as the family's credit, not lost",
   "risk": "Extra money received but not shown anywhere cannot be refunded or carried forward, and the books will not reconcile to the bank.",
   "severity": "high",
   "preconditions": [
@@ -1487,9 +1487,9 @@
   "expected": [
    "Nothing is recorded automatically. The note reads '$2.00 doesn't match what this family owes ($1.00 open).'",
    "After Record, the $1.00 invoice is Paid and Payment History shows $1.00.",
-   "The extra $1.00 must be visible somewhere you can act on (the intended note is '$1.00 more than was owed — not applied to anything.').",
-   "The surplus is visible: the 'Recently recorded' entry shows the note '$1.00 more than was owed — not applied to anything.' in amber, so the extra can be refunded or carried forward.",
-   "The receipt shows $1.00, not $2.00. Note whether the parent is told about the extra $1.00."
+   "The 'Recently recorded' entry shows the note '$1.00 more than was owed — kept as credit for their next invoice.'",
+   "Credit on file on Payments lists the family with $1.00, and their payment page says 'You have $1.00 in credit.' Next month's invoice is paid $1.00 from it when it's made.",
+   "The receipt shows $1.00, not $2.00."
   ],
   "evidence": "Screenshots of every place checked for the surplus, Payment History, and the receipt. Record the bank amount against the recorded amount.",
   "phone": false
@@ -2687,6 +2687,33 @@
    "See all opens Payments with Overdue already picked, showing every overdue invoice."
   ],
   "evidence": "Screenshots of the Payments Overdue card, the Dashboard card and alerts, and the page See all opens.",
+  "phone": true
+ },
+ {
+  "id": "PAY-25",
+  "area": "Payments",
+  "title": "Money paid ahead is kept as credit and pays the next invoice",
+  "risk": "A family who pays early can't be recorded, or the money sits in a note, so the cash in hand doesn't match the books and the family is asked to pay again.",
+  "severity": "high",
+  "preconditions": [
+   "A test family whose invoice for this month is Paid, with an email address.",
+   "Next month's invoices haven't been made yet."
+  ],
+  "steps": [
+   "Open the family's payment page (the link icon on their invoice row).",
+   "On Payments, tap Record Payment at the top right, enter $1.00, Cash, and tap the family.",
+   "Read the summary and tap Record.",
+   "Look at Credit on file on Payments, and the family's payment page again.",
+   "Payments → Generate Invoices for next month."
+  ],
+  "expected": [
+   "Before: the payment page says they're all paid up and does not say 'Send $…'.",
+   "Tapping the family goes straight to the summary, which says nothing is owed now so it's kept as credit.",
+   "Credit on file lists the family with $1.00. Their payment page says 'You have $1.00 in credit.'",
+   "After generating: next month's invoice has a $1.00 'credit' payment in Payment History, and Credit on file no longer lists the family.",
+   "Total Revenue went up by $1.00 once, when the cash was recorded — not again when the credit was used."
+  ],
+  "evidence": "Screenshots of the payment page before and after, the summary, Credit on file, and next month's invoice with its payment.",
   "phone": true
  },
  {

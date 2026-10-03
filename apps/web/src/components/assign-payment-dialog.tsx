@@ -17,7 +17,7 @@ import { ArrowLeft, Check, ChevronRight, Search, UserPlus } from "lucide-react";
  * "Who paid this?" — for money from someone CoachOS doesn't recognise.
  *
  * One question per screen, each answer narrowing the next: who paid, then (if
- * they're new or owe nothing) which child it's for, then which school and
+ * they're new) which child it's for, then which school and
  * program — creating whatever doesn't exist yet. The last screen says in plain
  * sentences everything that will happen before anything does.
  */
@@ -150,7 +150,10 @@ export function AssignPaymentDialog({
     setFamilyId(f.id);
     setChildId(f.children[0]?.id ?? NEW);
     setChild((c) => ({ ...c, last_name: f.name.split(" ").slice(1).join(" ") }));
-    if (f.owedCents > 0) {
+    // Owing something, or paid up for this month: the money goes on what they
+    // owe, and anything over is kept as credit for their next invoice. Not yet
+    // billed: it's most likely this month's fee, so say for which child.
+    if (f.owedCents > 0 || f.billedThisMonth) {
       setPlacing(false);
       go("review");
     } else {
@@ -529,9 +532,11 @@ export function AssignPaymentDialog({
                 Record <strong>{formatCurrency(cents / 100)}</strong>
                 {leftover === 0
                   ? " — paid in full"
-                  : leftover > 0
-                    ? ` — paid in full, and ${formatCurrency(leftover / 100)} more than owed (noted, not applied)`
-                    : ` — ${formatCurrency(-leftover / 100)} still to pay`}
+                  : leftover > 0 && owedAfterPlacing === 0
+                    ? ` — nothing is owed now, so it's kept as credit and goes on their next invoice`
+                    : leftover > 0
+                      ? ` — paid in full, and ${formatCurrency(leftover / 100)} more than owed, kept as credit for their next invoice`
+                      : ` — ${formatCurrency(-leftover / 100)} still to pay`}
               </Line>
               {zelle && <Line>Remember {zelle.sender} as {parentName}, so their next payment records itself</Line>}
             </ul>

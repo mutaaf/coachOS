@@ -145,7 +145,8 @@ export type Payment = {
   id: string;
   invoice_id: string;
   amount: number;
-  method: "cash" | "zelle" | "venmo" | "stripe";
+  /** "credit": paid from the family's credit on file. */
+  method: "cash" | "zelle" | "venmo" | "stripe" | "credit";
   reference: string | null;
   received_at: string;
   notes: string | null;
@@ -156,6 +157,22 @@ export type Payment = {
   fee: number;
   /** Sent by the form that recorded it; unique, so a double tap records nothing more. */
   client_key: string | null;
+  created_at: string;
+};
+
+/**
+ * A family's credit ledger. Positive: money in that nothing was owed for.
+ * Negative: credit spent, with the payment it made. The sum is their credit.
+ */
+export type FamilyCredit = {
+  id: string;
+  parent_id: string;
+  amount: number;
+  method: "cash" | "zelle" | "venmo" | null;
+  zelle_receipt_id: string | null;
+  payment_id: string | null;
+  client_key: string | null;
+  note: string | null;
   created_at: string;
 };
 
