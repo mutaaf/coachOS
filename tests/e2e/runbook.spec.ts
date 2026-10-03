@@ -146,7 +146,8 @@ test("the whole run-book, start to finish", async ({ page }) => {
       .select("first_name, phone")
       .eq("first_name", "Sara")
       .single();
-    expect(parent!.phone).toBe("(214) 555-0123");
+    // Typed "(214) 555-0123" on /join; saved as one number (issue #22).
+    expect(parent!.phone).toBe("+12145550123");
   });
 
   // ---- Step 5: the weekly time, and sessions on the calendar --------------

@@ -2623,5 +2623,31 @@
   ],
   "evidence": "Screenshot of the filtered list.",
   "phone": false
+ },
+ {
+  "id": "MSG-07",
+  "area": "Messaging",
+  "title": "Phone numbers are saved as one number, so WhatsApp reaches the family",
+  "risk": "A number typed with dots or without the 1 opens WhatsApp to a stranger in another country, or '12' is saved as a parent's phone, so the family is never reached.",
+  "severity": "high",
+  "preconditions": [
+   "A test program with registration open, and its /join link."
+  ],
+  "steps": [
+   "On Students & Parents, tap Add Parent. Type a test name and the phone '12', and tap Add Parent. Then change the phone to '214.555.0177' and tap Add Parent again.",
+   "Open Parents and type '(214) 555' in the search box.",
+   "On Coaches, add a test coach with the phone '214.555.0178'. Tap their phone number.",
+   "Open the /join link on a phone, fill it in with the mobile number '214.555.0179 call after 5', and tap Register. Then change it to '214.555.0179' and register.",
+   "On Registrations, tap the phone number on the new registration."
+  ],
+  "expected": [
+   "'12' is refused with 'That phone number doesn't look right' and nothing is added; the second try adds the parent, shown as (214) 555-0177.",
+   "The search finds the parent.",
+   "The coach's number shows as (214) 555-0178 and opens WhatsApp to +1 214 555 0178 — a US number, not an international one.",
+   "The family is asked to fix the number the first time, and registered the second.",
+   "The registration's number opens WhatsApp to +1 214 555 0179."
+  ],
+  "evidence": "Screenshots of the refused number, the search, and each WhatsApp chat that opened.",
+  "phone": true
  }
 ]

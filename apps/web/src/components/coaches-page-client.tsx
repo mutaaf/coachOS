@@ -7,7 +7,8 @@ import { CoachFormDialog } from "@/components/coach-form-dialog";
 import { deleteCoach } from "@/lib/actions/coaches";
 import { useAction } from "@/lib/use-action";
 import { formatCurrency } from "@/lib/utils";
-import { UserCheck, Phone, Mail, Plus, Pencil, Trash2, CalendarClock } from "lucide-react";
+import { UserCheck, Mail, Plus, Pencil, Trash2, CalendarClock } from "lucide-react";
+import { PhoneLink } from "@/components/phone-link";
 import type { Coach } from "@/types/database";
 import type { CoachWithWorkload } from "@/lib/queries/coaches";
 
@@ -130,15 +131,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
                 </div>
 
                 <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <a
-                    href={`https://wa.me/${coach.phone.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
-                  >
-                    <Phone className="h-3 w-3" />
-                    {coach.phone}
-                  </a>
+                  <PhoneLink phone={coach.phone} />
                   {coach.email && (
                     <a
                       href={`mailto:${coach.email}`}

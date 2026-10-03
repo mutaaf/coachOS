@@ -8,9 +8,18 @@ import { normalizePhone } from "@/lib/roster";
  * and Android the second, and both accept the combined form.
  */
 export function whatsappLink(phone: string, text: string): string | null {
+  const digits = toWhatsAppDigits(phone);
+  if (!digits) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
+/**
+ * The number as wa.me wants it. Every WhatsApp link is built from this: a US
+ * number's digits without the 1 open a chat in another country.
+ */
+export function toWhatsAppDigits(phone: string | null | undefined): string | null {
   const e164 = normalizePhone(phone);
-  if (!e164) return null;
-  return `https://wa.me/${e164.slice(1)}?text=${encodeURIComponent(text)}`;
+  return e164 ? e164.slice(1) : null;
 }
 
 export function smsLink(phone: string, text: string): string | null {

@@ -3,6 +3,7 @@
 import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
 
 function readCoachFields(formData: FormData) {
   const rate = parseFloat(formData.get("pay_rate") as string);
@@ -23,14 +24,24 @@ function readCoachFields(formData: FormData) {
   };
 }
 
+/** Names and a phone are required; the phone is saved as one number, so its WhatsApp link dials the US. */
+function checkCoachFields(fields: ReturnType<typeof readCoachFields>): { error: string } | null {
+  if (!fields.first_name || !fields.last_name || !fields.phone) {
+    return { error: "A coach needs a first name, last name, and phone number." };
+  }
+  const phone = normalizePhone(fields.phone);
+  if (!phone) return { error: NOT_A_PHONE };
+  fields.phone = phone;
+  return null;
+}
+
 export async function createCoach(formData: FormData) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
   const fields = readCoachFields(formData);
 
-  if (!fields.first_name || !fields.last_name || !fields.phone) {
-    return { error: "A coach needs a first name, last name, and phone number." };
-  }
+  const problem = checkCoachFields(fields);
+  if (problem) return problem;
 
   const { error } = await supabase.from("coaches").insert(fields);
   if (error) return { error: error.message };
@@ -45,9 +56,8 @@ export async function updateCoach(id: string, formData: FormData) {
   const supabase = createAdminSupabase();
   const fields = readCoachFields(formData);
 
-  if (!fields.first_name || !fields.last_name || !fields.phone) {
-    return { error: "A coach needs a first name, last name, and phone number." };
-  }
+  const problem = checkCoachFields(fields);
+  if (problem) return problem;
 
   // Only what the form sent is changed, so a save can't reset how a coach is
   // paid to the defaults just because those fields weren't in it.

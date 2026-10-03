@@ -12,7 +12,6 @@ import {
   X,
   ArrowUp,
   UserPlus,
-  Phone,
   Mail,
   Copy,
 } from "lucide-react";
@@ -26,6 +25,7 @@ import type { ProgramAvailability, RegistrationStatus } from "@/types/database";
 import type { RegistrationWithProgram } from "@/lib/queries/registrations";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SamePersonPrompt, childMatches, type SameMatch } from "@/components/same-person-prompt";
+import { PhoneLink } from "@/components/phone-link";
 
 const STATUS_STYLES: Record<RegistrationStatus, string> = {
   pending: "bg-gray-100 text-gray-700",
@@ -256,15 +256,7 @@ export function RegistrationsPageClient({
                   <span>
                     {r.parent_first_name} {r.parent_last_name}
                   </span>
-                  <a
-                    href={`https://wa.me/${r.parent_phone.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
-                  >
-                    <Phone className="h-3 w-3" />
-                    {r.parent_phone}
-                  </a>
+                  <PhoneLink phone={r.parent_phone} />
                   {r.parent_email && (
                     <a
                       href={`mailto:${r.parent_email}`}
