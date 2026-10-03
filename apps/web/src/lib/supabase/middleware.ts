@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdmin } from "@/lib/admin";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -26,12 +27,18 @@ export async function updateSession(request: NextRequest) {
   );
 
   const {
-    data: { user },
+    data: { user: account },
   } = await supabase.auth.getUser();
+  // An account without the admin role is treated as nobody: it can't open the
+  // dashboard, which renders every family's details. See lib/admin.ts.
+  const user = isAdmin(account) ? account : null;
 
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
+    // Invite and password links land here before anyone is signed in; the
+    // one-time link itself is what lets them in.
+    !request.nextUrl.pathname.startsWith("/welcome") &&
     !request.nextUrl.pathname.startsWith("/api") &&
     // The registration page is deliberately public — parents sign up without an
     // account. It reads and writes only through server actions.

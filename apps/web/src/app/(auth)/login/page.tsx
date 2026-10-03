@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isAdmin } from "@/lib/admin";
+import { requestPasswordLink } from "@/lib/actions/access";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,21 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
+  // "Get a new password link" from an expired invite lands here with ?forgot=1.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("forgot")) setForgot(true);
+  }, []);
+
+  async function sendLink(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+    const res = await requestPasswordLink(email);
+    setIsLoading(false);
+    if ("error" in res && res.error) return toast.error(res.error);
+    setLinkSent(true);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,13 +44,19 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         toast.error(error.message);
+        return;
+      }
+      // An account isn't access: the dashboard would turn it away anyway.
+      if (!isAdmin(data.user)) {
+        await supabase.auth.signOut();
+        toast.error("This account doesn't have access to CoachOS. Ask Mutaaf to give it access.");
         return;
       }
 
@@ -64,6 +87,25 @@ export default function LoginPage() {
       </CardHeader>
 
       <CardContent>
+        {forgot ? (
+          linkSent ? (
+            <div className="space-y-3 text-center" data-testid="link-sent">
+              <p>If {email} has access, a link to choose a new password is on its way. ⚽</p>
+              <Button variant="ghost" onClick={() => { setForgot(false); setLinkSent(false); }}>Back to sign in</Button>
+            </div>
+          ) : (
+            <form onSubmit={sendLink} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Your email</Label>
+                <Input id="forgot-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+              </div>
+              <Button type="submit" className="w-full rounded-xl" disabled={isLoading}>
+                {isLoading ? "Sending…" : "Email me a link"}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setForgot(false)}>Back to sign in</Button>
+            </form>
+          )
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -100,7 +142,11 @@ export default function LoginPage() {
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+          <button type="button" onClick={() => setForgot(true)} className="block w-full text-center text-sm text-muted-foreground hover:text-foreground">
+            Forgot your password?
+          </button>
         </form>
+        )}
       </CardContent>
     </Card>
   );

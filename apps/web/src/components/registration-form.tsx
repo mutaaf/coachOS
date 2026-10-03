@@ -6,11 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { BouncingBall, ConfettiBurst } from "@/components/celebration";
 
 type Result = {
   status: "confirmed" | "waitlisted";
   waitlistPosition: number | null;
   amount: number | null;
+  whatsappGroupUrl: string | null;
+  childName: string;
+  email: string | null;
+  phone: string;
 };
 
 export function RegistrationForm({
@@ -48,44 +53,74 @@ export function RegistrationForm({
       status: response.status as "confirmed" | "waitlisted",
       waitlistPosition: response.waitlistPosition ?? null,
       amount: response.amount ?? null,
+      whatsappGroupUrl: (response as { whatsappGroupUrl?: string | null }).whatsappGroupUrl ?? null,
+      childName: String(formData.get("child_first_name") ?? "").trim(),
+      email: String(formData.get("parent_email") ?? "").trim() || null,
+      phone: String(formData.get("parent_phone") ?? "").trim(),
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setSubmitting(false);
   }
 
   if (result) {
-    const confirmed = result.status === "confirmed";
+    const waitlisted = result.status === "waitlisted";
+    const child = result.childName || "Your child";
     return (
-      <div
-        className={
-          confirmed
-            ? "rounded-xl border border-emerald-200 bg-emerald-50 p-6"
-            : "rounded-xl border border-amber-200 bg-amber-50 p-6"
-        }
-      >
-        <h2
-          className={
-            confirmed
-              ? "text-lg font-semibold text-emerald-900"
-              : "text-lg font-semibold text-amber-900"
-          }
+      <div data-testid="registration-done" className="relative">
+        {!waitlisted && <ConfettiBurst />}
+        <div
+          className={`overflow-hidden rounded-3xl border-2 bg-white text-center shadow-sm ${
+            waitlisted ? "border-amber-200" : "border-orange-200"
+          }`}
         >
-          {confirmed ? "You're in." : "You're on the waitlist."}
-        </h2>
-        <p className={confirmed ? "mt-2 text-sm text-emerald-800" : "mt-2 text-sm text-amber-800"}>
-          {confirmed ? (
-            <>
-              Your child has a spot in {programName}. We&apos;ll message you on WhatsApp
-              with the schedule and payment details
-              {result.amount ? ` (${`$${result.amount}`} per month)` : ""}.
-            </>
-          ) : (
-            <>
-              {programName} is full right now. You&apos;re number{" "}
-              <strong>{result.waitlistPosition}</strong> in line — if a spot opens, we&apos;ll
-              message you before anyone else. Nothing is owed unless a spot comes free.
-            </>
-          )}
-        </p>
+          <div className={waitlisted ? "bg-amber-50 px-6 pb-6 pt-8" : "bg-gradient-to-b from-orange-100 to-white px-6 pb-6 pt-8"}>
+            {waitlisted ? (
+              <span aria-hidden="true" className="text-5xl">🤞</span>
+            ) : (
+              <BouncingBall className="text-6xl" />
+            )}
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              {waitlisted ? `${child} is on the list!` : `${child} is in! 🎉`}
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-slate-700">
+              {waitlisted ? (
+                <>
+                  {programName} is full right now, so we&apos;ve saved a place in line —{" "}
+                  number <strong>{result.waitlistPosition}</strong>. You&apos;ll hear from us first if a spot
+                  opens. Nothing is owed unless one does.
+                </>
+              ) : (
+                <>
+                  Welcome to <strong>{programName}</strong>! We can&apos;t wait to see {result.childName || "them"} on
+                  the field
+                  {result.amount ? <> ({`$${result.amount}`} a month — we&apos;ll send your payment link)</> : null}.
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="space-y-4 px-6 pb-8 pt-2">
+            {!waitlisted && result.whatsappGroupUrl && (
+              <a
+                href={result.whatsappGroupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 text-base font-bold text-white shadow-sm transition hover:brightness-95"
+              >
+                💬 Join the team group chat
+              </a>
+            )}
+            <p className="text-sm text-slate-600">
+              {result.email ? (
+                <>
+                  We&apos;ve emailed the details to <strong>{result.email}</strong>.
+                </>
+              ) : (
+                <>We&apos;ll text you at {result.phone} with the details.</>
+              )}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -153,7 +188,7 @@ export function RegistrationForm({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="parent_phone">WhatsApp number</Label>
+              <Label htmlFor="parent_phone">Mobile number</Label>
               <Input
                 id="parent_phone"
                 name="parent_phone"

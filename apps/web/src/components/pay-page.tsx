@@ -480,7 +480,7 @@ export function PayPage({
         </section>
 
         <p className="mt-8 text-center text-xs text-slate-500">
-          Questions? Message us on WhatsApp.
+          Questions? Just reply to any email from us.
         </p>
       </div>
     </main>

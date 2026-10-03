@@ -26,6 +26,7 @@ export type Program = {
   registration_open: boolean;
   public_slug: string | null;
   public_description: string | null;
+  whatsapp_group_url: string | null;
   location: string | null;
   created_at: string;
   updated_at: string;

@@ -1,5 +1,6 @@
 import { getConfig } from "@/lib/queries/config";
 import { SettingsPageClient } from "@/components/settings-page-client";
+import { listAccess } from "@/lib/actions/access";
 
 // Every dashboard page reads live business data behind a login, so it must be
 // rendered per request. Without this Next prerenders it at build time and the
@@ -7,7 +8,7 @@ import { SettingsPageClient } from "@/components/settings-page-client";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const config = await getConfig();
+  const [config, people] = await Promise.all([getConfig(), listAccess()]);
 
-  return <SettingsPageClient config={config} />;
+  return <SettingsPageClient config={config} people={people ?? []} />;
 }

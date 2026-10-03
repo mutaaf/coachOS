@@ -1,4 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/admin";
 
 /**
  * Whether the request comes from someone signed in to the dashboard.
@@ -11,10 +12,10 @@ export async function signedIn(): Promise<boolean> {
   return !!(await currentUser());
 }
 
-/** Who is signed in, or null. */
+/** Who is signed in with the admin role, or null. See lib/admin.ts. */
 export async function currentUser(): Promise<{ id: string; email: string | null } | null> {
   const { data } = await createServerSupabase().auth.getUser();
-  return data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
+  return isAdmin(data.user) ? { id: data.user!.id, email: data.user!.email ?? null } : null;
 }
 
 export const NOT_SIGNED_IN = { error: "Your session has ended. Sign in again and retry." };

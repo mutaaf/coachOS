@@ -245,10 +245,13 @@ export async function ensureTestUser() {
   // cleared by name.
   const user_metadata = { tour_completed_at: "2026-01-01T00:00:00Z", last_seen_release: null, checklist_hidden: null };
 
+  // The owner's account: only the admin role gets into CoachOS (lib/admin.ts).
+  const app_metadata = { role: "admin" };
+
   const { data: existing } = await authAdmin.auth.admin.listUsers();
   const already = existing?.users?.find((u) => u.email === TEST_USER.email);
   if (already) {
-    await authAdmin.auth.admin.updateUserById(already.id, { user_metadata });
+    await authAdmin.auth.admin.updateUserById(already.id, { user_metadata, app_metadata });
     return already.id;
   }
 
@@ -257,6 +260,7 @@ export async function ensureTestUser() {
     password: TEST_USER.password,
     email_confirm: true,
     user_metadata,
+    app_metadata,
   });
   if (error) throw error;
   return data.user!.id;
@@ -309,4 +313,26 @@ export async function issueAttendanceLink(sessionId: string, hoursValid = 12) {
   if (error) throw error;
 
   return { token, passcode };
+}
+
+/** An account that exists but was never given the admin role — anyone at all. */
+export const OUTSIDER = { email: "outsider@example.test", password: "outsider-password-1234" };
+
+export async function ensureOutsider() {
+  const authAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: existing } = await authAdmin.auth.admin.listUsers();
+  const already = existing?.users?.find((u) => u.email === OUTSIDER.email);
+  if (already) {
+    await authAdmin.auth.admin.updateUserById(already.id, { app_metadata: { role: null } });
+    return already.id;
+  }
+  const { data, error } = await authAdmin.auth.admin.createUser({
+    email: OUTSIDER.email,
+    password: OUTSIDER.password,
+    email_confirm: true,
+  });
+  if (error) throw error;
+  return data.user!.id;
 }

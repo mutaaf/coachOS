@@ -4,6 +4,32 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Security
+- **Signed in is no longer enough.** Accounts are shared with the marketing
+  site and public sign-up was on, so anyone could have made one and read or
+  changed families' data straight through the database API, or edited the
+  website. Sign-up is now off, and CoachOS, the database's rules on every
+  operational table, and the website's `is_admin()` all require the admin
+  role in `app_metadata`, which only the server can grant
+
+### Added
+- **Settings → Access**: everyone who can sign in, invite someone (a festive
+  email with a one-time link to choose a password, plus a link to copy), and
+  take access away (never your own, never the last person's)
+- **Forgot your password?** on the sign-in page
+
+### Added
+- **A WhatsApp group per program**: paste its invite link on the program.
+  Families who get a place see "Join the team group chat" and get it in their
+  welcome email; with no link, nobody is pointed at WhatsApp, and the
+  waitlist never gets it
+- **Festive emails**: a confetti-and-soccer-ball header, playful type and
+  buttons across parent emails (calm on a failed payment). New: "you're in"
+  on signing up (from CoachOS or the website, via /api/registrations/notify,
+  with a daily sweep), and "Welcome to the team" with the first practice when
+  a child goes on the roster
+- **Sign-ups are celebrated** with confetti and a bouncing ball
+
 ### Fixed
 - A Chase Zelle alert forwarded from Yahoo Mail couldn't be read: the table
   arrives as "| Amount | $100.00 |". Read now — and an email stored as

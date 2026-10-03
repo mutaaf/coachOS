@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Registration } from "@/types/database";
 import { sameName } from "@/lib/roster";
+import { emailRegistration, emailWelcome } from "@/lib/parent-emails";
 
 /**
  * Public registration submission.
@@ -85,10 +86,34 @@ export async function submitRegistration(formData: FormData) {
 
   const registration = data as Registration;
 
+  // The row the database function just made — it returns the outcome, not the id.
+  const { data: made } = await supabase
+    .from("registrations")
+    .select("id, status")
+    .eq("program_id", programId)
+    .eq("parent_phone", parentPhone)
+    // Escaped: a name with % or _ is matched literally.
+    .ilike("child_first_name", childFirstName.replace(/[\\%_]/g, (c) => `\\${c}`))
+    .not("status", "in", "(cancelled,declined)")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // Their "you're in" email. Never in the way: it logs a failure, never throws.
+  if (made) await emailRegistration(supabase, made.id);
+
+  // The group chat is for families with a place, and only when there is one.
+  const { data: program } = await supabase
+    .from("programs")
+    .select("whatsapp_group_url")
+    .eq("id", programId)
+    .maybeSingle();
+
   revalidatePath("/registrations");
 
   return {
     success: true,
+    whatsappGroupUrl: registration.status === "waitlisted" ? null : program?.whatsapp_group_url ?? null,
+    emailed: !!parentEmail,
     status: registration.status,
     waitlistPosition: registration.waitlist_position,
     amount: registration.amount,
@@ -197,6 +222,14 @@ export async function convertRegistration(registrationId: string) {
     .eq("id", registrationId);
 
   if (updateError) return { error: updateError.message };
+
+  // On the roster: the welcome email, with the first practice and group chat.
+  await emailWelcome(supabase, {
+    enrollmentId: enrollment.id,
+    parentId: parentId!,
+    childName: reg.child_first_name,
+    programId: reg.program_id,
+  });
 
   revalidatePath("/registrations");
   revalidatePath("/students");
