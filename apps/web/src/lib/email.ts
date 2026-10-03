@@ -34,6 +34,21 @@ export function isEmail(value: string | null | undefined): value is string {
   return !!value && EMAIL.test(value.trim());
 }
 
+/** The domain verified in Resend. Mail from any other is refused outright. */
+export const SENDING_DOMAIN = "risingstars.training";
+
+/**
+ * Whether "Send Email As" is a sender Resend will accept: a name, then an
+ * address at the verified domain or beneath it, `Rising Stars <payments@…>`.
+ * Anything else would fail every parent email, quietly.
+ */
+export function isSender(value: string): boolean {
+  const m = /^([^<>@]*\S)\s*<([^\s<>@]+)@([^\s<>@]+)>$/.exec(value.trim());
+  if (!m) return false;
+  const domain = m[3].toLowerCase();
+  return domain === SENDING_DOMAIN || domain.endsWith(`.${SENDING_DOMAIN}`);
+}
+
 export type SendOutcome = "sent" | "failed" | "skipped" | "duplicate" | "no_address" | "disabled";
 
 export async function sendEmail(

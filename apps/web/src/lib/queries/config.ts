@@ -23,6 +23,12 @@ export async function getConfigByCategory(category: string): Promise<Config[]> {
   return data || [];
 }
 
+/** Default Monthly Fee in Settings, filled in for a new program. Blank leaves the box empty. */
+export async function getDefaultMonthlyFee(): Promise<string> {
+  const value = (await getConfigValue("default_monthly_fee"))?.trim() ?? "";
+  return value !== "" && Number(value) >= 0 ? value : "";
+}
+
 export async function getConfigValue(key: string): Promise<string | null> {
   const supabase = createAdminSupabase();
   const { data, error } = await supabase

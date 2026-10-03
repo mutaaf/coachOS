@@ -95,6 +95,12 @@ export function addDays(iso: string, days: number): string {
   return `${moved.getUTCFullYear()}-${mm}-${dd}`;
 }
 
+/** A day of the month as people say it: 1st, 2nd, 3rd, 11th, 22nd. */
+export function dayOfMonthLabel(day: number): string {
+  const suffix = day % 100 >= 11 && day % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][day % 10] || "th";
+  return `${day}${suffix}`;
+}
+
 /** Day of the week for a YYYY-MM-DD, 0 = Sunday. */
 export function dayOfWeek(iso: string): number {
   const [y, m, d] = parts(iso);

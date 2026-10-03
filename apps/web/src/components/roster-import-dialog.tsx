@@ -67,12 +67,15 @@ export function RosterImportDialog({
   schools,
   initialSchoolId,
   initialProgramId,
+  defaultMonthlyFee = "",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   schools: ImportSchoolOption[];
   initialSchoolId?: string;
   initialProgramId?: string;
+  /** Default Monthly Fee from Settings, for a session made by the import. */
+  defaultMonthlyFee?: string;
 }) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -82,7 +85,7 @@ export function RosterImportDialog({
   const [newSchool, setNewSchool] = useState("");
   const [programId, setProgramId] = useState(initialProgramId ?? NEW);
   const [newProgram, setNewProgram] = useState("");
-  const [fee, setFee] = useState("100");
+  const [fee, setFee] = useState(defaultMonthlyFee);
 
   const [files, setFiles] = useState<File[]>([]);
   const [text, setText] = useState("");

@@ -2,6 +2,7 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import { getStripeSettings, stripeReady } from "@/lib/stripe-client";
 import { openInvoicesForFamily, toCents } from "@/lib/invoice-status";
 import type { AutopayMethod } from "@/lib/autopay";
+import { readDueDay } from "@/lib/invoices";
 
 export function maskEmail(email: string | null): string | null {
   if (!email || !email.includes("@")) return null;
@@ -50,6 +51,8 @@ export interface PayPageData {
   testMode: boolean;
   cardFeePercent: number;
   zelleRecipient: string | null;
+  /** The day of the month each month's fee falls due, from Settings. */
+  dueDay: number;
   businessName: string;
   zelleNames: string[];
   /** Set when an automatic payment failed and is waiting for a new card or account. */
@@ -120,6 +123,7 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
       "card_fee_percent",
       "zelle_recipient",
       "business_name",
+      "payment_due_day",
     ]);
   const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
 
@@ -158,6 +162,7 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
     testMode: stripe.mode === "test",
     cardFeePercent: Number(c.card_fee_percent) > 0 ? Number(c.card_fee_percent) : 0,
     zelleRecipient: c.zelle_recipient?.trim() || null,
+    dueDay: readDueDay(c.payment_due_day),
     businessName:
       c.business_name && c.business_name !== "CoachOS" ? c.business_name : "Rising Stars Youth Academy",
     // First name and an initial: enough for the family to recognise, not a

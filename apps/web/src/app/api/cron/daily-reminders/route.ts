@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     return data?.body || "";
   }
 
-  // The month's invoices, on the 1st — the date they fall due. Autopay can only
+  // The month's invoices, on the 1st, due on the Payment Due Day. Autopay can only
   // charge an invoice that exists, so without this every family on autopay
   // would wait until someone remembered to press Generate. Only on the 1st: run
   // daily, it would bill a child who joined on the 20th for the whole month.
