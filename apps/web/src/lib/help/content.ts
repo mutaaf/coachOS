@@ -88,6 +88,20 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "compose",
+    title: "Message a whole school or session",
+    when: "For news like a moved practice or a cancelled day",
+    keywords: "compose message group school program session all parents announcement",
+    href: "/messaging?tab=compose",
+    hrefLabel: "Open Compose",
+    tourStep: "messaging-tabs",
+    steps: [
+      { text: "Go to **Messaging** → **Compose**. Tap [[All Parents]], [[By School]] or [[By Program]]." },
+      { text: "For a school or program, pick it from the list. The parents it will go to appear underneath — check the names.", tip: "Switching between All Parents, By School and By Program clears the list, so pick again after switching. Send stays grey until you do." },
+      { text: "Write the message, or pick one from **Use a template...**. Tap [[Send to 12 recipient(s)]] and send them from the **Outbox**." },
+    ],
+  },
+  {
     id: "zelle",
     title: "A parent paid by Zelle",
     when: "Whenever a Zelle alert arrives",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { MessageSquare, Send, Users, Plus, Pencil, Trash2, RefreshCw, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import type { MessageTemplate } from "@/types/database";
 import { OutboxPanel } from "@/components/outbox-panel";
+import { initialSelection, recipientReducer, sendableRecipients, type RecipientMode } from "@/lib/recipient-selection";
 
 const VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
 
@@ -30,16 +31,23 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [recipients, setRecipients] = useState<{ phone: string; name: string }[]>([]);
-  const [recipientMode, setRecipientMode] = useState<"all" | "school" | "program">("all");
-  const [selectedSchoolOrProgram, setSelectedSchoolOrProgram] = useState("");
+  const [selection, dispatch] = useReducer(recipientReducer, initialSelection);
+  const { mode: recipientMode, selectedId: selectedSchoolOrProgram } = selection;
+  // Only the parents loaded for the group on screen; empty while a new one loads.
+  const recipients = sendableRecipients(selection);
   const [sending, setSending] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
 
-  async function loadRecipients(mode: string, id?: string) {
-    const data = await fetchRecipients(mode as "all" | "school" | "program", id);
-    setRecipients(data);
+  async function chooseMode(mode: RecipientMode) {
+    dispatch({ type: "mode", mode });
+    if (mode === "all") dispatch({ type: "loaded", key: "all", recipients: await fetchRecipients("all") });
+  }
+
+  async function chooseGroup(mode: RecipientMode, id: string) {
+    dispatch({ type: "select", id });
+    if (!id) return;
+    dispatch({ type: "loaded", key: `${mode}:${id}`, recipients: await fetchRecipients(mode, id) });
   }
 
   function handleTemplateSelect(templateId: string) {
@@ -62,7 +70,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
       }
       toast.success(`${(result as { count: number }).count} message(s) ready in the Outbox`);
       setMessage("");
-      setRecipients([]);
+      dispatch({ type: "clear" });
     } catch {
       toast.error("Failed to queue messages");
     } finally {
@@ -127,21 +135,21 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 <Button
                   size="sm"
                   variant={recipientMode === "all" ? "default" : "outline"}
-                  onClick={() => { setRecipientMode("all"); loadRecipients("all"); }}
+                  onClick={() => chooseMode("all")}
                 >
                   All Parents
                 </Button>
                 <Button
                   size="sm"
                   variant={recipientMode === "school" ? "default" : "outline"}
-                  onClick={() => setRecipientMode("school")}
+                  onClick={() => chooseMode("school")}
                 >
                   By School
                 </Button>
                 <Button
                   size="sm"
                   variant={recipientMode === "program" ? "default" : "outline"}
-                  onClick={() => setRecipientMode("program")}
+                  onClick={() => chooseMode("program")}
                 >
                   By Program
                 </Button>
@@ -151,7 +159,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   placeholder="Select a school"
                   options={schools.map((s: any) => ({ value: s.id, label: s.name }))}
                   value={selectedSchoolOrProgram}
-                  onChange={(e) => { setSelectedSchoolOrProgram(e.target.value); loadRecipients("school", e.target.value); }}
+                  onChange={(e) => chooseGroup("school", e.target.value)}
                 />
               )}
               {recipientMode === "program" && (
@@ -159,7 +167,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   placeholder="Select a program"
                   options={programs.map((p: any) => ({ value: p.id, label: `${p.school?.name ?? ""} — ${p.name}` }))}
                   value={selectedSchoolOrProgram}
-                  onChange={(e) => { setSelectedSchoolOrProgram(e.target.value); loadRecipients("program", e.target.value); }}
+                  onChange={(e) => chooseGroup("program", e.target.value)}
                 />
               )}
               {recipients.length > 0 && (

@@ -192,7 +192,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/messaging",
     target: '[data-tour="messaging-tabs"]',
     title: "Compose, templates and history",
-    body: "Compose writes one message to a whole school or session (it lands in the Outbox to send). Templates are the wording of every automatic message — change them freely. History shows what went out.",
+    body: "Compose writes one message to a whole school or session (it lands in the Outbox to send) — pick the school or session, then check the names shown before you send. Templates are the wording of every automatic message — change them freely. History shows what went out.",
   },
   {
     id: "website",
