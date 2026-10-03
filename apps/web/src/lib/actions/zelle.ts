@@ -4,7 +4,7 @@ import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { openInvoicesForFamily, recalculateInvoiceStatus } from "@/lib/invoice-status";
-import { allocateGreedily, applyReceipt, senderKey } from "@/lib/zelle";
+import { allocateGreedily, applyReceipt, rememberableKey, senderKey } from "@/lib/zelle";
 
 function refresh() {
   revalidatePath("/payments");
@@ -47,12 +47,12 @@ export async function matchZelleReceipt(receiptId: string, parentId: string) {
   const applied = await applyReceipt(supabase, receipt, parentId, picked, note);
   if ("error" in applied) return applied;
 
-  await supabase
-    .from("zelle_senders")
-    .upsert(
-      { sender_key: senderKey(receipt.sender_name), parent_id: parentId },
-      { onConflict: "sender_key" }
-    );
+  const key = rememberableKey(receipt.sender_name);
+  if (key) {
+    await supabase
+      .from("zelle_senders")
+      .upsert({ sender_key: key, parent_id: parentId }, { onConflict: "sender_key" });
+  }
 
   refresh();
   return { success: true, leftover: leftoverCents / 100 };

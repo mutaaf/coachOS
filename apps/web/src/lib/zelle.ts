@@ -31,23 +31,24 @@ export type ParsedZelle =
 
 // A name as banks print it: capitalised words, upper or title case, with the
 // odd initial, hyphen or apostrophe. Requiring capitals is what stops "Hi Anum,
-// Raquel Garcia sent you" from reading the greeting as part of the name.
-const NAME = String.raw`([A-Z][A-Za-z'’.\-]*(?: [A-Z][A-Za-z'’.\-]*){0,4})`;
+// Raquel Garcia sent you" from reading the greeting as part of the name. Any
+// letter counts, so "JOSÉ PATEL" is not read as "PATEL".
+const NAME = String.raw`(\p{Lu}[\p{L}\p{M}'’.\-]*(?: \p{Lu}[\p{L}\p{M}'’.\-]*){0,4})`;
 const AMOUNT = String.raw`\$\s?([\d,]+(?:\.\d{2})?)`;
 
 const INCOMING: { re: RegExp; name: number; amount: number | null }[] = [
   // Bank of America, Chase and most others: "Raquel Garcia sent you $100.00"
-  { re: new RegExp(`${NAME} (?:has )?sent you ${AMOUNT}`), name: 1, amount: 2 },
+  { re: new RegExp(`${NAME} (?:has )?sent you ${AMOUNT}`, "u"), name: 1, amount: 2 },
   // Chase's newer layout: "Raquel Garcia sent you money", amount on its own line
-  { re: new RegExp(`${NAME} (?:has )?sent you money`), name: 1, amount: null },
+  { re: new RegExp(`${NAME} (?:has )?sent you money`, "u"), name: 1, amount: null },
   // Wells Fargo, Capital One: "You received $100.00 from RAQUEL GARCIA"
   {
-    re: new RegExp(`[Yy]ou(?:'ve| have)? received ${AMOUNT}(?: with Zelle®?| via Zelle®?)? from ${NAME}`),
+    re: new RegExp(`[Yy]ou(?:'ve| have)? received ${AMOUNT}(?: with Zelle®?| via Zelle®?)? from ${NAME}`, "u"),
     name: 2,
     amount: 1,
   },
   // "...deposited $100.00 from Raquel Garcia"
-  { re: new RegExp(`deposited ${AMOUNT}(?: [a-z ]+)? from ${NAME}`), name: 2, amount: 1 },
+  { re: new RegExp(`deposited ${AMOUNT}(?: [a-z ]+)? from ${NAME}`, "u"), name: 2, amount: 1 },
 ];
 
 // Her own Zelle activity arrives in the same inbox: money she sent, money she
@@ -113,14 +114,26 @@ export function parseZelleEmail(subject: string, body: string): ParsedZelle {
   return { kind: "unreadable" };
 }
 
-/** "RAQUEL M. GARCIA" and "Raquel Garcia" are the same sender. */
+/** "RAQUEL M. GARCIA" and "Raquel Garcia" are the same sender, and so are "JOSÉ NÚÑEZ" and "Jose Nunez". */
 export function senderKey(name: string): string {
   return name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/[^a-z]+/g, " ")
     .split(" ")
     .filter((t) => t.length > 1)
     .join(" ");
+}
+
+/**
+ * The key to remember a sender by, or null when there is too little of a name
+ * to be sure. A surname alone is shared by a whole family: "PATEL" remembered
+ * for José would credit Raúl Patel's payments to him.
+ */
+export function rememberableKey(name: string | null | undefined): string | null {
+  const key = senderKey(name ?? "");
+  return key.split(" ").filter(Boolean).length >= 2 ? key : null;
 }
 
 type SenderMatch =
@@ -129,8 +142,10 @@ type SenderMatch =
 
 /** Work out which family a sender is, if it can be said with certainty. */
 export async function findSender(supabase: OpsClient, senderName: string): Promise<SenderMatch> {
-  const key = senderKey(senderName);
-  if (!key) return { parentId: null, reason: "The email had no sender name." };
+  if (!senderKey(senderName)) return { parentId: null, reason: "The email had no sender name." };
+  // One word could be anyone in the family, whatever was remembered for it before.
+  const key = rememberableKey(senderName);
+  if (!key) return { parentId: null, reason: `The email only gave one name (${senderName}), so it could be anyone in that family.` };
 
   const { data: known } = await supabase
     .from("zelle_senders")

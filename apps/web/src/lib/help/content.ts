@@ -126,7 +126,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Payments**, the **Zelle** box shows how many are waiting." },
       { text: "Read the orange note — it says why CoachOS asked: a name it doesn't know (often a spouse), an amount that doesn't match, or what looks like a repeat." },
-      { text: "Tap [[Who paid this?]]. The families most like the sender's name are at the top — tap theirs, check the summary, and tap [[Record]]. CoachOS remembers that name, so next time it's automatic." },
+      { text: "Tap [[Who paid this?]]. The families most like the sender's name are at the top — tap theirs, check the summary, and tap [[Record]]. CoachOS remembers that name, so next time it's automatic.", tip: "If the bank only gave a surname, it isn't remembered — it could be anyone in that family, so those payments always ask." },
       { text: "Not on the list? Tap [[Someone new]] — see “Money from someone who isn't set up yet”." },
       { text: "Not a family at all (a friend paying you back)? Tap [[Not a family]]." },
     ],

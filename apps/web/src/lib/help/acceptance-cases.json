@@ -1617,6 +1617,29 @@
   "phone": true
  },
  {
+  "id": "ZEL-18",
+  "area": "Zelle",
+  "title": "Names with accents match the right family, and are found by search without typing the accent",
+  "risk": "An accented name read as just the surname is remembered, and another family member's payment with the same surname is credited to the wrong family. A family can't be found by typing their name without the accent.",
+  "severity": "high",
+  "preconditions": [
+   "Two test families with the same surname and accented first names (for example 'José Patel' and 'Raúl Patel'), each with this month's invoice, and a test child called 'José Núñez'.",
+   "A cooperating sender whose bank-account name has an accent, or two who can stand in as the Patels."
+  ],
+  "steps": [
+   "Have 'José Patel' Zelle the exact amount owed and forward the alert. Then have 'Raúl Patel' do the same.",
+   "On Students & Parents, type 'jose', then 'nunez', in the search box.",
+   "Optional: forward an alert whose sender is only a surname (for example 'PATEL sent you $1.00'). Tap 'Who paid this?', pick a family and Record. Forward a second one like it."
+  ],
+  "expected": [
+   "Each payment is recorded against its own family; neither goes to the other.",
+   "Both searches find José Núñez.",
+   "The surname-only payment is held with the note 'The email only gave one name … so it could be anyone in that family'. After recording it, the second one is still held — a surname alone is never remembered."
+  ],
+  "evidence": "Screenshots of both families' invoices and of the search results.",
+  "phone": false
+ },
+ {
   "id": "EML-01",
   "area": "Email",
   "title": "Receipt content agrees with Payment History and never shows another family",

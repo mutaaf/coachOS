@@ -17,7 +17,7 @@ import { deleteStudent, deleteParent, archiveStudent, restoreStudent } from "@/l
 import { useAction } from "@/lib/use-action";
 import { toast } from "sonner";
 import type { Student, Parent } from "@/types/database";
-import { matchesPhone } from "@/lib/identity";
+import { matchesPhone, searchable } from "@/lib/identity";
 import { formatPhone } from "@/lib/utils";
 import type { StudentEnrollmentInfo, ParentWithStudents } from "@/lib/queries/students";
 
@@ -48,24 +48,26 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
 
   const archivedCount = students.filter((s) => s.status === "inactive").length;
 
+  // Accents are ignored: "nunez" finds Núñez.
+  const q = searchable(search);
+
   const filteredStudents = students.filter((s) => {
     if (!showArchived && s.status === "inactive") return false;
-    const q = search.toLowerCase();
     return (
-      `${s.first_name} ${s.last_name}`.toLowerCase().includes(q) ||
-      s.parents.some((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(q) || matchesPhone(p.phone, search)) ||
+      searchable(`${s.first_name} ${s.last_name}`).includes(q) ||
+      s.parents.some((p) => searchable(`${p.first_name} ${p.last_name}`).includes(q) || matchesPhone(p.phone, search)) ||
       s.enrollments.some(
-        (e) => e.schoolName.toLowerCase().includes(q) || e.programName.toLowerCase().includes(q)
+        (e) => searchable(e.schoolName).includes(q) || searchable(e.programName).includes(q)
       )
     );
   });
 
   const filteredParents = parents.filter(
     (p) =>
-      `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
+      searchable(`${p.first_name} ${p.last_name}`).includes(q) ||
       // On the digits: "(214) 555" finds a number saved as +12145551000.
       matchesPhone(p.phone, search) ||
-      (p.email && p.email.toLowerCase().includes(search.toLowerCase()))
+      (p.email && searchable(p.email).includes(q))
   );
 
   return (

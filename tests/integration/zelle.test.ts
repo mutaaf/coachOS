@@ -396,6 +396,71 @@ describe("the owner confirming who paid", () => {
   });
 });
 
+/**
+ * Accented names (issue #23). The name pattern stopped at the first accented
+ * letter and the sender key dropped it: "JOSÉ PATEL" was read as "PATEL", that
+ * one word was remembered, and RAÚL PATEL's payment then went to José's family.
+ */
+describe("accented names", () => {
+  it("reads the whole name, accents and all", () => {
+    expect(parseZelleEmail("JOSÉ PATEL sent you $100.00", "")).toMatchObject({ senderName: "JOSÉ PATEL" });
+    expect(parseZelleEmail("Lucía Peña sent you $100.00", "")).toMatchObject({ senderName: "Lucía Peña" });
+    expect(parseZelleEmail("Zelle payment", "You received $100.00 from MARÍA NÚÑEZ")).toMatchObject({
+      senderName: "MARÍA NÚÑEZ",
+    });
+  });
+
+  it("treats a name with and without its accents as the same sender", () => {
+    expect(senderKey("García")).toBe("garcia");
+    expect(senderKey("JOSÉ NÚÑEZ")).toBe(senderKey("Jose Nunez"));
+    expect(senderKey("Lucía Peña")).toBe("lucia pena");
+  });
+
+  it("matches García, Núñez and Peña to their families, however the bank spells them", async () => {
+    const garcia = await family({ first: "María", last: "García" });
+    const nunez = await family({ first: "Jose", last: "Nunez" });
+    const pena = await family({ first: "Lucía", last: "Peña" });
+
+    expect((await ingestZelleEmail(db, email("MARIA GARCIA sent you $100.00"))).outcome).toBe("matched");
+    expect((await ingestZelleEmail(db, email("JOSÉ NÚÑEZ sent you $100.00"))).outcome).toBe("matched");
+    expect((await ingestZelleEmail(db, email("Lucía Peña sent you $100.00"))).outcome).toBe("matched");
+
+    for (const f of [garcia, nunez, pena]) expect((await invoices(f.parentId))[0].status).toBe("paid");
+  });
+
+  it("does not give one Patel's payment to another", async () => {
+    const jose = await family({ first: "José", last: "Patel" });
+    const raul = await family({ first: "Raúl", last: "Patel" });
+
+    expect((await ingestZelleEmail(db, email("JOSÉ PATEL sent you $100.00"))).outcome).toBe("matched");
+    expect((await ingestZelleEmail(db, email("RAÚL PATEL sent you $100.00"))).outcome).toBe("matched");
+
+    expect((await invoices(jose.parentId))[0].payments).toHaveLength(1);
+    expect((await invoices(raul.parentId))[0].payments).toHaveLength(1);
+  });
+
+  it("never remembers a single word as a sender", async () => {
+    const { parentId } = await family({ first: "José", last: "Patel" });
+    const r = await ingestZelleEmail(db, email("PATEL sent you $100.00"));
+    expect(r.outcome).toBe("unmatched");
+
+    expect(await matchZelleReceipt((r as any).receiptId, parentId)).toMatchObject({ success: true });
+
+    const { data: remembered } = await admin.from("zelle_senders").select("sender_key");
+    expect(remembered).toEqual([]);
+  });
+
+  it("does not trust a single word remembered before this was fixed", async () => {
+    const jose = await family({ first: "José", last: "Patel" });
+    await admin.from("zelle_senders").insert({ sender_key: "patel", parent_id: jose.parentId });
+
+    const r = await ingestZelleEmail(db, email("PATEL sent you $100.00"));
+
+    expect(r.outcome).toBe("unmatched");
+    expect((await invoices(jose.parentId))[0].payments).toHaveLength(0);
+  });
+});
+
 describe("a parent naming the account they pay from", () => {
   it("makes that account's payments match their family", async () => {
     const { parentId, payToken } = await family({ first: "Raquel", last: "Garcia" });

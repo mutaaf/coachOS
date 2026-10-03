@@ -7,7 +7,7 @@ import { getStripeClient } from "@/lib/stripe-client";
 import { appUrl } from "@/lib/app-url";
 import { getOrCreateStripeCustomer } from "@/lib/actions/stripe";
 import { isPayToken } from "@/lib/queries/pay-page";
-import { findSender, senderKey } from "@/lib/zelle";
+import { findSender, rememberableKey } from "@/lib/zelle";
 import { isEmail } from "@/lib/email";
 
 /**
@@ -123,8 +123,8 @@ export async function rememberZelleName(token: string, name: string) {
   const parent = await parentForToken(token);
   if (!parent) return NOT_FOUND;
 
-  const key = senderKey(String(name ?? "").slice(0, 100));
-  if (key.split(" ").filter(Boolean).length < 2) {
+  const key = rememberableKey(String(name ?? "").slice(0, 100));
+  if (!key) {
     return { error: "Please enter the first and last name on the account." };
   }
 
