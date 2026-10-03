@@ -2361,7 +2361,7 @@
   "expected": [
    "With no reason, the cancellation is refused ('The session wasn't cancelled' with 'Cancellation reason is required.'). The box is labelled optional, so record this as a labelling mismatch.",
    "With a reason: toast 'Session cancelled', and the session shows faded and struck through, with a Cancelled badge.",
-   "When reopened, it shows status 'cancelled' and no Save Attendance or Coach link buttons.",
+   "When reopened, it shows status 'cancelled' and no Save & complete or Coach link buttons.",
    "Generating again does not recreate it.",
    "No practice reminder is prepared for a cancelled session. Record that the app does not tell parents about the cancellation itself; the owner must message them."
   ],
@@ -2375,22 +2375,26 @@
   "risk": "The register is wrong or lost, so the business cannot show who attended (safeguarding and billing disputes).",
   "severity": "high",
   "preconditions": [
-   "A scheduled test session for a test program with at least four active test children and one withdrawn test child."
+   "A scheduled test session today for a test program with at least four active test children and one withdrawn test child.",
+   "A second scheduled test session at least a week ahead."
   ],
   "steps": [
-   "Click the session. Check the list of children against the active enrolment.",
+   "Click today's session. Check the list of children against the active enrolment.",
    "Click children to cycle their status: leave one present, and set one absent, one late and one excused.",
-   "Check the 'x/y' counter, then click Save Attendance.",
-   "Close and reopen the session. Check each child's status.",
-   "Click Mark Complete. Reopen the session."
+   "Check the 'x/y' counter, then click Save & complete.",
+   "Reopen the session. Check the badge, the counter and each child's status.",
+   "Change one child's status and click Save changes. Reopen the session.",
+   "Open the session a week or more ahead."
   ],
   "expected": [
-   "Only active children are listed. The withdrawn child is not.",
+   "Only active children are listed. The withdrawn child is not. There is one Save & complete button, with no separate Save Attendance or Mark Complete.",
    "Clicking cycles present > absent > late > excused > present, and the counter counts present and late.",
-   "Toast 'Attendance saved'. On reopening, every status is as you set it.",
-   "After Mark Complete the badge shows 'completed'. Note whether the saved register can still be viewed. If it is hidden once the session is complete, record that attendance evidence for completed sessions cannot be reviewed on screen."
+   "Toast 'Attendance saved and practice complete'.",
+   "The badge shows 'completed', the counter matches what you saved, and every child's status is as you set it.",
+   "Toast 'Attendance saved'. On reopening, the change is kept and the session is still completed.",
+   "Save & complete is greyed out, with 'This practice hasn't happened yet. Take the register and complete it on the day.'"
   ],
-  "evidence": "Screenshots before saving, after reopening, and after Mark Complete.",
+  "evidence": "Screenshots before saving, after reopening the completed session, after the correction, and of the future session.",
   "phone": false
  },
  {
@@ -2442,7 +2446,7 @@
    "Issue link A for a test session and confirm it unlocks. Then close and reopen the session and click Coach link again to issue link B. On the phone, open link A with passcode A, then link B with passcode B.",
    "Try a link after its 'Works until' time, with its correct passcode.",
    "Issue a link for another test session, cancel that session (with a reason), then open the link with its passcode.",
-   "Issue a link for a third test session, click Mark Complete on it, then open the link with its passcode."
+   "Issue a link for a third test session (today or earlier), click Save & complete on it, then open the link with its passcode."
   ],
   "expected": [
    "Each wrong attempt shows 'That link or passcode is not right.' and no child data.",

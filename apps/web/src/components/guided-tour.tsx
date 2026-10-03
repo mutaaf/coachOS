@@ -106,7 +106,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schedule",
     target: "main h1",
     title: "Schedule and attendance",
-    body: "Your sessions by week. Take attendance here, or send a coach a link and passcode so they can do it on their phone at the gym. The link works until a few hours after the practice ends, and cancelling the practice turns it off.",
+    body: "Your sessions by week. Take attendance here — Save & complete saves the register and marks the practice done — or send a coach a link and passcode so they can do it on their phone at the gym. A completed practice keeps its register, so you can check it and fix a mistake. The link works until a few hours after the practice ends, and cancelling the practice turns it off.",
   },
   {
     id: "payments-autopay",
