@@ -2382,5 +2382,47 @@
   ],
   "evidence": "Screenshots of the payment page and Autopay card in each mode.",
   "phone": true
+ },
+ {
+  "id": "WEB-01",
+  "area": "Website",
+  "title": "A program added from CoachOS appears on risingstars.training with live places, and sign-ups land in CoachOS",
+  "risk": "The website advertises the wrong price, dates or places, or sign-ups go to an old form nobody reads.",
+  "severity": "high",
+  "preconditions": [
+   "A test program in CoachOS with open places."
+  ],
+  "steps": [
+   "Website → Add a listing → pick the test program. Add a description, an age and a picture. Add to website.",
+   "Open risingstars.training's programs page.",
+   "Register a test child from the listing.",
+   "Back in CoachOS: Website → Edit the listing, change the title, save; then delete it."
+  ],
+  "expected": [
+   "The listing shows the program's title, dates, place, price and the picture.",
+   "The site shows live open places for it.",
+   "The registration appears in CoachOS Registrations, and the family gets the 'you're in' email.",
+   "The title change shows on the site after a refresh; after deleting, it's gone from the site."
+  ],
+  "evidence": "Screenshots of the CoachOS card and the website listing.",
+  "phone": true
+ },
+ {
+  "id": "WEB-02",
+  "area": "Website",
+  "title": "Listings that have ended or aren't linked are flagged",
+  "risk": "Parents try to sign up for a program that's over, or into a form nobody reads.",
+  "severity": "medium",
+  "preconditions": [
+   "None."
+  ],
+  "steps": [
+   "Open Website and tap 'Needs a look'."
+  ],
+  "expected": [
+   "Every listing whose end date has passed says 'Ended — still on the site'; upcoming ones that have started say so; unlinked ones say sign-ups go to the old form."
+  ],
+  "evidence": "Screenshot of the filtered list.",
+  "phone": false
  }
 ]

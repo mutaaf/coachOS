@@ -273,6 +273,21 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "website",
+    title: "Put a program on the website, or take one down",
+    when: "A new season, or one that's ended",
+    keywords: "website risingstars.training listing program upcoming current picture testimonial partnership",
+    href: "/website",
+    hrefLabel: "Open Website",
+    tourStep: "website",
+    steps: [
+      { text: "Open **Website**. Anything ended, or not linked to a CoachOS program, is under **Needs a look**." },
+      { text: "Tap [[Add a listing]] and pick the CoachOS program. Title, dates, place and price fill in — add a description, ages and a picture, then [[Add to website]].", tip: "Linked listings show live open places on the site, and families who register land in CoachOS with a \"you're in\" email." },
+      { text: "To change one, tap [[Edit]]; to take one down, the bin. It's on (or off) the site as soon as you save." },
+      { text: "Testimonials and partnerships are on their own tabs, the same way." },
+    ],
+  },
+  {
     id: "settings",
     title: "Change your details",
     when: "Zelle number, emails, fee, business name",

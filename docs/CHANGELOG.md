@@ -4,6 +4,15 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Added
+- **Website** in the menu: the programs, testimonials and partnerships on
+  risingstars.training, edited from CoachOS (no more legacy admin). Add a
+  listing from a CoachOS program and its title, dates, place and price fill
+  in; linked listings show live open places and register into CoachOS.
+  Ended, started-but-"upcoming" and unlinked listings are flagged. Pictures
+  upload to the site's storage. The site's hero, levels and program-type
+  cards aren't shown on the site, so they aren't here
+
 ### Security
 - **Signed in is no longer enough.** Accounts are shared with the marketing
   site and public sign-up was on, so anyone could have made one and read or
