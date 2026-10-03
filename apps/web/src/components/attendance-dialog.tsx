@@ -94,7 +94,11 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
 
   async function handleCancel() {
     const ok = await run(() => cancelSession(session.id, cancelReason), {
-      success: "Session cancelled",
+      success: (r) => {
+        const queued = r && "data" in r ? r.data?.queued ?? 0 : 0;
+        if (!queued) return "Session cancelled";
+        return `Session cancelled. ${queued} ${queued === 1 ? "family is" : "families are"} waiting in your Outbox to be told.`;
+      },
       error: "The session wasn't cancelled",
     });
     if (ok) onOpenChange(false);
@@ -231,14 +235,19 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
             </div>
 
             {showCancel && (
-              <div className="flex gap-2">
-                <input
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                  placeholder="Reason (required) — e.g. gym closed"
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                />
-                <Button size="sm" variant="destructive" onClick={handleCancel}>Confirm Cancel</Button>
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                    placeholder="Reason (required) — e.g. gym closed"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                  />
+                  <Button size="sm" variant="destructive" onClick={handleCancel}>Confirm Cancel</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Each family in this program gets a message in your Outbox, with the reason, for you to send.
+                </p>
               </div>
             )}
           </>

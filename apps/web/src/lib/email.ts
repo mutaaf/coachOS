@@ -14,7 +14,7 @@ import type { OpsClient } from "@/lib/supabase/types";
  * turn a payment that went through into an error.
  */
 
-export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder" | "registration" | "welcome";
+export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder" | "registration" | "welcome" | "seat";
 
 export interface OutgoingEmail {
   kind: EmailKind;

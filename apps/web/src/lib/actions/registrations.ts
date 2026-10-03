@@ -6,7 +6,8 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Registration } from "@/types/database";
 import { Directory, mergeIntoChild, phoneKey, sameName, type ChildOnFile } from "@/lib/identity";
 import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
-import { emailRegistration, emailWelcome } from "@/lib/parent-emails";
+import { emailWelcome } from "@/lib/parent-emails";
+import { queueWelcome, tellSeatOpened, welcomeRegistration } from "@/lib/family-messages";
 import { billFirstMonth } from "@/lib/invoices";
 
 /**
@@ -102,8 +103,9 @@ export async function submitRegistration(formData: FormData) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  // Their "you're in" email. Never in the way: it logs a failure, never throws.
-  if (made) await emailRegistration(supabase, made.id);
+  // Their "you're in" email, and a message in the Outbox for the Boss to send.
+  // Never in the way: each logs a failure, never throws.
+  if (made) await welcomeRegistration(supabase, made.id);
 
   // The group chat is for families with a place, and only when there is one.
   const { data: program } = await supabase
@@ -263,13 +265,16 @@ export async function convertRegistration(
     return { error: err instanceof Error ? err.message : "Added to the roster, but the first bill couldn't be made." };
   }
 
-  // On the roster: the welcome email, with the first practice and group chat.
-  await emailWelcome(supabase, {
+  // On the roster: the welcome email, with the first practice and group chat,
+  // and the welcome message in the Outbox.
+  const welcome = {
     enrollmentId: enrollment.id,
     parentId: parentId!,
     childName: reg.child_first_name,
     programId: reg.program_id,
-  });
+  };
+  await emailWelcome(supabase, welcome);
+  await queueWelcome(supabase, welcome);
 
   revalidatePath("/registrations");
   revalidatePath("/students");
@@ -381,6 +386,8 @@ export async function promoteFromWaitlist(registrationId: string, opts: { outOfT
   const taken = await takeSeat(supabase, registrationId);
   if (taken) return taken;
   await renumberWaitlist(supabase, reg.program_id);
+  // /join promised them a message the moment a spot opened.
+  await tellSeatOpened(supabase, registrationId);
 
   revalidatePath("/registrations");
   revalidatePath("/students");
@@ -402,6 +409,7 @@ export async function promoteNextInLine(programId: string) {
   const taken = await takeSeat(supabase, first.id);
   if (taken) return taken;
   await renumberWaitlist(supabase, programId);
+  await tellSeatOpened(supabase, first.id);
 
   revalidatePath("/registrations");
   revalidatePath("/students");

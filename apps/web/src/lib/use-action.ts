@@ -33,20 +33,21 @@ export function useAction() {
 
   /**
    * @param action   the server action to run
-   * @param messages `success` is shown when it works; `error` prefixes whatever
-   *                 the action reported, so the real reason still reaches the user
+   * @param messages `success` is shown when it works, or worked out from what the
+   *                 action returned; `error` prefixes whatever the action
+   *                 reported, so the real reason still reaches the user
    * @returns        true when the action succeeded
    */
-  async function run(
-    action: () => Promise<ActionResult>,
-    messages: { success?: string; error?: string; refresh?: boolean } = {}
+  async function run<R extends ActionResult>(
+    action: () => Promise<R>,
+    messages: { success?: string | ((result: R) => string); error?: string; refresh?: boolean } = {}
   ): Promise<boolean> {
     const { success, error = "That didn't work", refresh = true } = messages;
     if (busy.current) return false;
     busy.current = true;
     setRunning(true);
 
-    let result: ActionResult;
+    let result: R;
     try {
       result = await action();
     } catch (thrown) {
@@ -64,7 +65,7 @@ export function useAction() {
       return false;
     }
 
-    if (success) toast.success(success);
+    if (success) toast.success(typeof success === "function" ? success(result) : success);
 
     if (refresh) {
       // Inside a transition so `pending` stays true until the new data is on
