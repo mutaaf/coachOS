@@ -22,3 +22,13 @@ export function formatPhone(phone: string): string {
   }
   return phone;
 }
+
+/**
+ * A key a form sends with a payment, so the same form sent twice records it
+ * once. randomUUID needs a secure page; plain http on the local network falls
+ * back to something just as unlikely to repeat.
+ */
+export function newClientKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+}

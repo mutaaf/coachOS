@@ -2412,6 +2412,29 @@
   "phone": true
  },
  {
+  "id": "PAY-22",
+  "area": "Payments",
+  "title": "Recording and editing a payment keeps the right amount",
+  "risk": "A payment is saved with the last invoice's amount, saved twice from a double tap, or edited to money never received — and the books quietly disagree with the bank.",
+  "severity": "critical",
+  "preconditions": [
+   "Two test families with open invoices of different amounts (for example $60 and $120)."
+  ],
+  "steps": [
+   "On Payments, tap Record Payment on the $60 invoice's row, look at the amount, then tap Cancel.",
+   "Tap Record Payment on the $120 invoice's row and look at the amount. Change it to 40 and tap Record Payment.",
+   "Tap Record Payment at the top right, enter 20, pick the $120 family, and double-tap the Record $20.00 button quickly.",
+   "Open Payment History, tap the pencil on the $40 payment, change it to 500 and tap Save Changes. Then try -50."
+  ],
+  "expected": [
+   "The first dialog shows 60.00; the second shows 120.00, never the first invoice's amount.",
+   "The double tap records $20.00 once: Payment History shows one $20 payment, not two.",
+   "Editing to 500 is refused with a message saying it's more than the $80.00 the invoice leaves for that payment, and the payment stays $40. A negative amount is refused too."
+  ],
+  "evidence": "Screenshots of both Record Payment dialogs, Payment History after the double tap, and the refused edit.",
+  "phone": true
+ },
+ {
   "id": "WEB-01",
   "area": "Website",
   "title": "A program added from CoachOS appears on risingstars.training with live places, and sign-ups land in CoachOS",

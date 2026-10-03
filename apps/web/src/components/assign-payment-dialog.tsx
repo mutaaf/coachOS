@@ -10,7 +10,7 @@ import { useAction } from "@/lib/use-action";
 import { assignUnrecognisedPayment } from "@/lib/actions/payment-assign";
 import type { AssignFamily, AssignSchool } from "@/lib/queries/payment-assign";
 import type { AssignInput } from "@/lib/payment-assign";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, newClientKey } from "@/lib/utils";
 import { ArrowLeft, Check, ChevronRight, Search, UserPlus } from "lucide-react";
 
 /**
@@ -99,6 +99,8 @@ export function AssignPaymentDialog({
   const [programId, setProgramId] = useState<string>("");
   const [program, setProgram] = useState({ name: "", monthly_fee: "" });
   const [placing, setPlacing] = useState(false);
+  // One per payment: a second tap on "Record" sends the same key and records nothing more.
+  const [key, setKey] = useState(newClientKey);
 
   const school = options.schools.find((s) => s.id === schoolId);
   /** A new program's fee starts at what was paid: usually one month's fee. */
@@ -141,6 +143,7 @@ export function AssignPaymentDialog({
     setProgramId("");
     setProgram({ name: "", monthly_fee: "" });
     setPlacing(false);
+    setKey(newClientKey());
   }
 
   function pickFamily(f: AssignFamily) {
@@ -191,6 +194,7 @@ export function AssignPaymentDialog({
                 : { id: programId },
           }
         : undefined,
+      key,
     };
   }
 

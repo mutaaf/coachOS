@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -19,10 +19,17 @@ type ActionResult = { error?: string; success?: boolean } | void | undefined;
  * `router.refresh()` refetches the page on the server, which takes as long as
  * the page does; without a transition the interface just sits there afterwards
  * looking like the click was ignored.
+ *
+ * And it runs one action at a time. `pending` only disabled the button once a
+ * re-render landed, so a quick double tap got in first: two $40 payments, 170ms
+ * apart. A ref is set before anything awaits, so the second tap does nothing.
  */
 export function useAction() {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [refreshing, startTransition] = useTransition();
+  const [running, setRunning] = useState(false);
+  const busy = useRef(false);
+  const pending = running || refreshing;
 
   /**
    * @param action   the server action to run
@@ -35,6 +42,9 @@ export function useAction() {
     messages: { success?: string; error?: string; refresh?: boolean } = {}
   ): Promise<boolean> {
     const { success, error = "That didn't work", refresh = true } = messages;
+    if (busy.current) return false;
+    busy.current = true;
+    setRunning(true);
 
     let result: ActionResult;
     try {
@@ -44,6 +54,9 @@ export function useAction() {
       const detail = thrown instanceof Error ? thrown.message : String(thrown);
       toast.error(error, { description: detail });
       return false;
+    } finally {
+      busy.current = false;
+      setRunning(false);
     }
 
     if (result && "error" in result && result.error) {

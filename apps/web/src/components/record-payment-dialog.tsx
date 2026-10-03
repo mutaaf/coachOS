@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { recordPayment, updatePayment, fetchPendingInvoices, fetchInvoiceDetail } from "@/lib/actions/payments";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, newClientKey } from "@/lib/utils";
 import { useAction } from "@/lib/use-action";
 import { useRouter } from "next/navigation";
 
@@ -27,27 +27,54 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
   const [invoices, setInvoices] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState(invoiceId || "");
   const [invoiceDetail, setInvoiceDetail] = useState<any>(null);
+  // The dialog stays mounted between invoices, so an uncontrolled amount kept
+  // the last invoice's figure: $60 was saved against a $120 invoice. The amount
+  // is set from the invoice it was loaded for, and cleared when it closes.
+  const [amount, setAmount] = useState("");
+  // One per opening: sending the same form twice records one payment.
+  const [clientKey, setClientKey] = useState("");
 
   useEffect(() => {
-    if (isEditing) {
-      setMethod(payment.method || "cash");
+    if (!open) {
+      setInvoiceDetail(null);
+      setAmount("");
+      setSelectedInvoice("");
       return;
     }
-    if (open && !invoiceId) {
+    setClientKey(newClientKey());
+    if (isEditing) {
+      setMethod(payment.method || "cash");
+      setAmount(String(payment.amount ?? ""));
+      return;
+    }
+    if (!invoiceId) {
       fetchPendingInvoices().then((data) => setInvoices(data));
     }
     if (invoiceId) setSelectedInvoice(invoiceId);
   }, [open, invoiceId, isEditing, payment]);
 
   useEffect(() => {
-    if (isEditing) return;
-    if (selectedInvoice && open) {
-      fetchInvoiceDetail(selectedInvoice).then((data) => setInvoiceDetail(data));
-    }
+    if (isEditing || !open) return;
+    setInvoiceDetail(null);
+    setAmount("");
+    if (!selectedInvoice) return;
+    let current = true;
+    fetchInvoiceDetail(selectedInvoice).then((data) => {
+      // A slower answer for an invoice no longer chosen is ignored.
+      if (!current) return;
+      setInvoiceDetail(data);
+      const paid = data?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
+      const left = Number(data.amount) - paid;
+      setAmount(left > 0 ? left.toFixed(2) : "");
+    });
+    return () => {
+      current = false;
+    };
   }, [selectedInvoice, open, isEditing]);
 
-  const totalPaid = invoiceDetail?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
-  const remaining = invoiceDetail ? Number(invoiceDetail.amount) - totalPaid : 0;
+  const detail = invoiceDetail?.id === selectedInvoice ? invoiceDetail : null;
+  const totalPaid = detail?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
+  const remaining = detail ? Number(detail.amount) - totalPaid : 0;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -64,6 +91,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
       : await run(
           () => {
             formData.set("invoice_id", selectedInvoice);
+            formData.set("client_key", clientKey);
             return recordPayment(formData);
           },
           { success: "Payment recorded", error: "The payment wasn't recorded" }
@@ -102,10 +130,10 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
             </div>
           )}
 
-          {!isEditing && invoiceDetail && (
+          {!isEditing && detail && (
             <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1">
-              <div><span className="text-muted-foreground">Student:</span> {invoiceDetail.students?.first_name} {invoiceDetail.students?.last_name}</div>
-              <div><span className="text-muted-foreground">Amount Due:</span> {formatCurrency(invoiceDetail.amount)}</div>
+              <div><span className="text-muted-foreground">Student:</span> {detail.students?.first_name} {detail.students?.last_name}</div>
+              <div><span className="text-muted-foreground">Amount Due:</span> {formatCurrency(detail.amount)}</div>
               <div><span className="text-muted-foreground">Remaining:</span> {formatCurrency(remaining)}</div>
             </div>
           )}
@@ -117,8 +145,10 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
               name="amount"
               type="number"
               step="0.01"
+              min="0.01"
               required
-              defaultValue={isEditing ? payment.amount : remaining > 0 ? remaining : ""}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -146,7 +176,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={pending || (!isEditing && !selectedInvoice)}>
+            <Button type="submit" disabled={pending || (!isEditing && !detail)}>
               {pending ? (isEditing ? "Saving..." : "Recording...") : (isEditing ? "Save Changes" : "Record Payment")}
             </Button>
           </div>
