@@ -4,7 +4,8 @@ import {
   createAttendanceLink,
   revokeAttendanceLink,
 } from "@/lib/actions/attendance-links";
-import { businessToday } from "@/lib/dates";
+import { cancelSession } from "@/lib/actions/schedule";
+import { addDays, businessInstant, businessToday } from "@/lib/dates";
 
 /**
  * A link that opens a register without an account is the widest thing in the
@@ -156,7 +157,11 @@ describe("opening a sheet", () => {
 
   it("stops working once it expires", async () => {
     const { sessionId } = await sessionWithRoster([{ first: "Amina" }]);
-    const link = await createAttendanceLink(sessionId, -1); // already past
+    const link = await createAttendanceLink(sessionId);
+    await admin
+      .from("attendance_links")
+      .update({ expires_at: new Date(Date.now() - 60_000).toISOString() })
+      .eq("token", link.token!);
 
     const { data } = await open(link.token!, link.passcode!);
     expect(data.error).toMatch(/expired/i);
@@ -179,6 +184,113 @@ describe("opening a sheet", () => {
 
     expect((await open(first.token!, first.passcode!)).data.error).toMatch(/turned off/i);
     expect((await open(second.token!, second.passcode!)).data.error).toBeUndefined();
+  });
+});
+
+/**
+ * A link made at 7:29pm for a 9am practice used to run out at 7:29am — before
+ * the coach had even got to the field. It lasts until after the practice ends.
+ */
+describe("how long a link lasts", () => {
+  async function sessionOn(date: string, start: string, end: string) {
+    const { programId } = await seedProgram({});
+    const { data } = await admin
+      .from("sessions")
+      .insert({ program_id: programId, date, start_time: start, end_time: end, status: "scheduled" })
+      .select("id")
+      .single();
+    return data!.id as string;
+  }
+
+  it("still works when tomorrow morning's practice starts and ends", async () => {
+    const tomorrow = addDays(businessToday(), 1);
+    const sessionId = await sessionOn(tomorrow, "09:00", "10:00");
+
+    const link = await createAttendanceLink(sessionId);
+
+    const expires = new Date(link.expiresAt!);
+    expect(expires.getTime()).toBeGreaterThan(businessInstant(tomorrow, "10:00").getTime());
+  });
+
+  it("lasts a few hours past the end, for a register filled in afterwards", async () => {
+    const day = addDays(businessToday(), 5);
+    const sessionId = await sessionOn(day, "16:00", "17:00");
+
+    const link = await createAttendanceLink(sessionId);
+
+    expect(new Date(link.expiresAt!).getTime()).toBe(
+      businessInstant(day, "17:00").getTime() + 6 * 3_600_000
+    );
+  });
+
+  it("gives a practice that already ended a fresh 12 hours", async () => {
+    const sessionId = await sessionOn(addDays(businessToday(), -3), "16:00", "17:00");
+    const before = Date.now();
+
+    const link = await createAttendanceLink(sessionId);
+
+    expect(new Date(link.expiresAt!).getTime()).toBeGreaterThanOrEqual(before + 12 * 3_600_000 - 1_000);
+    expect((await open(link.token!, link.passcode!)).data.error).toBeUndefined();
+  });
+});
+
+/**
+ * A cancelled practice opened in the coach's register and saved attendance for
+ * a practice that never happened.
+ */
+describe("a cancelled practice", () => {
+  it("turns off its coach link when she cancels it", async () => {
+    const { sessionId } = await sessionWithRoster([{ first: "Amina" }]);
+    const link = await createAttendanceLink(sessionId);
+
+    await cancelSession(sessionId, "Gym closed");
+
+    const { data } = await open(link.token!, link.passcode!);
+    expect(data.error).toBeDefined();
+    expect(data.roster).toBeUndefined();
+  });
+
+  it("will not open or save even if a link is still live", async () => {
+    const { sessionId, studentIds } = await sessionWithRoster([{ first: "Amina" }]);
+    const link = await createAttendanceLink(sessionId);
+    // As if the link was never switched off: the database itself must refuse.
+    await admin.from("sessions").update({ status: "cancelled" }).eq("id", sessionId);
+
+    const opened = await open(link.token!, link.passcode!);
+    expect(opened.data.error).toMatch(/cancelled/i);
+    expect(opened.data.roster).toBeUndefined();
+
+    const saved = await anonPublic.rpc("save_attendance_sheet", {
+      p_token: link.token,
+      p_passcode: link.passcode,
+      p_records: [{ student_id: studentIds[0], status: "present" }],
+    });
+    expect(saved.data.error).toMatch(/cancelled/i);
+
+    const { count } = await admin
+      .from("attendance")
+      .select("*", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+    expect(count).toBe(0);
+  });
+
+  it("only tells someone with the passcode that it was cancelled", async () => {
+    const { sessionId } = await sessionWithRoster([{ first: "Amina" }]);
+    const link = await createAttendanceLink(sessionId);
+    await admin.from("sessions").update({ status: "cancelled" }).eq("id", sessionId);
+
+    const { data } = await open(link.token!, "000000");
+    expect(data.error).toMatch(/not right/i);
+  });
+
+  it("will not open once the practice is marked complete", async () => {
+    const { sessionId } = await sessionWithRoster([{ first: "Amina" }]);
+    const link = await createAttendanceLink(sessionId);
+    await admin.from("sessions").update({ status: "completed" }).eq("id", sessionId);
+
+    const { data } = await open(link.token!, link.passcode!);
+    expect(data.error).toMatch(/finished/i);
+    expect(data.roster).toBeUndefined();
   });
 });
 

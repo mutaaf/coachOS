@@ -8,7 +8,7 @@ import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/
 import { createClient } from "@/lib/supabase/client";
 import { useAction } from "@/lib/use-action";
 import { createAttendanceLink } from "@/lib/actions/attendance-links";
-import { formatDateOnly, sessionDayPhrase } from "@/lib/dates";
+import { formatBusinessTime, formatDateOnly, sessionDayPhrase } from "@/lib/dates";
 import { toast } from "sonner";
 import { Link2, Copy } from "lucide-react";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
@@ -39,7 +39,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
   const { run, pending } = useAction();
   // Shown once, right after issuing — the passcode is hashed and cannot be
   // read back, so this is the only chance to copy it.
-  const [coachLink, setCoachLink] = useState<{ url: string; passcode: string } | null>(null);
+  const [coachLink, setCoachLink] = useState<{ url: string; passcode: string; expiresAt: string } | null>(null);
 
   useEffect(() => {
     if (open && session) {
@@ -109,6 +109,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
     setCoachLink({
       url: `${window.location.origin}/s/${result.token}`,
       passcode: result.passcode!,
+      expiresAt: result.expiresAt!,
     });
   }
 
@@ -170,7 +171,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
                   {coachLink.passcode}
                 </p>
                 <p className="text-xs text-green-800">
-                  Valid for 12 hours. The passcode isn&apos;t shown again — copy it now.
+                  Works until {formatBusinessTime(coachLink.expiresAt)}. The passcode isn&apos;t shown again — copy it now.
                 </p>
                 <Button size="sm" variant="outline" onClick={copyCoachLink} className="w-full">
                   <Copy className="h-3.5 w-3.5 mr-1" /> Copy link and passcode

@@ -4,6 +4,12 @@ import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase, createAdminPublicSupabase } from "@/lib/supabase/server";
+import { businessInstant } from "@/lib/dates";
+
+/** Time after the practice ends to finish the register, e.g. from the car. */
+const HOURS_AFTER_PRACTICE = 6;
+/** The least a new link is good for, so one made for a past practice still works. */
+const MINIMUM_HOURS = 12;
 
 /**
  * A passcode a coach can read off WhatsApp and type on a phone.
@@ -23,16 +29,20 @@ function generateToken() {
 /**
  * Create a link for one session.
  *
+ * It lasts until a few hours after the practice ends. It used to last 12 hours
+ * from being made, so a link sent at 7:29pm for a 9am practice ran out at
+ * 7:29am, before the coach got to the field.
+ *
  * The passcode is returned exactly once, here, because it is stored hashed and
  * cannot be read back afterwards. If it is lost, issue a new link.
  */
-export async function createAttendanceLink(sessionId: string, hoursValid = 12) {
+export async function createAttendanceLink(sessionId: string) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
-    .select("id, date, status")
+    .select("id, date, end_time, status")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -41,10 +51,17 @@ export async function createAttendanceLink(sessionId: string, hoursValid = 12) {
   if (session.status === "cancelled") {
     return { error: "That session was cancelled, so there is no register to take." };
   }
+  if (session.status !== "scheduled") {
+    return { error: "That session is finished, so its register is closed." };
+  }
 
   const token = generateToken();
   const passcode = generatePasscode();
-  const expiresAt = new Date(Date.now() + hoursValid * 3_600_000).toISOString();
+  const afterPractice =
+    businessInstant(session.date, session.end_time).getTime() + HOURS_AFTER_PRACTICE * 3_600_000;
+  const expiresAt = new Date(
+    Math.max(afterPractice, Date.now() + MINIMUM_HOURS * 3_600_000)
+  ).toISOString();
 
   // Hash in the database so the plain passcode never lands in a column.
   const { data: hashed, error: hashError } = await createAdminPublicSupabase().rpc(

@@ -106,7 +106,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schedule",
     target: "main h1",
     title: "Schedule and attendance",
-    body: "Your sessions by week. Take attendance here, or send a coach a link and passcode so they can do it on their phone at the gym.",
+    body: "Your sessions by week. Take attendance here, or send a coach a link and passcode so they can do it on their phone at the gym. The link works until a few hours after the practice ends, and cancelling the practice turns it off.",
   },
   {
     id: "payments-autopay",

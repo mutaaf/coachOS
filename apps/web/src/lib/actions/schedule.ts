@@ -236,6 +236,15 @@ export async function cancelSession(id: string, reason: string) {
     return { error: "Failed to cancel session. Please try again." };
   }
 
+  // A coach holding the link should not be able to take a register for a
+  // practice that is not happening. The database refuses too; this is the
+  // switch she would expect cancelling to flip.
+  await supabase
+    .from("attendance_links")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("session_id", id)
+    .is("revoked_at", null);
+
   revalidatePath("/schedule");
   return { data };
 }
