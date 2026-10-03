@@ -230,8 +230,8 @@ test("the whole run-book, start to finish", async ({ page }) => {
   await test.step("record a Zelle payment against it", async () => {
     await page.reload();
 
-    // The row's own button, not the one in the page header — that one opens the
-    // dialog with no invoice attached.
+    // The row's own button, not the one in the page header — that one asks who
+    // paid rather than paying this invoice.
     await page.getByRole("button", { name: "Record Payment", exact: true }).last().click();
 
     await page.locator("#amount").fill("150");

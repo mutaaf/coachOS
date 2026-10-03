@@ -655,7 +655,7 @@
   "preconditions": [
    "Stripe is in Test mode.",
    "Test Parent D has an unpaid invoice from LAST month (status 'overdue') and an invoice for THIS month.",
-   "Use Payments → 'Record Payment' to record a partial cash payment (e.g. $20) against last month's invoice. Note the remaining balance.",
+   "On Payments → Invoices, use 'Record Payment' on last month's invoice row to record a partial cash payment (e.g. $20) against last month's invoice. Note the remaining balance.",
    "Parent D's autopay is off."
   ],
   "steps": [
@@ -1525,10 +1525,10 @@
    "A test family on file with a known phone number and a child in a program."
   ],
   "steps": [
-   "On Payments, tap 'Record a payment', enter an amount and choose Cash.",
+   "On Payments, tap 'Record Payment' (top right), enter an amount and choose Cash.",
    "Tap 'Someone new' and type the test family's phone number in a different format (e.g. with dots).",
    "Read the yellow message, then use the button offered.",
-   "Close and start again: 'Record a payment' → 'Someone new', a new phone number, a child name, '+ A new school' with the name of an EXISTING school typed in capitals. Continue to the summary and record.",
+   "Close and start again: 'Record Payment' → 'Someone new', a new phone number, a child name, '+ A new school' with the name of an EXISTING school typed in capitals. Continue to the summary and record.",
    "Start again with a new program but leave the monthly fee empty, and try to continue."
   ],
   "expected": [
@@ -1550,7 +1550,7 @@
   "preconditions": [
    "Settings → 'Email Parents' is on.",
    "There are test families with email addresses you can read: one paid by Zelle (ZEL-02 or ZEL-07), one paid by card through autopay if Stripe is on, and one paid by cash.",
-   "For the cash payment: go to Payments, click 'Record Payment', choose a test family's invoice, enter Cash and the amount, and save."
+   "For the cash payment: go to Payments, click 'Record Payment' on a test family's invoice row, enter Cash and the amount, and save."
   ],
   "steps": [
    "Open each receipt email. Note the sender, the subject, the heading, each line (child · month, program, amount), any 'Card processing fee' line, the Total, 'Paid by ... on ...', and the 'View your payment page' button.",
@@ -1630,7 +1630,7 @@
    "A test family's email is an inbox you control."
   ],
   "steps": [
-   "Trigger a receipt for the test family (for example Record Payment → cash $1.00).",
+   "Trigger a receipt for the test family (for example 'Record Payment' on an invoice row → cash $1.00).",
    "Open the receipt in the family's inbox and press Reply. Note the 'To' address, then send 'TEST EML-04 reply'.",
    "Confirm it arrives in the 'Replies Go To' inbox and not at payments@risingstars.training.",
    "In Settings, change 'Replies Go To' to a second test address and save.",
@@ -1657,7 +1657,7 @@
    "There is a second test family with an email."
   ],
   "steps": [
-   "For the no-email family, record a $1.00 cash payment against a different open invoice, using Payments → Record Payment.",
+   "For the no-email family, record a $1.00 cash payment against a different open invoice, using 'Record Payment' on that invoice's row (Payments → Invoices).",
    "After the next daily run, check Messaging → Outbox for a reminder to the no-email family.",
    "Open the no-email family's payment page (link icon on the Invoices row) and check the 'Receipts by email' section.",
    "In Settings, turn 'Email Parents' off and save. Record a $1.00 cash payment for the family with email. Check their inbox.",
@@ -1907,7 +1907,7 @@
    "Click Record Payment on the same invoice again. Check that 'Remaining' shows the balance (e.g. $60.00) and that the Amount box defaults to it.",
    "Exception checks before paying the balance: try Amount 0, then -10, then an amount larger than the balance. Note what is accepted. Delete any payment that should not have been accepted (Payment History > bin icon).",
    "Record the exact balance with Reference 'AUDIT-2'. Check the Status.",
-   "Click Record Payment at the top of the Payments page (no invoice pre-selected) and check whether the paid invoice is still offered in the Invoice list."
+   "Click 'Record Payment' at the top right of Payments, enter $1, and find the test family in the list. Read what it says they owe, then close without recording."
   ],
   "expected": [
    "After the partial payment, the toast reads 'Payment recorded' and the invoice stays Pending (or Overdue if past due), not Paid.",
@@ -1915,7 +1915,7 @@
    "Remaining shows the correct balance.",
    "Zero and negative amounts are refused ('Enter an amount greater than $0.'). An amount above the balance is refused with 'That's more than the $X still owed…'. Nothing is recorded in Payment History for any refused attempt.",
    "After the balance is paid, the invoice shows Paid and the Record Payment and Waive buttons disappear from its row.",
-   "The paid invoice is no longer offered when recording a new payment."
+   "The family's line no longer counts the paid invoice in what they owe ('nothing owed' if that was their only one)."
   ],
   "evidence": "Screenshots of the dialog showing Remaining at each step, the invoice row after each payment, Payment History, and any invalid amounts that were accepted.",
   "phone": false
@@ -1963,7 +1963,7 @@
    "Click Waive again and confirm.",
    "Check the row, the Waived filter, and the Pending and Overdue cards.",
    "Waive the partly paid invoice. Check its payment still appears in Payment History and in Total Revenue.",
-   "Click Record Payment at the top of the page and check whether either waived invoice is offered.",
+   "Click 'Record Payment' at the top right, enter $1, and find each test family in the list. Read what it says they owe, then close without recording.",
    "Click the bin icon on the invoice to delete that has a payment, and confirm 'Delete this invoice?'. Check the message, the invoice list, Payment History and Total Revenue.",
    "Delete that invoice's payments from Payment History, then delete the invoice. Then delete the test invoice that never had payments."
   ],
@@ -1972,7 +1972,7 @@
    "After confirming: toast 'Invoice waived', status badge 'waived', no Record Payment or Waive buttons on the row, and the invoice appears under the Waived filter.",
    "The Pending or Overdue card drops by the invoice amount.",
    "The partly paid invoice's payment stays recorded and counted in Total Revenue. Record whether the screen shows how much was waived versus collected. It does not record who waived the invoice or why; note this as an audit-trail gap.",
-   "Waived invoices are not offered for new payments.",
+   "Waived invoices are not counted in what a family owes, so no new payment would be put on them.",
    "Deleting an invoice that has payments is refused with 'Delete the payments first before deleting this invoice'. The invoice and payment remain and Total Revenue is unchanged.",
    "Once its payments are gone, the invoice deletes with 'Invoice deleted'. An invoice with no payments deletes directly. Record as an audit-trail observation that deletions leave no visible trail on screen (who, when)."
   ],
