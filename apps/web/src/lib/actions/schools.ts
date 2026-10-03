@@ -2,6 +2,7 @@
 
 import { requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { findSchoolNamed } from "@/lib/identity";
 import { revalidatePath } from "next/cache";
 
 export async function createSchool(formData: FormData) {
@@ -17,6 +18,16 @@ export async function createSchool(formData: FormData) {
 
   if (!name || name.trim().length === 0) {
     return { error: "School name is required." };
+  }
+
+  const existing = await findSchoolNamed(supabase, name);
+  if (existing) {
+    return {
+      error:
+        existing.status === "archived"
+          ? `${existing.name} is already on your list, archived.`
+          : `${existing.name} is already on your list of schools.`,
+    };
   }
 
   const { data, error } = await supabase

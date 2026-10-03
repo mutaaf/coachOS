@@ -5,6 +5,7 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { checkRows, importRows, rowsFromCsv, type RosterRow } from "@/lib/roster";
 import { readRoster, type RosterInput } from "@/lib/roster-reader";
+import { findSchoolNamed } from "@/lib/identity";
 
 /**
  * The roster import wizard: read a list, check it, save it.
@@ -96,13 +97,20 @@ export async function importRoster(target: ImportTarget, rows: RosterRow[]) {
   if (!schoolId) {
     const name = target.newSchoolName?.trim();
     if (!name) return { error: "Pick a school, or type the name of a new one." };
-    const { data, error } = await supabase
-      .from("schools")
-      .insert({ name, status: "active" })
-      .select("id")
-      .single();
-    if (error) return { error: error.message };
-    schoolId = data.id as string;
+    // "Lincoln elementary" typed as new is the Lincoln Elementary already on
+    // the list; a second one would split its sessions between two schools.
+    const existing = await findSchoolNamed(supabase, name);
+    if (existing) {
+      schoolId = existing.id;
+    } else {
+      const { data, error } = await supabase
+        .from("schools")
+        .insert({ name, status: "active" })
+        .select("id")
+        .single();
+      if (error) return { error: error.message };
+      schoolId = data.id as string;
+    }
   }
 
   let programId = target.programId;

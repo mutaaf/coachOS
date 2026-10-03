@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ClipboardPaste, ArrowRight, Upload, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { ColumnConfig } from "@/components/quick-entry-grid";
+import { splitName as splitFullName } from "@/lib/roster";
 
 interface PasteImportProps {
   columns: ColumnConfig[];
@@ -41,11 +42,10 @@ function extractPhone(text: string): { phone: string; remainder: string } {
   return { phone: "", remainder: text.trim() };
 }
 
+/** Every word before the last is the first name, as everywhere else (lib/roster.ts). */
 function splitName(fullName: string): { first: string; last: string } {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 0) return { first: "", last: "" };
-  if (parts.length === 1) return { first: parts[0], last: "" };
-  return { first: parts[0], last: parts.slice(1).join(" ") };
+  const [first, last] = splitFullName(fullName);
+  return { first: first ?? "", last: last ?? "" };
 }
 
 function parseLines(text: string, entityType: string): Record<string, string>[] {

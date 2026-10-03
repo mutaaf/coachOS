@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -17,6 +17,7 @@ import { Select } from "@/components/ui/select";
 import { createStudent, updateStudent } from "@/lib/actions/students";
 import type { Student } from "@/types/database";
 import { GraduationCap } from "lucide-react";
+import { SamePersonPrompt, childMatches, type SameMatch } from "@/components/same-person-prompt";
 
 interface StudentFormDialogProps {
   open: boolean;
@@ -49,28 +50,52 @@ export function StudentFormDialog({
 }: StudentFormDialogProps) {
   const [isPending, startTransition] = useTransition();
   const isEditing = !!student;
+  // Someone of this name already on file: the form waits on "Is this the same…?"
+  const [asking, setAsking] = useState<{ formData: FormData; matches: SameMatch[] } | null>(null);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+  useEffect(() => {
+    if (!open) setAsking(null);
+  }, [open]);
 
+  function save(formData: FormData) {
+    const name = `${formData.get("first_name")} ${formData.get("last_name")}`;
     startTransition(async () => {
       const result = isEditing
         ? await updateStudent(student.id, formData)
         : await createStudent(formData);
 
-      if (result.error) {
+      if ("matches" in result && result.matches) {
+        setAsking({ formData, matches: childMatches(result.matches) });
+        return;
+      }
+      if ("error" in result && result.error) {
         toast.error(result.error);
         return;
       }
 
       toast.success(
         isEditing
-          ? `${formData.get("first_name")} ${formData.get("last_name")} updated`
-          : `${formData.get("first_name")} ${formData.get("last_name")} added`
+          ? `${name} updated`
+          : "existing" in result && result.existing
+            ? `${name} was already on file — updated, not added again`
+            : `${name} added`
       );
+      setAsking(null);
       onOpenChange(false);
     });
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    save(new FormData(e.currentTarget));
+  }
+
+  function answer(field: "existing_student_id" | "confirm_new", value: string) {
+    if (!asking) return;
+    const formData = new FormData();
+    asking.formData.forEach((v, k) => formData.set(k, v));
+    formData.set(field, value);
+    save(formData);
   }
 
   return (
@@ -159,7 +184,20 @@ export function StudentFormDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          {asking && (
+            <SamePersonPrompt
+              question={`Is this the same ${asking.formData.get("first_name")}?`}
+              matches={asking.matches}
+              sameLabel="Yes, same child"
+              newLabel="No, add a new child"
+              onSame={(id) => answer("existing_student_id", id)}
+              onNew={() => answer("confirm_new", "1")}
+              onBack={() => setAsking(null)}
+              disabled={isPending}
+            />
+          )}
+
+          <div className={asking ? "hidden" : "flex justify-end gap-3 pt-2"}>
             <Button
               type="button"
               variant="outline"

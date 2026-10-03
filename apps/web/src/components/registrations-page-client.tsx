@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ import {
 } from "@/lib/actions/registrations";
 import type { ProgramAvailability, RegistrationStatus } from "@/types/database";
 import type { RegistrationWithProgram } from "@/lib/queries/registrations";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SamePersonPrompt, childMatches, type SameMatch } from "@/components/same-person-prompt";
 
 const STATUS_STYLES: Record<RegistrationStatus, string> = {
   pending: "bg-gray-100 text-gray-700",
@@ -65,17 +67,44 @@ export function RegistrationsPageClient({
     return base;
   }, [registrations]);
 
-  /** Runs a server action, surfaces its error, and refreshes on success. */
+  /**
+   * Runs a server action, surfaces its error, and refreshes on success. One at
+   * a time: `pending` only disables the buttons once a render lands, so a quick
+   * double tap on "Add to roster" got in twice.
+   */
+  const busy = useRef(false);
   function run(action: () => Promise<{ error?: string; success?: boolean }>, okMessage: string) {
+    if (busy.current) return;
+    busy.current = true;
     startTransition(async () => {
-      const result = await action();
-      if (result?.error) {
-        toast.error(result.error);
-        return;
+      try {
+        const result = await action();
+        if (result?.error) {
+          toast.error(result.error);
+          return;
+        }
+        if (!result?.success) return;
+        toast.success(okMessage);
+        router.refresh();
+      } finally {
+        busy.current = false;
       }
-      toast.success(okMessage);
-      router.refresh();
     });
+  }
+
+  // A child of the same name already on file: "Is this the same Mia?"
+  const [asking, setAsking] = useState<{ registrationId: string; name: string; matches: SameMatch[] } | null>(null);
+
+  function addToRoster(r: RegistrationWithProgram, choice?: { studentId?: string; createNew?: boolean }) {
+    run(async () => {
+      const result = await convertRegistration(r.id, choice);
+      if ("matches" in result) {
+        setAsking({ registrationId: r.id, name: r.child_first_name, matches: childMatches(result.matches) });
+        return {};
+      }
+      setAsking(null);
+      return result;
+    }, "Added to the roster");
   }
 
   function copyLink(slug: string) {
@@ -285,9 +314,7 @@ export function RegistrationsPageClient({
                   <Button
                     size="sm"
                     disabled={pending}
-                    onClick={() =>
-                      run(() => convertRegistration(r.id), "Added to the roster")
-                    }
+                    onClick={() => addToRoster(r)}
                   >
                     <UserPlus className="mr-1 h-3.5 w-3.5" />
                     Add to roster
@@ -327,6 +354,33 @@ export function RegistrationsPageClient({
           ))}
         </div>
       )}
+
+      <Dialog open={!!asking} onOpenChange={(open) => !open && setAsking(null)}>
+        <DialogContent onClose={() => setAsking(null)}>
+          <DialogHeader>
+            <DialogTitle>Add to roster</DialogTitle>
+          </DialogHeader>
+          {asking && (
+            <div className="mt-4">
+              <SamePersonPrompt
+                question={`Is this the same ${asking.name}?`}
+                matches={asking.matches}
+                sameLabel="Yes, same child"
+                newLabel="No, add a new child"
+                onSame={(studentId) => {
+                  const r = registrations.find((x) => x.id === asking.registrationId);
+                  if (r) addToRoster(r, { studentId });
+                }}
+                onNew={() => {
+                  const r = registrations.find((x) => x.id === asking.registrationId);
+                  if (r) addToRoster(r, { createNew: true });
+                }}
+                disabled={pending}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

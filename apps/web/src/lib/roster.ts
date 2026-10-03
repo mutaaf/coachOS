@@ -1,4 +1,5 @@
 import type { OpsClient } from "@/lib/supabase/types";
+import { Directory, phoneKey, type ChildOnFile } from "@/lib/identity";
 
 /**
  * Getting a session's families into CoachOS from whatever the owner already
@@ -41,30 +42,24 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   return null;
 }
 
-/** "Mía" and "mia " are the same child; an accent added on re-import must not make a second one. */
-export function sameName(a: string | null | undefined, b: string | null | undefined): boolean {
-  const norm = (s: string | null | undefined) =>
-    (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-  return norm(a) !== "" && norm(a) === norm(b);
-}
-
-/** The last ten digits — how a stored number is compared, whatever format it was saved in. */
-export function phoneKey(raw: string | null | undefined): string | null {
-  const digits = (raw ?? "").replace(/\D/g, "");
-  return digits.length >= 10 ? digits.slice(-10) : null;
-}
+// Who counts as the same person is decided in one place, lib/identity.ts.
+export { sameName, phoneKey } from "@/lib/identity";
 
 const clean = (v: unknown) => {
   const s = typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "";
   return s.length ? s : null;
 };
 
-/** "Raquel M. Garcia" → ["Raquel", "Garcia"]; a single word is a first name. */
+/**
+ * "Mia Sofia Garcia" → ["Mia Sofia", "Garcia"]; a single word is a first name.
+ * Every word before the last stays in the first name — dropping the middle
+ * made "Mia Sofia" on one list and "Mia" on the next look like two children.
+ */
 export function splitName(full: string | null): [string | null, string | null] {
   const parts = (full ?? "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return [null, null];
   if (parts.length === 1) return [parts[0], null];
-  return [parts[0], parts[parts.length - 1]];
+  return [parts.slice(0, -1).join(" "), parts[parts.length - 1]];
 }
 
 // ---------------------------------------------------------------------------
@@ -191,21 +186,24 @@ export type RowCheck =
   | { ok: true; existingParent: string | null; alreadyEnrolled: boolean }
   | { ok: false; problem: string };
 
+/** Who this row's family is on file as, if anyone. */
+function familyOf(directory: Directory, row: RosterRow) {
+  return directory.family({
+    phone: row.parent_phone,
+    parentFirst: clean(row.parent_first_name),
+    parentLast: clean(row.parent_last_name),
+    childFirst: clean(row.child_first_name),
+    childLast: clean(row.child_last_name),
+  });
+}
+
 /** What the review screen says about each row before anything is saved. */
 export async function checkRows(
   supabase: OpsClient,
   programId: string | null,
   rows: RosterRow[]
 ): Promise<RowCheck[]> {
-  const { data: parents } = await supabase
-    .from("parents")
-    .select("id, first_name, last_name, phone, student_parents(students(id, first_name))");
-
-  const byPhone = new Map<string, any>();
-  for (const p of parents || []) {
-    const key = phoneKey(p.phone);
-    if (key) byPhone.set(key, p);
-  }
+  const directory = await Directory.load(supabase);
 
   let enrolledStudentIds = new Set<string>();
   if (programId) {
@@ -220,21 +218,17 @@ export async function checkRows(
   return rows.map((row) => {
     if (!clean(row.child_first_name)) return { ok: false, problem: "Child's first name is missing" };
     if (!clean(row.child_last_name)) return { ok: false, problem: "Child's last name is missing" };
-    const key = phoneKey(row.parent_phone);
-    if (!key || !normalizePhone(row.parent_phone)) {
+    if (!phoneKey(row.parent_phone) || !normalizePhone(row.parent_phone)) {
       return { ok: false, problem: "Parent's phone number is missing or incomplete" };
     }
-    const existing = byPhone.get(key);
-    if (!existing && !clean(row.parent_first_name)) {
+    const { parent, child } = familyOf(directory, row);
+    if (!parent && !clean(row.parent_first_name)) {
       return { ok: false, problem: "Parent's name is missing" };
     }
-    const sibling = existing?.student_parents
-      ?.map((sp: any) => sp.students)
-      .find((s: any) => s && sameName(s.first_name, row.child_first_name));
     return {
       ok: true,
-      existingParent: existing ? `${existing.first_name} ${existing.last_name}` : null,
-      alreadyEnrolled: !!sibling && enrolledStudentIds.has(sibling.id),
+      existingParent: parent ? `${parent.first_name} ${parent.last_name}` : null,
+      alreadyEnrolled: !!child && enrolledStudentIds.has(child.id),
     };
   });
 }
@@ -250,11 +244,12 @@ export interface ImportResult {
  * Put each row's child on the program, creating the parent and child only when
  * they aren't already on file.
  *
- * Safe to run twice on the same list. A parent is the same parent if the phone
- * number matches, whatever format either was typed in; a child is the same
- * child if that parent already has one with the same first name. So importing
- * a session's list again, or importing a sibling's session that shares a
- * parent, never makes duplicates.
+ * Safe to run twice on the same list. Who is already on file is decided by
+ * lib/identity.ts: a parent by phone number, whatever format either was typed
+ * in; a child by that parent's child with the same first name, middle name or
+ * not; and a family whose number changed by the child and parent both having
+ * the same names. So importing a session's list again, or a sibling's session
+ * that shares a parent, never makes duplicates.
  */
 export async function importRows(
   supabase: OpsClient,
@@ -263,13 +258,7 @@ export async function importRows(
 ): Promise<ImportResult> {
   const result: ImportResult = { enrolled: 0, alreadyEnrolled: 0, newParents: 0, skipped: [] };
   const checks = await checkRows(supabase, programId, rows);
-
-  const { data: parents } = await supabase.from("parents").select("id, phone");
-  const parentByPhone = new Map<string, string>();
-  for (const p of parents || []) {
-    const key = phoneKey(p.phone);
-    if (key) parentByPhone.set(key, p.id);
-  }
+  const directory = await Directory.load(supabase);
 
   for (let i = 0; i < rows.length; i++) {
     const check = checks[i];
@@ -280,10 +269,11 @@ export async function importRows(
     const row = rows[i];
     const childFirst = clean(row.child_first_name)!;
     const childLast = clean(row.child_last_name)!;
-    const key = phoneKey(row.parent_phone)!;
 
-    let parentId = parentByPhone.get(key);
-    if (!parentId) {
+    // Looked up again rather than taken from the check: an earlier row in this
+    // same list may have just created the family.
+    let { parent, child } = familyOf(directory, row);
+    if (!parent) {
       const { data, error } = await supabase
         .from("parents")
         .insert({
@@ -293,41 +283,35 @@ export async function importRows(
           email: clean(row.parent_email),
           preferred_payment: "zelle",
         })
-        .select("id")
+        .select("id, first_name, last_name, phone")
         .single();
       if (error) {
         result.skipped.push({ row: i, problem: error.message });
         continue;
       }
-      parentId = data.id as string;
-      parentByPhone.set(key, parentId);
+      parent = data;
+      directory.addParent(data);
       result.newParents++;
     }
 
-    // The same child, already linked to this parent?
-    const { data: siblings } = await supabase
-      .from("student_parents")
-      .select("students(id, first_name)")
-      .eq("parent_id", parentId);
-    let studentId: string | undefined = (siblings || [])
-      .map((s: any) => s.students)
-      .find((s: any) => s && sameName(s.first_name, childFirst))?.id;
-
-    if (!studentId) {
+    if (!child) {
       const { data, error } = await supabase
         .from("students")
         .insert({ first_name: childFirst, last_name: childLast, grade: clean(row.grade) })
-        .select("id")
+        .select("id, first_name, last_name, grade, date_of_birth, medical_notes, notes, status")
         .single();
       if (error) {
         result.skipped.push({ row: i, problem: error.message });
         continue;
       }
-      studentId = data.id as string;
+      child = { ...(data as Omit<ChildOnFile, "parents">), parents: [] };
+      directory.addChild(child);
       await supabase
         .from("student_parents")
-        .insert({ student_id: studentId, parent_id: parentId, relationship: "parent" });
+        .insert({ student_id: child.id, parent_id: parent.id, relationship: "parent" });
+      directory.linkChild(child.id, parent);
     }
+    const studentId = child.id;
 
     const { data: existing } = await supabase
       .from("enrollments")

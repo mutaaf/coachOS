@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { createParent, updateParent } from "@/lib/actions/students";
 import { useAction } from "@/lib/use-action";
 import type { Parent } from "@/types/database";
+import type { ParentOnFile } from "@/lib/identity";
+import { SamePersonPrompt, parentMatches } from "@/components/same-person-prompt";
+import { toast } from "sonner";
 
 interface ParentFormDialogProps {
   open: boolean;
@@ -20,12 +23,14 @@ interface ParentFormDialogProps {
 export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialogProps) {
   const { run, pending } = useAction();
   const [paymentMethod, setPaymentMethod] = useState<string>(parent?.preferred_payment || "cash");
+  const [asking, setAsking] = useState<{ formData: FormData; matches: ParentOnFile[] } | null>(null);
 
   // The dialog stays mounted, empty, until a parent is chosen, so state set
   // only on mount opened every edit on "Cash" with no Zelle field — and saving
   // a new phone number switched a Zelle family to cash. Set it on each opening.
   useEffect(() => {
     if (open) setPaymentMethod(parent?.preferred_payment || "cash");
+    if (!open) setAsking(null);
   }, [open, parent]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -34,17 +39,53 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
 
     // These report failure by returning an error, so the old try/catch never
     // fired and a parent that failed to save still said "Parent added".
-    const ok = parent
-      ? await run(() => updateParent(parent.id, formData), {
-          success: "Parent updated",
-          error: "The parent wasn't updated",
-        })
-      : await run(() => createParent(formData), {
-          success: "Parent added",
-          error: "The parent wasn't added",
-        });
+    if (parent) {
+      const ok = await run(() => updateParent(parent.id, formData), {
+        success: "Parent updated",
+        error: "The parent wasn't updated",
+      });
+      if (ok) onOpenChange(false);
+      return;
+    }
+    await add(formData);
+  }
 
-    if (ok) onOpenChange(false);
+  async function add(formData: FormData) {
+    // That phone number already on file: ask before adding a second parent.
+    const found: { matches?: ParentOnFile[] } = {};
+    const ok = await run(
+      async () => {
+        const result = await createParent(formData);
+        if ("matches" in result && result.matches) {
+          found.matches = result.matches;
+          return;
+        }
+        return result;
+      },
+      { error: "The parent wasn't added" }
+    );
+    if (found.matches) {
+      setAsking({ formData, matches: found.matches });
+      return;
+    }
+    if (ok) {
+      toast.success("Parent added");
+      onOpenChange(false);
+    }
+  }
+
+  function keepOnFile(id: string) {
+    const match = asking?.matches.find((m) => m.id === id);
+    toast.success(match ? `${match.first_name} ${match.last_name} is already on file — nothing added` : "Already on file");
+    onOpenChange(false);
+  }
+
+  function addAnyway() {
+    if (!asking) return;
+    const formData = new FormData();
+    asking.formData.forEach((v, k) => formData.set(k, v));
+    formData.set("confirm_new", "1");
+    void add(formData);
   }
 
   return (
@@ -103,7 +144,19 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" name="notes" defaultValue={parent?.notes || ""} />
           </div>
-          <div className="flex justify-end gap-3 pt-2">
+          {asking && (
+            <SamePersonPrompt
+              question="Is this the same parent?"
+              matches={parentMatches(asking.matches)}
+              sameLabel="Yes, keep this one"
+              newLabel="No, add a new parent"
+              onSame={keepOnFile}
+              onNew={addAnyway}
+              onBack={() => setAsking(null)}
+              disabled={pending}
+            />
+          )}
+          <div className={asking ? "hidden" : "flex justify-end gap-3 pt-2"}>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={pending}>{pending ? "Saving..." : parent ? "Update" : "Add Parent"}</Button>
           </div>

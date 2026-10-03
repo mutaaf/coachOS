@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Target, Plus, Phone, Mail, MapPin, Users, ArrowRight, MessageSquare, CheckCircle, Pencil, Trash2 } from "lucide-react";
 import type { Lead } from "@/types/database";
 import { formatDateOnly, isPastDue } from "@/lib/dates";
+import { useAction } from "@/lib/use-action";
 
 const STAGES = [
   { value: "identified", label: "Identified", color: "bg-gray-100 text-gray-700" },
@@ -41,15 +42,14 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
     leads: leads.filter((l) => l.stage === stage.value),
   }));
 
+  // One at a time: a double tap on Add Lead or Convert used to make two.
+  const { run, pending } = useAction();
+
   async function handleAddLead(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    try {
-      await createLead(new FormData(e.currentTarget));
-      toast.success("Lead added");
-      setShowAddLead(false);
-    } catch {
-      toast.error("Failed to add lead");
-    }
+    const formData = new FormData(e.currentTarget);
+    const ok = await run(() => createLead(formData), { success: "Lead added", error: "The lead wasn't added" });
+    if (ok) setShowAddLead(false);
   }
 
   async function handleStageChange(leadId: string, newStage: string) {
@@ -108,13 +108,11 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
   }
 
   async function handleConvert(leadId: string) {
-    try {
-      await convertLeadToSchool(leadId);
-      toast.success("Lead converted to school!");
-      setShowActivity(false);
-    } catch {
-      toast.error("Failed to convert lead");
-    }
+    const ok = await run(() => convertLeadToSchool(leadId), {
+      success: "Lead converted to school!",
+      error: "The lead wasn't converted",
+    });
+    if (ok) setShowActivity(false);
   }
 
   return (
@@ -217,7 +215,7 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
             </div>
             <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setShowAddLead(false)}>Cancel</Button>
-              <Button type="submit">Add Lead</Button>
+              <Button type="submit" disabled={pending}>{pending ? "Adding..." : "Add Lead"}</Button>
             </div>
           </form>
         </DialogContent>
@@ -270,7 +268,7 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
 
                 {/* Convert Button */}
                 {selectedLead.stage !== "signed" && selectedLead.stage !== "lost" && (
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleConvert(selectedLead.id)}>
+                  <Button variant="outline" size="sm" className="w-full" disabled={pending} onClick={() => handleConvert(selectedLead.id)}>
                     <CheckCircle className="h-4 w-4 mr-2" /> Convert to School
                   </Button>
                 )}
