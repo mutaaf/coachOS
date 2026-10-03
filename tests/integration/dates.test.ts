@@ -17,6 +17,8 @@ import {
   dayLabel,
   greeting,
   sessionDayPhrase,
+  businessInstant,
+  formatBusinessTime,
 } from "@/lib/dates";
 
 /**
@@ -141,6 +143,19 @@ describe("stored days and the business's clock", () => {
     expect(sessionDayPhrase("2026-10-06", tuesdayMorning)).toBe("today's session");
     expect(sessionDayPhrase("2026-10-07", tuesdayMorning)).toBe("tomorrow's session");
     expect(sessionDayPhrase("2026-10-09", tuesdayMorning)).toBe("the session on Friday, October 9");
+  });
+
+  it("puts a practice's time on Dallas's clock, either side of the clocks changing", () => {
+    // Daylight time: Dallas is UTC-5.
+    expect(businessInstant("2026-10-06", "17:00").toISOString()).toBe("2026-10-06T22:00:00.000Z");
+    // Standard time: UTC-6.
+    expect(businessInstant("2026-12-01", "09:00").toISOString()).toBe("2026-12-01T15:00:00.000Z");
+    expect(businessInstant("2026-11-01", "10:00:00").toISOString()).toBe("2026-11-01T16:00:00.000Z");
+    expect(businessInstant("2027-03-14", "16:00").toISOString()).toBe("2027-03-14T21:00:00.000Z");
+  });
+
+  it("shows a moment on Dallas's clock", () => {
+    expect(formatBusinessTime("2026-10-07T04:00:00.000Z")).toBe("Tue, Oct 6, 11:00 PM");
   });
 });
 

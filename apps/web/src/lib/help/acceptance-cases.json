@@ -2412,7 +2412,7 @@
    "On the computer, reopen the session and check the statuses."
   ],
   "expected": [
-   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Valid for 12 hours. The passcode isn't shown again — copy it now.' The copied text names the session's day ('today's session', 'tomorrow's session', or 'the session on' its date) and includes the link and the passcode.",
+   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Works until [day, date, time]. The passcode isn't shown again — copy it now.' The time is 6 hours after the practice ends (or 12 hours from now, if that is later), so a link made the evening before still works at the practice. The copied text names the session's day ('today's session', 'tomorrow's session', or 'the session on' its date) and includes the link and the passcode.",
    "After reopening, the passcode is not shown again.",
    "On the phone, before the passcode is entered, the page shows only 'Take the register' and a passcode box, with no child names. Open register stays disabled until 6 digits are entered.",
    "After unlocking, the page shows the program, school, date and time, 'N of M here', the active children, their medical notes, and Here/Away/Late/Excused buttons.",
@@ -2431,7 +2431,7 @@
    "A fresh coach link and passcode for a test session (Coach link button), opened on a phone in a private window.",
    "A timer.",
    "For the replaced-link check: a second Coach link issued for the same session. There is no separate Revoke button; issuing a new link is the only way to switch off the old one.",
-   "For the expiry check: a link issued at least 12 hours before testing."
+   "For the expiry check: a link whose 'Works until' time has passed (note the time when you issue it)."
   ],
   "steps": [
    "Enter a wrong 6-digit passcode and tap Open register. Note the message.",
@@ -2440,8 +2440,9 @@
    "Try the correct passcode again after 5 minutes, and again after 16 minutes.",
    "Optional: change one character of the link and enter the correct passcode.",
    "Issue link A for a test session and confirm it unlocks. Then close and reopen the session and click Coach link again to issue link B. On the phone, open link A with passcode A, then link B with passcode B.",
-   "Try a link issued more than 12 hours ago with its correct passcode.",
-   "Issue a link for another test session, cancel that session (with a reason), then open the link with its passcode."
+   "Try a link after its 'Works until' time, with its correct passcode.",
+   "Issue a link for another test session, cancel that session (with a reason), then open the link with its passcode.",
+   "Issue a link for a third test session, click Mark Complete on it, then open the link with its passcode."
   ],
   "expected": [
    "Each wrong attempt shows 'That link or passcode is not right.' and no child data.",
@@ -2449,8 +2450,9 @@
    "The link is still locked after 5 minutes and works again after about 15 minutes.",
    "A tampered link gives the same 'not right' message, which reveals nothing about whether the link exists.",
    "Link A is refused with 'This link has been turned off. Ask for a new one.' Link B works.",
-   "The 12-hour-old link is refused with 'This link has expired. Ask for a new one.'",
-   "A link for a cancelled session should be refused. If it still opens and allows saving, record an exception. Also record as an observation that the owner cannot switch off a link without issuing a new one."
+   "The link past its time is refused with 'This link has expired. Ask for a new one.'",
+   "The cancelled session's link is refused with 'This link has been turned off. Ask for a new one.' and shows no children; nothing can be saved. Record as an observation that, short of cancelling, the owner cannot switch off a link without issuing a new one.",
+   "The completed session's link is refused with 'This practice is finished, so its register is closed.'"
   ],
   "evidence": "Screen recording of all passcode attempts with a clock visible. Screenshots of the lock message, the later successful unlock with times, and each refusal message with the time the link was issued and the time it was tested.",
   "phone": true
