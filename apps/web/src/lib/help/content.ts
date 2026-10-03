@@ -302,6 +302,21 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "same-child",
+    title: "“Is this the same child?”",
+    when: "When you add someone already on file",
+    keywords: "duplicate twice same child parent school copy again already on file merge medical note allergy",
+    href: "/students",
+    hrefLabel: "Open Students",
+    tourStep: "students",
+    steps: [
+      { text: "Adding a child with the name of one already on file asks **Is this the same Mia?** and shows who her parents are." },
+      { text: "Tap [[Yes, same child]] and what you typed — a medical note too — goes onto the child you already have, so the coach sees it.", tip: "Tap [[No, add a new child]] only for a different child who shares the name." },
+      { text: "Add Parent asks the same when the phone number is already on file, however it was typed." },
+      { text: "Add to roster, roster imports and Bulk Import find families already on file by themselves, and never add a school with the same name twice." },
+    ],
+  },
+  {
     id: "reset",
     title: "A family's link was shared too widely",
     when: "If someone forwards it around",

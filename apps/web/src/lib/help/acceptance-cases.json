@@ -226,6 +226,35 @@
   "phone": true
  },
  {
+  "id": "ROS-09",
+  "area": "Roster import",
+  "title": "The same child, parent or school is never added twice",
+  "risk": "A second copy of a child is billed twice, and a medical note lands on the copy while the coach's register shows the original with no note.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "A test child “Mia Garcia” is on Students, linked to a test parent “Raquel Garcia” whose phone is saved as (915) 500-2487.",
+   "A test school “Audit Lincoln” is on Schools."
+  ],
+  "steps": [
+   "On Students, tap Add Student. Type “mia” and “GARCIA”, add the medical note “Peanut allergy — EpiPen”, and tap Add Student.",
+   "When it asks “Is this the same mia?”, tap “Yes, same child”.",
+   "Register Mia again for a test session from its public link, using the phone typed 915-500-2487 and a medical note. Confirm the registration and tap Add to roster.",
+   "Import a roster for “audit lincoln” (typed as a new school) with the row “Mia Sofia Garcia, Raquel Garcia, 214-555-0177”.",
+   "On Students, tap Add Parent with the phone 9155002487.",
+   "On Marketing, tap Add Lead, type a school name, and double-tap Add Lead."
+  ],
+  "expected": [
+   "There is still one Mia Garcia on Students, and her medical notes include both notes.",
+   "Add to roster puts the original Mia on the session; it does not ask and does not add a copy.",
+   "The import lands on the existing Audit Lincoln, and Mia is not added again.",
+   "Add Parent asks “Is this the same parent?” and shows the parent already on file.",
+   "Exactly one lead is added."
+  ],
+  "evidence": "Screenshots of the “Is this the same…?” questions, Mia's record with both notes, and the Schools and Marketing lists.",
+  "phone": false
+ },
+ {
   "id": "ONB-01",
   "area": "Onboarding",
   "title": "The first-login tour starts once, can be skipped, can be replayed from the menu, and doesn’t restart on another device",

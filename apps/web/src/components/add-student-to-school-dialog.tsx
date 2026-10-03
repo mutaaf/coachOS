@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import { createStudent, enrollStudent } from "@/lib/actions/students";
 import type { Program } from "@/types/database";
+import { SamePersonPrompt, childMatches, type SameMatch } from "@/components/same-person-prompt";
 
 interface AddStudentToSchoolDialogProps {
   open: boolean;
@@ -60,6 +61,7 @@ export function AddStudentToSchoolDialog({
   >([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedProgramId, setSelectedProgramId] = useState("");
+  const [asking, setAsking] = useState<{ formData: FormData; matches: SameMatch[] } | null>(null);
 
   const activePrograms = programs.filter((p) => p.status === "active" || p.status === "upcoming");
   const programOptions = activePrograms.map((p) => ({
@@ -96,6 +98,7 @@ export function AddStudentToSchoolDialog({
       setMode("existing");
       setSelectedStudentId("");
       setSelectedProgramId("");
+      setAsking(null);
     }
   }, [open]);
 
@@ -132,16 +135,32 @@ export function AddStudentToSchoolDialog({
       toast.error("Please select a program");
       return;
     }
+    createAndEnroll(formData);
+  }
 
+  function answer(field: "existing_student_id" | "confirm_new", value: string) {
+    if (!asking) return;
+    const formData = new FormData();
+    asking.formData.forEach((v, k) => formData.set(k, v));
+    formData.set(field, value);
+    createAndEnroll(formData);
+  }
+
+  function createAndEnroll(formData: FormData) {
+    const programId = formData.get("program_id") as string;
     startTransition(async () => {
-      // Create the student
+      // Create the student — or, if one of that name is on file, ask first.
       const createResult = await createStudent(formData);
-      if (createResult.error) {
+      if ("matches" in createResult && createResult.matches) {
+        setAsking({ formData, matches: childMatches(createResult.matches) });
+        return;
+      }
+      if ("error" in createResult && createResult.error) {
         toast.error(createResult.error);
         return;
       }
 
-      const newStudentId = createResult.data?.id;
+      const newStudentId = "data" in createResult ? createResult.data?.id : undefined;
       if (!newStudentId) {
         toast.error("Failed to create student");
         return;
@@ -329,7 +348,20 @@ export function AddStudentToSchoolDialog({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            {asking && (
+              <SamePersonPrompt
+                question={`Is this the same ${asking.formData.get("first_name")}?`}
+                matches={asking.matches}
+                sameLabel="Yes, same child"
+                newLabel="No, add a new child"
+                onSame={(id) => answer("existing_student_id", id)}
+                onNew={() => answer("confirm_new", "1")}
+                onBack={() => setAsking(null)}
+                disabled={isPending}
+              />
+            )}
+
+            <div className={asking ? "hidden" : "flex justify-end gap-2 pt-2"}>
               <Button
                 type="button"
                 variant="outline"

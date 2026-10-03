@@ -4,7 +4,7 @@ import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import type { Registration } from "@/types/database";
-import { sameName } from "@/lib/roster";
+import { Directory, mergeIntoChild, sameName, type ChildOnFile } from "@/lib/identity";
 import { emailRegistration, emailWelcome } from "@/lib/parent-emails";
 
 /**
@@ -122,10 +122,19 @@ export async function submitRegistration(formData: FormData) {
 
 /**
  * Turn a confirmed registration into real records: a parent, a student, the link
- * between them, and an enrollment. Idempotent on re-run — an existing parent is
- * matched by phone rather than duplicated.
+ * between them, and an enrollment.
+ *
+ * A family already on file is used, not copied (lib/identity.ts): the parent
+ * by phone however it was typed, the child by that parent's child of the same
+ * name, and the registration's medical notes are added to that child — so the
+ * allergy reaches the register the coach actually reads. A child with the same
+ * name under a family it doesn't recognise is returned as `matches` for the
+ * Boss to answer "Is this the same Mia?"; she answers with `choice`.
  */
-export async function convertRegistration(registrationId: string) {
+export async function convertRegistration(
+  registrationId: string,
+  choice: { studentId?: string; createNew?: boolean } = {}
+): Promise<{ error: string } | { success: true } | { matches: ChildOnFile[] }> {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
@@ -147,36 +156,56 @@ export async function convertRegistration(registrationId: string) {
     return { error: "Only confirmed registrations can be converted." };
   }
 
-  // Parent — reuse an existing record with the same phone number.
-  let parentId = reg.parent_id as string | null;
+  const directory = await Directory.load(supabase);
+  const family = directory.family({
+    phone: reg.parent_phone,
+    parentFirst: reg.parent_first_name,
+    parentLast: reg.parent_last_name,
+    childFirst: reg.child_first_name,
+    childLast: reg.child_last_name,
+  });
+
+  // The child: the one the Boss picked, the family's own, or a new one — but
+  // never a new one without asking while someone of that name is on file.
+  let child = reg.student_id ? null : family.child;
+  if (choice.studentId) {
+    child = family.possible.find((c) => c.id === choice.studentId) ?? null;
+    if (!child) return { error: "That child isn't a match for this registration any more. Try again." };
+  } else if (!reg.student_id && !child && family.possible.length && !choice.createNew) {
+    return { matches: family.possible };
+  }
+
+  // Parent — reuse the family's record, whatever format the phone was typed in.
+  let parentId = (reg.parent_id as string | null) ?? family.parent?.id ?? null;
   if (!parentId) {
-    const { data: existingParent } = await supabase
+    const { data: newParent, error: parentError } = await supabase
       .from("parents")
+      .insert({
+        first_name: reg.parent_first_name,
+        last_name: reg.parent_last_name,
+        phone: reg.parent_phone,
+        email: reg.parent_email,
+      })
       .select("id")
-      .eq("phone", reg.parent_phone)
-      .maybeSingle();
+      .single();
 
-    if (existingParent) {
-      parentId = existingParent.id;
-    } else {
-      const { data: newParent, error: parentError } = await supabase
-        .from("parents")
-        .insert({
-          first_name: reg.parent_first_name,
-          last_name: reg.parent_last_name,
-          phone: reg.parent_phone,
-          email: reg.parent_email,
-        })
-        .select("id")
-        .single();
-
-      if (parentError) return { error: parentError.message };
-      parentId = newParent.id;
-    }
+    if (parentError) return { error: parentError.message };
+    parentId = newParent.id;
   }
 
   // Student
-  let studentId = reg.student_id as string | null;
+  let studentId = (reg.student_id as string | null) ?? child?.id ?? null;
+  if (child) {
+    try {
+      await mergeIntoChild(supabase, child, {
+        grade: reg.child_grade,
+        date_of_birth: reg.child_date_of_birth,
+        medical_notes: reg.medical_notes,
+      });
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Couldn't update the child's notes." };
+    }
+  }
   if (!studentId) {
     const { data: newStudent, error: studentError } = await supabase
       .from("students")

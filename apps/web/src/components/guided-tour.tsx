@@ -91,14 +91,14 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/students",
     target: "main h1",
     title: "Students and parents",
-    body: "Every child and the parents linked to them. Fix a phone number here, add a parent, or move a child between sessions. Siblings share one parent, so a family gets one link and one charge. A child who has left can be archived: off the list, with every payment kept.",
+    body: "Every child and the parents linked to them. Fix a phone number here, add a parent, or move a child between sessions. Siblings share one parent, so a family gets one link and one charge. Adding someone already on file asks \"Is this the same Mia?\" first, so nobody is added twice. A child who has left can be archived: off the list, with every payment kept.",
   },
   {
     id: "registrations",
     path: "/registrations",
     target: "main h1",
     title: "Registrations",
-    body: "New sign-ups from a session's public link. Share the link in a WhatsApp group; parents register themselves, full sessions fill a waitlist, and you add each confirmed child to the roster with one tap.",
+    body: "New sign-ups from a session's public link. Share the link in a WhatsApp group; parents register themselves, full sessions fill a waitlist, and you add each confirmed child to the roster with one tap. A family already on file is used, not copied — their medical notes go onto the child you already have.",
   },
   {
     id: "schedule",

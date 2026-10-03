@@ -3,6 +3,7 @@
 import { requireSignedIn } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { findChildrenNamed, findParentByPhone, mergeIntoChild } from "@/lib/identity";
 
 export async function createStudent(formData: FormData) {
   await requireSignedIn();
@@ -17,6 +18,29 @@ export async function createStudent(formData: FormData) {
 
   if (!first_name || !last_name) {
     return { error: "First name and last name are required." };
+  }
+
+  // "Yes, that's her": what was typed goes onto the child already on file —
+  // a new medical note included — rather than onto a copy.
+  const existingId = formData.get("existing_student_id") as string | null;
+  if (existingId) {
+    const { data: child, error } = await supabase.from("students").select("*").eq("id", existingId).single();
+    if (error || !child) return { error: error?.message ?? "That child isn't on file any more." };
+    try {
+      await mergeIntoChild(supabase, child, { grade, date_of_birth, medical_notes, notes });
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Couldn't update the child." };
+    }
+    const { data: merged } = await supabase.from("students").select("*").eq("id", existingId).single();
+    revalidatePath("/students");
+    revalidatePath(`/students/${existingId}`);
+    return { data: merged ?? child, existing: true };
+  }
+
+  // Someone of that name already on file: ask "Is this the same Mia?" first.
+  if (!formData.get("confirm_new")) {
+    const matches = await findChildrenNamed(supabase, first_name, last_name);
+    if (matches.length) return { matches };
   }
 
   const { data, error } = await supabase
@@ -97,6 +121,12 @@ export async function createParent(formData: FormData) {
 
   if (!first_name || !last_name || !phone) {
     return { error: "First name, last name, and phone are required." };
+  }
+
+  // The same phone, however it was typed, is the parent already on file.
+  if (!formData.get("confirm_new")) {
+    const match = await findParentByPhone(supabase, phone);
+    if (match) return { matches: [match] };
   }
 
   const { data, error } = await supabase
