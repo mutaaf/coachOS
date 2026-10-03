@@ -3,13 +3,15 @@
 import { requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { foldName, phoneKey, sameFirstName, sameName } from "@/lib/identity";
-import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
+import { Directory, foldName, phoneKey, sameFirstName, sameName, type ParentOnFile } from "@/lib/identity";
+import { normalizePhone, NOT_A_PHONE, splitName } from "@/lib/roster";
 
 /**
  * Bulk Import never adds someone already on file, or the same row twice: a
  * school with the same name, a parent with the same phone, a child with the
- * same name (lib/identity.ts). Those rows come back as errors saying so.
+ * same name (lib/identity.ts). Those rows come back as errors saying so. A
+ * student row's parent is the exception: one already on file is linked, not
+ * refused.
  */
 
 export type BulkSchoolRow = {
@@ -92,15 +94,20 @@ export async function bulkCreateSchools(
   return { created: data?.length ?? 0, errors };
 }
 
+/**
+ * A row's parent is found by phone, as lib/roster.ts does, and created only
+ * when nobody on file has that number. Each child is saved linked to them —
+ * a child with no parent has nobody to message and gets no invoices.
+ */
 export async function bulkCreateStudents(
   rows: BulkStudentRow[]
 ): Promise<BulkImportResult> {
   await requireSignedIn();
   const supabase = createAdminSupabase();
   const errors: { row: number; message: string }[] = [];
-  const validRows: { first_name: string; last_name: string; grade: string | null }[] = [];
-  const validIndices: number[] = [];
+  let created = 0;
 
+  const directory = await Directory.load(supabase);
   const { data: onFile } = await supabase.from("students").select("first_name, last_name");
   const known: { first_name: string; last_name: string }[] = [...(onFile ?? [])];
 
@@ -123,33 +130,61 @@ export async function bulkCreateStudents(
       });
       continue;
     }
+
+    const parentName = row.parent_name?.trim() || "";
+    const rawPhone = row.parent_phone?.trim() || "";
+    let parent: ParentOnFile | null = null;
+    if (rawPhone) {
+      const phone = normalizePhone(rawPhone);
+      if (!phone) {
+        errors.push({ row: i, message: `${rawPhone}: ${NOT_A_PHONE}` });
+        continue;
+      }
+      parent = directory.parentByPhone(phone);
+      if (!parent) {
+        if (!parentName) {
+          errors.push({ row: i, message: `Add the parent's name for ${rawPhone}, so they can be saved with ${first_name}` });
+          continue;
+        }
+        const [parentFirst, parentLast] = splitName(parentName);
+        const { data, error } = await supabase
+          .from("parents")
+          .insert({ first_name: parentFirst, last_name: parentLast ?? last_name, phone })
+          .select("id, first_name, last_name, phone")
+          .single();
+        if (error) {
+          errors.push({ row: i, message: error.message });
+          continue;
+        }
+        parent = data as ParentOnFile;
+        directory.addParent(parent);
+      }
+    } else if (parentName) {
+      errors.push({ row: i, message: `Add ${parentName}'s phone number, so they can be saved with ${first_name}` });
+      continue;
+    }
+
+    const { data: child, error } = await supabase
+      .from("students")
+      .insert({ first_name, last_name, grade: row.grade?.trim() || null })
+      .select("id")
+      .single();
+    if (error) {
+      errors.push({ row: i, message: error.message });
+      continue;
+    }
     known.push({ first_name, last_name });
-    validRows.push({
-      first_name,
-      last_name,
-      grade: row.grade?.trim() || null,
-    });
-    validIndices.push(i);
+    created++;
+    if (parent) {
+      const { error: linkError } = await supabase
+        .from("student_parents")
+        .insert({ student_id: child.id, parent_id: parent.id, relationship: "parent" });
+      if (linkError) errors.push({ row: i, message: `${first_name} was added, but not linked to their parent: ${linkError.message}` });
+    }
   }
 
-  if (validRows.length === 0) {
-    return { created: 0, errors };
-  }
-
-  const { data, error } = await supabase
-    .from("students")
-    .insert(validRows)
-    .select();
-
-  if (error) {
-    return {
-      created: 0,
-      errors: [...errors, { row: -1, message: error.message }],
-    };
-  }
-
-  revalidatePath("/students");
-  return { created: data?.length ?? 0, errors };
+  if (created > 0) revalidatePath("/students");
+  return { created, errors };
 }
 
 export async function bulkCreateParents(

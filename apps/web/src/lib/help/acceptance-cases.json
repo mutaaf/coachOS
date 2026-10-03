@@ -281,6 +281,31 @@
   "phone": false
  },
  {
+  "id": "ROS-11",
+  "area": "Roster import",
+  "title": "Bulk Students saves each child's parent",
+  "risk": "A child is added with no parent, so there is nobody to message and no invoices are made for them.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "A test parent is already on file with a test phone number, for example “Raquel Test” on (214) 555-0101."
+  ],
+  "steps": [
+   "Go to Students and press “Bulk Students”.",
+   "Row 1: “Omar Test”, Parent Name “Ayesha Test”, Parent Phone a new test number.",
+   "Row 2: “Leo Test”, Parent Name blank, Parent Phone “214.555.0101” (Raquel's number, typed differently).",
+   "Row 3: “Zara Test”, Parent Name “Ayesha Test”, no Parent Phone.",
+   "Press “Import All”."
+  ],
+  "expected": [
+   "It says 2 were imported. Row 3 stays, with “Add Ayesha Test's phone number, so they can be saved with Zara”.",
+   "On Students, Omar's row shows Ayesha Test as his parent, and Leo's shows Raquel Test.",
+   "On Parents, Ayesha Test appears once, and Raquel Test is still there once — no copy."
+  ],
+  "evidence": "The import screen after pressing Import All, and the Students and Parents lists.",
+  "phone": false
+ },
+ {
   "id": "ONB-01",
   "area": "Onboarding",
   "title": "The first-login tour starts once, can be skipped, can be replayed from the menu, and doesn’t restart on another device",
