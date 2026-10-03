@@ -174,7 +174,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Payments**, find the family's row and tap the 🔗 link icon — their payment page link is copied." },
       { text: "Paste it into a WhatsApp message to them." },
-      { text: "On their page they choose **Bank account** (free) or **Card** (the fee is shown first). After that it's automatic on the 1st.", tip: "They can turn it off or switch card ↔ bank on the same page." },
+      { text: "On their page they choose **Bank account** (free) or **Card** (the fee is shown first). After that it's automatic on the day each invoice is due.", tip: "They can turn it off or switch card ↔ bank on the same page." },
     ],
   },
   {
@@ -366,13 +366,13 @@ export const TASKS: HelpTask[] = [
   {
     id: "settings",
     title: "Change your details",
-    when: "Zelle number, emails, fee, business name",
-    keywords: "settings change zelle number email reply business name card fee",
+    when: "Zelle number, emails, fees, due day, business name",
+    keywords: "settings change zelle number email reply sender business name card fee monthly fee due day",
     href: "/settings",
     hrefLabel: "Open Settings",
     tourStep: "settings",
     steps: [
-      { text: "In **Settings**, Payments has your Zelle details, the card fee and where Zelle alerts go; Messaging has where email replies go; General has the business name." },
+      { text: "In **Settings**, Payments has the day invoices are due (1 to 28), the fee a new session starts with, your Zelle details, the card fee and where Zelle alerts go; Messaging has who emails come from and where replies go; General has the business name." },
       { text: "Change what you need and tap [[Save]] — it takes effect everywhere at once. Each address has a Copy button.", tip: "Leave the Stripe card to Mutaaf — it switches between test and live payments.", careful: true },
     ],
   },
@@ -380,7 +380,7 @@ export const TASKS: HelpTask[] = [
 
 /** Things CoachOS does by itself, so she knows what not to do. */
 export const AUTOMATIC: { when: string; what: string; detail: string }[] = [
-  { when: "On the 1st", what: "Every family is invoiced for the month.", detail: "One invoice per child, for the session's monthly fee. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are skipped. A child who joins mid-month has a week to pay." },
+  { when: "On the 1st", what: "Every family is invoiced for the month.", detail: "One invoice per child, for the session's monthly fee, due on the Payment Due Day in Settings (the 1st unless you change it). Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are skipped. A child who joins mid-month has a week to pay." },
   { when: "About 1 pm", what: "Autopay families are charged.", detail: "Once a day; siblings are one charge. Bank payments show {processing} for a few days." },
   { when: "Within 15 min", what: "Forwarded Zelle payments are recorded.", detail: "Matched to the family and marked paid. If CoachOS isn't sure, it asks you." },
   { when: "Each payment", what: "A receipt is emailed", detail: "to families who've given an email. Their replies come to your inbox." },
@@ -396,7 +396,7 @@ export const GLOSSARY: { term: string; meaning: string }[] = [
   { term: "{waived}", meaning: "You let this one go. Nothing is owed." },
   { term: "**Outbox**", meaning: "Messages ready to send from your phone. CoachOS writes them; you press send." },
   { term: "**Payment page**", meaning: "Each family's private page: what they owe, Zelle details, autopay. Only people with the link see it." },
-  { term: "**Autopay**", meaning: "A family saves a bank account (free) or card (small fee) once and pays on the 1st by itself." },
+  { term: "**Autopay**", meaning: "A family saves a bank account (free) or card (small fee) once and pays on the due day by itself." },
   { term: "**Test mode**", meaning: "Practice mode: card and bank payments aren't real. Shown by an amber badge. Mutaaf switches it to live." },
 ];
 

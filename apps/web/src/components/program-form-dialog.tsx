@@ -34,6 +34,8 @@ interface ProgramFormDialogProps {
   defaultValues?: Partial<Program>;
   /** Marketing-site listings this program can be shown as. */
   websiteListings?: WebsiteListingOption[];
+  /** Default Monthly Fee from Settings, filled in for a new program. */
+  defaultMonthlyFee?: string;
 }
 
 const statusOptions = [
@@ -51,6 +53,7 @@ export function ProgramFormDialog({
   program,
   defaultValues,
   websiteListings = [],
+  defaultMonthlyFee = "",
 }: ProgramFormDialogProps) {
   const router = useRouter();
   const isEditing = !!program;
@@ -208,7 +211,7 @@ export function ProgramFormDialog({
                 min="0"
                 step="0.01"
                 placeholder="120.00"
-                defaultValue={defaults?.monthly_fee ?? 120}
+                defaultValue={defaults?.monthly_fee ?? defaultMonthlyFee}
                 required
                 disabled={isSubmitting}
               />

@@ -63,6 +63,7 @@ interface SchoolDetailClientProps {
   allSchools: (School & { program_count: number; student_count: number })[];
   allParents: Parent[];
   websiteListings: WebsiteListing[];
+  defaultMonthlyFee: string;
 }
 
 function getStatusBadgeVariant(
@@ -146,6 +147,7 @@ export function SchoolDetailClient({
   allSchools,
   allParents,
   websiteListings,
+  defaultMonthlyFee,
 }: SchoolDetailClientProps) {
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -986,6 +988,7 @@ export function SchoolDetailClient({
         program={editingProgram}
         defaultValues={duplicatingProgram}
         websiteListings={websiteListings}
+        defaultMonthlyFee={defaultMonthlyFee}
       />
 
       <AddStudentToSchoolDialog
@@ -1074,6 +1077,7 @@ export function SchoolDetailClient({
         ]}
         initialSchoolId={school.id}
         initialProgramId={rosterProgramId ?? undefined}
+        defaultMonthlyFee={defaultMonthlyFee}
       />
     </div>
   );

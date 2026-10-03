@@ -19,6 +19,7 @@ type SchoolWithCounts = School & {
 interface SchoolsPageClientProps {
   schools: SchoolWithCounts[];
   importOptions: ImportSchoolOption[];
+  defaultMonthlyFee: string;
 }
 
 function getStatusBadgeVariant(
@@ -36,7 +37,7 @@ function getStatusBadgeVariant(
   }
 }
 
-export function SchoolsPageClient({ schools, importOptions }: SchoolsPageClientProps) {
+export function SchoolsPageClient({ schools, importOptions, defaultMonthlyFee }: SchoolsPageClientProps) {
   const [rosterOpen, setRosterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -174,7 +175,9 @@ export function SchoolsPageClient({ schools, importOptions }: SchoolsPageClientP
         }}
         school={editingSchool}
       />
-      <RosterImportDialog open={rosterOpen} onOpenChange={setRosterOpen} schools={importOptions} />
+      <RosterImportDialog open={rosterOpen} onOpenChange={setRosterOpen} schools={importOptions}
+        defaultMonthlyFee={defaultMonthlyFee}
+      />
     </>
   );
 }

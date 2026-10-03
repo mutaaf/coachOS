@@ -84,10 +84,13 @@ function ConfigField({
     case "number":
       return (
         <div className="space-y-2">
-          <Label className="text-sm">{item.label}</Label>
+          <Label className="text-sm" htmlFor={`cfg-${item.key}`}>{item.label}</Label>
           {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
           <Input
+            id={`cfg-${item.key}`}
             type="number"
+            min={item.key === "payment_due_day" ? 1 : 0}
+            max={item.key === "payment_due_day" ? 28 : undefined}
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />

@@ -12,7 +12,7 @@
   ],
   "steps": [
    "Go to Schools and press “Import a roster”.",
-   "Under School, choose “+ New school” and type the test school name. Under Session, choose “+ New session”, type “Audit WhatsApp” and leave the monthly fee at 100. Press “Next”.",
+   "Under School, choose “+ New school” and type the test school name. Under Session, choose “+ New session”, type “Audit WhatsApp” and leave the monthly fee as filled in (the Default Monthly Fee from Settings). Press “Next”.",
    "Press “Add screenshots or a CSV” and choose the WhatsApp screenshot. Check that its file name appears in the list, then press “Read roster”. Note how long it takes (the screen says screenshots take about half a minute).",
    "On the review screen, read the summary line (“N children found. N need a fix before they can be added.”) and compare every row with the screenshot.",
    "Check that the owner’s own entry (“You” or admin) does not appear as a row.",
@@ -380,14 +380,14 @@
    "Without pressing the eye button, press Copy next to Zelle Email Key and paste the result into your notes.",
    "Press the eye (“Show”) button and compare the key with what you pasted. Press it again to hide the key.",
    "Switch to another tab and back, and check that the key is hidden again.",
-   "For “Replies Go To”, press Copy and then the “Email” button. For “Coach Phone” (General tab), press the “WhatsApp” button.",
+   "For “Replies Go To”, press Copy and then the “Email” button.",
    "In “Zelle email setup”, press “Copy address”, “Open Gmail”, “Open Apps Script” and “Copy the script”, and open “For whoever sets this up”.",
    "Repeat the Show and Copy checks on the phone."
   ],
   "expected": [
    "Secret keys show as dots until “Show” is pressed, and go back to dots when hidden.",
    "Copy copies the full key while it stays hidden, and the pasted value matches what “Show” displays.",
-   "The Email button opens a new message to that address, and the WhatsApp button opens a chat with that number. On the phone these buttons show as icons only.",
+   "The Email button opens a new message to that address. On the phone it shows as an icon only.",
    "“Open Gmail” and “Open Apps Script” open Google signed in as the Zelle Alerts Gmail. The copied script contains the key, but the key shown on screen under “For whoever sets this up” stays as dots."
   ],
   "evidence": "Screenshots of the hidden and shown states (black out the shown key before filing them), and a note of what each button did.",
@@ -432,7 +432,8 @@
   ],
   "steps": [
    "In “Replies Go To”, type “owner-at-gmail” (no @). Note whether the “Email” button disappears. Save.",
-   "In “Coach Phone”, type “555-12”. Note whether the “WhatsApp” button disappears. Save.",
+   "In Settings → Payments, type “45” in “Payment Due Day”. Save. Then try “0”.",
+   "In Settings → Messaging, type “garbage” in “Send Email As”. Save. Then try “Rising Stars <payments@gmail.com>”.",
    "In “Card Fee (%)”, type a negative number, then a very large number. Save each time.",
    "Type a value with spaces before and after it. Save and reload the page.",
    "Clear one of the three Zelle and email addresses completely and save. Check the Getting started list.",
@@ -440,7 +441,7 @@
    "Put all the original values back."
   ],
   "expected": [
-   "Invalid values are refused with a clear message and nothing is saved: an email without '@' ('… isn't an email address'), a phone with fewer than 10 digits, a link not starting https://, a negative number, a card fee above 10%, and a Zelle entry that is neither a phone number nor an email.",
+   "Invalid values are refused with a clear message and nothing is saved: an email without '@' ('… isn't an email address'), a link not starting https://, a negative number, a card fee above 10%, a Zelle entry that is neither a phone number nor an email, a due day outside 1 to 28 ('pick a day from 1 to 28'), and a sender that isn't a name and an address at risingstars.training.",
    "Spaces before and after a value are removed when it is saved.",
    "Clearing one of the three addresses un-ticks “Check your Zelle details and email addresses”.",
    "Leaving the page without saving throws the change away. Record whether you were warned."
@@ -473,6 +474,33 @@
   ],
   "evidence": "Screenshots of each mode’s label, the confirmation message, the Check connection result and the refusal after signing out.",
   "phone": true
+ },
+ {
+  "id": "SET-05",
+  "area": "Settings",
+  "title": "Payment Due Day and Default Monthly Fee change what the app does",
+  "risk": "Settings says a change is in effect while invoices, payment pages and new sessions carry on as before.",
+  "severity": "high",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "You have the test school and a test family’s payment page link. You have recorded the current Payment Due Day and Default Monthly Fee so you can put them back."
+  ],
+  "steps": [
+   "In Settings → Payments, set Payment Due Day to 15 and Default Monthly Fee to 85. Save.",
+   "Open the family’s payment page and read the small print under the Bank and Card buttons.",
+   "At the test school, press Add Program and look at the Monthly Fee. Close without saving. Press Import a roster, choose “+ New session” and look at the monthly fee.",
+   "Ask Mutaaf to generate next month’s invoices for the test school, then look at their due date on Payments.",
+   "Look through every Settings tab for Coach Name, Coach Phone, reminder times, Welcome Messages, Message Rate Limit or anything about session length.",
+   "Put the original values back and save."
+  ],
+  "expected": [
+   "The payment page says each month’s fee is paid on its due date (the 15th).",
+   "Both forms start with 85 as the monthly fee, and it can be changed.",
+   "Next month’s invoices are due on the 15th.",
+   "None of the removed settings appear, and there is no Scheduling tab."
+  ],
+  "evidence": "Screenshots of the payment page small print, both forms, and the invoice due dates.",
+  "phone": false
  },
  {
   "id": "SEC-01",
@@ -1206,10 +1234,10 @@
   "risk": "New autopay families wait a month to be charged, or a repeated run charges them twice.",
   "severity": "medium",
   "preconditions": [
-   "Test Parent N has an open invoice for this month (due on the 1st, so already due) and autopay off."
+   "Test Parent N has an open invoice for this month that is already due, and autopay off."
   ],
   "steps": [
-   "Open Parent N's pay link and read the small print under the buttons: 'Your current balance of $X will be paid within a day. After that, each month's fee is paid on its due date (the 1st).'",
+   "Open Parent N's pay link and read the small print under the buttons: 'Your current balance of $X will be paid within a day. After that, each month's fee is paid on its due date (the 1st).' The day shown is the Payment Due Day in Settings.",
    "Set up card 4242.",
    "Wait for the next daily run, or ask Mutaaf to trigger it. Then ask Mutaaf to trigger it a SECOND time the same day.",
    "Check Stripe and Payment History."
@@ -2042,7 +2070,7 @@
    "Child A has exactly one invoice for the month, billed to one of the two parents.",
    "A warning toast appears: '1 enrollment(s) skipped — no parent linked to student' (the number covers all such children).",
    "Child B has no invoice. The warning should let the owner identify WHICH child was skipped, but it gives only a count. Record whether the owner could find Child B from what the screen shows.",
-   "Invoices are always due on the 1st of the month, so an invoice created after the 1st becomes overdue as soon as the Payments page reloads. Record whether Child A's new invoice shows Overdue immediately."
+   "Invoices are due on the Payment Due Day in Settings (the 1st unless it was changed), so an invoice made after that day for a child who joined earlier becomes overdue as soon as the Payments page reloads. Record whether Child A's new invoice shows Overdue immediately."
   ],
   "evidence": "Screen recording with the toasts, and screenshots of the filtered invoice lists for Child A and Child B.",
   "phone": false

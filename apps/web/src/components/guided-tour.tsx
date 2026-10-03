@@ -117,7 +117,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         <strong>Send payment links</strong> prepares a message for each family with their own payment page. From
         there they can pay automatically by bank (no fee) or card (with the card fee). Once they do, they&apos;re
-        charged on the 1st each month, they get a receipt, and there&apos;s nothing for you to chase. Families with two
+        charged on the due day each month, they get a receipt, and there&apos;s nothing for you to chase. Families with two
         children get one charge.
       </>
     ),
@@ -173,7 +173,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/payments",
     target: '[data-tour="generate-invoices"]',
     title: "Monthly invoices make themselves",
-    body: "Every family is invoiced on the 1st automatically. Use this only to bill a month early, or to catch up a child who joined after the 1st — they get a week to pay. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are never invoiced.",
+    body: "Every family is invoiced on the 1st automatically, due on the Payment Due Day in Settings. Use this only to bill a month early, or to catch up a child who joined after the 1st — they get a week to pay. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are never invoiced.",
   },
   {
     id: "outbox",
@@ -213,7 +213,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/settings",
     target: '[data-tour="settings-tabs"]',
     title: "Settings",
-    body: "Every address, number and key lives here — your Zelle details, the Gmail that reads Zelle alerts, where replies to receipts go, the business name parents see, the card fee and the switch for real card payments. Each has a Copy button, and a change takes effect as soon as you save.",
+    body: "Every address, number and key lives here — the day invoices are due, the fee a new session starts with, your Zelle details, the Gmail that reads Zelle alerts, who emails come from and where replies go, the business name parents see, the card fee and the switch for real card payments. Each has a Copy button, and a change takes effect as soon as you save.",
   },
   {
     id: "access",

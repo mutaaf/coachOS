@@ -30,22 +30,37 @@ export function billableMonth(
 }
 
 /**
- * The 1st of the month, or a week after the child joined if that is later. A
+ * Payment Due Day in Settings, as a day every month has. Blank or anything
+ * outside 1–28 is the 1st — Settings refuses those, so this is only a guard.
+ */
+export function readDueDay(value: string | null | undefined): number {
+  const day = Number(value);
+  return Number.isInteger(day) && day >= 1 && day <= 28 ? day : 1;
+}
+
+export async function paymentDueDay(supabase: OpsClient): Promise<number> {
+  const { data } = await supabase.from("config").select("value").eq("key", "payment_due_day").maybeSingle();
+  return readDueDay(data?.value);
+}
+
+/**
+ * The month's due day, or a week after the child joined if that is later. A
  * child enrolled on the 2nd was billed a month that was overdue the day it
  * was made. The joining day is counted in Dallas, not UTC.
  */
-export function invoiceDueDate(month: string, enrolledAt: string | Date | null | undefined): string {
-  const first = `${month}-01`;
-  if (!enrolledAt) return first;
+export function invoiceDueDate(month: string, enrolledAt: string | Date | null | undefined, dueDay = 1): string {
+  const dueOn = `${month}-${String(dueDay).padStart(2, "0")}`;
+  if (!enrolledAt) return dueOn;
   const due = addDays(businessToday(new Date(enrolledAt)), JOINING_GRACE_DAYS);
-  return due > first ? due : first;
+  return due > dueOn ? due : dueOn;
 }
 
 /**
  * This month's invoice for a child who has just joined a program, so they are
  * billed from the day they join rather than from the next run on the 1st. The
  * same rules as the monthly run: nothing for a free program or one not yet
- * started, one invoice per child per program, due a week from today.
+ * started, one invoice per child per program, due a week from today or on
+ * the month's due day, whichever is later.
  */
 export async function billFirstMonth(
   supabase: OpsClient,
@@ -76,7 +91,7 @@ export async function billFirstMonth(
       program_id: programId,
       amount: program.monthly_fee,
       month,
-      due_date: invoiceDueDate(month, new Date()),
+      due_date: invoiceDueDate(month, new Date(), await paymentDueDay(supabase)),
       status: "pending",
     })
     .select("id")
@@ -124,6 +139,7 @@ export async function createMonthlyInvoices(month?: string) {
     (existingInvoices || []).map((inv) => `${inv.student_id}|${inv.program_id}`)
   );
 
+  const dueDay = await paymentDueDay(supabase);
   let created = 0;
   let skipped = 0;
   let noParent = 0;
@@ -160,7 +176,7 @@ export async function createMonthlyInvoices(month?: string) {
       program_id: enrollment.program_id,
       amount: program.monthly_fee,
       month: targetMonth,
-      due_date: invoiceDueDate(targetMonth, enrollment.enrolled_at),
+      due_date: invoiceDueDate(targetMonth, enrollment.enrolled_at, dueDay),
       status: "pending",
     });
 

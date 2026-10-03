@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { startAutopaySetup, turnOffAutopay, rememberZelleName, saveParentEmail } from "@/lib/actions/pay-page";
 import type { PayPageData, PayPageLine } from "@/lib/queries/pay-page";
+import { dayOfMonthLabel } from "@/lib/dates";
 
 const money = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -359,7 +360,7 @@ export function PayPage({
                       Your current balance of {money(data.openCents)} will be paid within a day.{" "}
                     </>
                   )}
-                  After that, each month&apos;s fee is paid on its due date (the 1st). Turn it off
+                  After that, each month&apos;s fee is paid on its due date (the {dayOfMonthLabel(data.dueDay)}). Turn it off
                   here whenever you like.
                 </p>
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
