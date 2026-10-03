@@ -2,7 +2,7 @@ import type { OpsClient } from "@/lib/supabase/types";
 import { businessMonth } from "@/lib/dates";
 import { normalizePhone, phoneKey, sameName } from "@/lib/roster";
 import { openInvoicesForFamily, recalculateInvoiceStatus, toCents } from "@/lib/invoice-status";
-import { allocateGreedily, applyReceipt, senderKey } from "@/lib/zelle";
+import { allocateGreedily, applyReceipt, rememberableKey } from "@/lib/zelle";
 import { emailReceipt } from "@/lib/parent-emails";
 
 /**
@@ -159,10 +159,13 @@ export async function assignPayment(
   if (receipt) {
     const applied = await applyReceipt(supabase, receipt, parentId!, picked, note);
     if ("error" in applied) return { error: applied.error! };
-    // Their next payment matches by itself.
-    await supabase
-      .from("zelle_senders")
-      .upsert({ sender_key: senderKey(receipt.sender_name!), parent_id: parentId }, { onConflict: "sender_key" });
+    // Their next payment matches by itself — unless all the bank gave was one word.
+    const key = rememberableKey(receipt.sender_name);
+    if (key) {
+      await supabase
+        .from("zelle_senders")
+        .upsert({ sender_key: key, parent_id: parentId }, { onConflict: "sender_key" });
+    }
   } else {
     const src = input.source as Extract<PaymentSource, { kind: "manual" }>;
     const paymentIds: string[] = [];

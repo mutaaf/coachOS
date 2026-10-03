@@ -31,6 +31,11 @@ export function foldName(s: string | null | undefined): string {
     .trim();
 }
 
+/** For a search box: "jose" finds "José", "nunez" finds "Núñez". Keeps punctuation, so emails still match. */
+export function searchable(s: string | null | undefined): string {
+  return (s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
 /** "Mía" and "mia " are the same child; an accent added on re-import must not make a second one. */
 export function sameName(a: string | null | undefined, b: string | null | undefined): boolean {
   const x = foldName(a);
