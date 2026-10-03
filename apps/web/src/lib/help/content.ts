@@ -215,9 +215,9 @@ export const TASKS: HelpTask[] = [
     tourStep: "registrations",
     steps: [
       { text: "On **Registrations**, copy the session's sign-up link." },
-      { text: "Share it however you like — WhatsApp, Instagram, a flyer. Parents register themselves and get a celebration and a \"you're in\" email; when full, they join a waitlist automatically." },
-      { text: "Add each confirmed child to the roster with one tap. They get a welcome email with the first practice and their payment page, and this month's bill is made — due a week later. It shows **Paid** once the money is recorded on Payments." },
-      { text: "When a place opens, tap **Give a seat to next in line** on the program. The waitlist reads #1 first; giving a seat to anyone else asks before skipping the family ahead of them." },
+      { text: "Share it however you like — WhatsApp, Instagram, a flyer. Parents register themselves and get a celebration and a \"you're in\" email; when full, they join a waitlist automatically. Either way, a message for them — they're in, or their place in line — waits in your **Outbox**." },
+      { text: "Add each confirmed child to the roster with one tap. They get a welcome email with the first practice and their payment page, a welcome message waits in your **Outbox**, and this month's bill is made — due a week later. It shows **Paid** once the money is recorded on Payments.", tip: "Don't want the welcome message? Turn off **Welcome Messages** in Settings → Messaging." },
+      { text: "When a place opens, tap **Give a seat to next in line** on the program. The waitlist reads #1 first; giving a seat to anyone else asks before skipping the family ahead of them. The family is emailed, and a \"a spot opened\" message waits in your **Outbox**." },
       { text: "The ✕ cancels a registration after asking. For a child on the roster, leave “Also take them off the roster” ticked so they aren't billed again. Changed your mind? Tap **Restore**.", tip: "Restore gives back the seat if one is free; if the program has filled, the child goes to the back of the waitlist." },
     ],
   },
@@ -260,7 +260,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Schedule**, tap the session, then [[Cancel Session]]." },
       { text: "Type a reason (“gym closed”) and confirm. No practice reminder goes out for it." },
-      { text: "Let families know in the group — CoachOS doesn't announce cancellations by itself.", careful: true },
+      { text: "A message to each family on the roster, with your reason, is waiting in your **Outbox**. Send them from there.", careful: true },
     ],
   },
   {
@@ -386,6 +386,8 @@ export const AUTOMATIC: { when: string; what: string; detail: string }[] = [
   { when: "Each payment", what: "A receipt is emailed", detail: "to families who've given an email. Their replies come to your inbox." },
   { when: "3 days late", what: "One reminder is prepared.", detail: "It waits in your Outbox to send, and is emailed if they have an email. Once — never daily." },
   { when: "Card declined", what: "The family is told how to fix it.", detail: "A message waits in your Outbox, an email goes out, and their page shows what went wrong." },
+  { when: "About 1 pm", what: "Tomorrow's practice reminders are prepared.", detail: "One per family, waiting in your Outbox. Once a day, at that time — turn them off with Practice Reminders in Settings." },
+  { when: "Practice cancelled", what: "Each family's message is written.", detail: "It waits in your Outbox with your reason. Nothing is sent for a practice that's already past." },
 ];
 
 export const GLOSSARY: { term: string; meaning: string }[] = [

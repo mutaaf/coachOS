@@ -233,6 +233,37 @@ export async function emailRegistration(supabase: OpsClient, registrationId: str
   });
 }
 
+/**
+ * A waiting family has been given the place that opened. The same "is in!"
+ * email as signing up with a place, keyed on the seat so it goes even though
+ * their waitlist email already used the registration's key.
+ */
+export async function emailSeat(supabase: OpsClient, registrationId: string) {
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select("id, program_id, status, child_first_name, parent_first_name, parent_email, parent_id")
+    .eq("id", registrationId)
+    .maybeSingle();
+  if (!reg?.parent_email) return "no_address" as const;
+  if (reg.status !== "confirmed") return "skipped" as const;
+  const program = await programDetails(supabase, reg.program_id);
+  if (!program) return "skipped" as const;
+  return sendEmail(supabase, {
+    kind: "seat",
+    dedupeKey: `seat:${reg.id}`,
+    parentId: reg.parent_id,
+    to: reg.parent_email,
+    ...registrationEmail({
+      ...program,
+      brand: await brand(supabase),
+      parentName: reg.parent_first_name,
+      childName: reg.child_first_name,
+      status: "confirmed",
+      waitlistPosition: null,
+    }),
+  });
+}
+
 /** When a child goes on a roster: first practice, group chat, payment page. */
 export async function emailWelcome(
   supabase: OpsClient,
