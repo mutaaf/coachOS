@@ -14,16 +14,19 @@ import {
   UserPlus,
   Mail,
   Copy,
+  RotateCcw,
 } from "lucide-react";
 import {
+  cancelRegistration,
   convertRegistration,
   promoteFromWaitlist,
+  promoteNextInLine,
+  restoreRegistration,
   setRegistrationStatus,
-  setRegistrationPaymentStatus,
 } from "@/lib/actions/registrations";
 import type { ProgramAvailability, RegistrationStatus } from "@/types/database";
 import type { RegistrationWithProgram } from "@/lib/queries/registrations";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SamePersonPrompt, childMatches, type SameMatch } from "@/components/same-person-prompt";
 import { PhoneLink } from "@/components/phone-link";
 
@@ -51,15 +54,44 @@ export function RegistrationsPageClient({
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const [programFilter, setProgramFilter] = useState("all");
 
-  const visible = useMemo(
-    () =>
-      registrations.filter(
-        (r) =>
-          (filter === "all" || r.status === filter) &&
-          (programFilter === "all" || r.program_id === programFilter)
-      ),
-    [registrations, filter, programFilter]
-  );
+  const visible = useMemo(() => {
+    const rows = registrations.filter(
+      (r) =>
+        (filter === "all" || r.status === filter) &&
+        (programFilter === "all" || r.program_id === programFilter)
+    );
+    // The waitlist reads in line order, #1 first. Newest-first put the last
+    // family to join at the top, and "Give a seat" went to them.
+    const slots = rows.flatMap((r, i) => (r.status === "waitlisted" ? [i] : []));
+    const inLine = slots
+      .map((i) => rows[i])
+      .sort(
+        (a, b) =>
+          (a.program?.name ?? "").localeCompare(b.program?.name ?? "") ||
+          a.program_id.localeCompare(b.program_id) ||
+          (a.waitlist_position ?? Infinity) - (b.waitlist_position ?? Infinity) ||
+          a.created_at.localeCompare(b.created_at)
+      );
+    slots.forEach((slot, n) => (rows[slot] = inLine[n]));
+    return rows;
+  }, [registrations, filter, programFilter]);
+
+  // Per program, the family whose turn it is.
+  const firstInLine = useMemo(() => {
+    const first = new Map<string, RegistrationWithProgram>();
+    for (const r of registrations) {
+      if (r.status !== "waitlisted") continue;
+      const current = first.get(r.program_id);
+      if (
+        !current ||
+        (r.waitlist_position ?? Infinity) < (current.waitlist_position ?? Infinity) ||
+        (r.waitlist_position === current.waitlist_position && r.created_at < current.created_at)
+      ) {
+        first.set(r.program_id, r);
+      }
+    }
+    return first;
+  }, [registrations]);
 
   const counts = useMemo(() => {
     const base: Record<string, number> = { all: registrations.length };
@@ -105,6 +137,62 @@ export function RegistrationsPageClient({
       setAsking(null);
       return result;
     }, "Added to the roster");
+  }
+
+  // Someone else is ahead in line: say who, and only skip them if she says so.
+  function giveSeat(r: RegistrationWithProgram) {
+    run(async () => {
+      const result = await promoteFromWaitlist(r.id);
+      if (!("ahead" in result) || !result.ahead) return result;
+      const { name, position } = result.ahead;
+      const skip = window.confirm(
+        `${name} is #${position} in line, ahead of ${r.child_first_name}. Give the seat to ${r.child_first_name} anyway?`
+      );
+      return skip ? promoteFromWaitlist(r.id, { outOfTurn: true }) : {};
+    }, `${r.child_first_name} has a seat`);
+  }
+
+  function giveSeatToNext(p: ProgramAvailability) {
+    const next = firstInLine.get(p.program_id);
+    run(() => promoteNextInLine(p.program_id), `${next?.child_first_name ?? "The next family"} has a seat`);
+  }
+
+  // Cancelling asks first, and — for a child already on the roster — whether
+  // to take them off it, so a cancelled child isn't still billed.
+  const [cancelling, setCancelling] = useState<RegistrationWithProgram | null>(null);
+  const [withdraw, setWithdraw] = useState(true);
+
+  function confirmCancel() {
+    const r = cancelling;
+    if (!r) return;
+    const offRoster = withdraw && r.enrollment?.status === "active";
+    setCancelling(null);
+    run(
+      () => cancelRegistration(r.id, { withdraw: offRoster }),
+      offRoster ? `Cancelled, and ${r.child_first_name} is off the roster` : "Cancelled"
+    );
+  }
+
+  function restore(r: RegistrationWithProgram) {
+    if (busy.current) return;
+    busy.current = true;
+    startTransition(async () => {
+      try {
+        const result = await restoreRegistration(r.id);
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(
+          result.status === "confirmed"
+            ? `Restored — ${r.child_first_name} has a seat`
+            : `Restored — the program is full, so ${r.child_first_name} is back on the waitlist`
+        );
+        router.refresh();
+      } finally {
+        busy.current = false;
+      }
+    });
   }
 
   function copyLink(slug: string) {
@@ -171,6 +259,18 @@ export function RegistrationsPageClient({
                         : `${p.seats_remaining} left`}
                     </span>
                   </div>
+
+                  {p.waitlist_count > 0 && p.seats_remaining > 0 && (
+                    <Button
+                      size="sm"
+                      className="mt-3 w-full"
+                      disabled={pending}
+                      onClick={() => giveSeatToNext(p)}
+                    >
+                      <ArrowUp className="mr-1 h-3.5 w-3.5" />
+                      Give a seat to next in line
+                    </Button>
+                  )}
 
                   {p.public_slug && (
                     <button
@@ -242,8 +342,10 @@ export function RegistrationsPageClient({
                       ? ` #${r.waitlist_position}`
                       : ""}
                   </span>
-                  {r.enrollment_id && <Badge variant="secondary">Enrolled</Badge>}
-                  {r.payment_status === "paid" && <Badge variant="success">Paid</Badge>}
+                  {r.enrollment?.status === "active" && <Badge variant="secondary">Enrolled</Badge>}
+                  {/* From the invoice and the money recorded on it — never set by hand. */}
+                  {r.invoice?.status === "paid" && <Badge variant="success">Paid</Badge>}
+                  {r.invoice?.status === "overdue" && <Badge variant="warning">Overdue</Badge>}
                 </div>
 
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -279,9 +381,7 @@ export function RegistrationsPageClient({
                     size="sm"
                     variant="outline"
                     disabled={pending}
-                    onClick={() =>
-                      run(() => promoteFromWaitlist(r.id), "Moved off the waitlist")
-                    }
+                    onClick={() => giveSeat(r)}
                   >
                     <ArrowUp className="mr-1 h-3.5 w-3.5" />
                     Give a seat
@@ -313,19 +413,10 @@ export function RegistrationsPageClient({
                   </Button>
                 )}
 
-                {r.payment_status === "unpaid" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() =>
-                      run(
-                        () => setRegistrationPaymentStatus(r.id, "paid"),
-                        "Marked paid"
-                      )
-                    }
-                  >
-                    Mark paid
+                {r.status === "cancelled" && (
+                  <Button size="sm" variant="outline" disabled={pending} onClick={() => restore(r)}>
+                    <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                    Restore
                   </Button>
                 )}
 
@@ -334,9 +425,12 @@ export function RegistrationsPageClient({
                     size="sm"
                     variant="ghost"
                     disabled={pending}
-                    onClick={() =>
-                      run(() => setRegistrationStatus(r.id, "cancelled"), "Cancelled")
-                    }
+                    aria-label={`Cancel ${r.child_first_name}'s registration`}
+                    title="Cancel registration"
+                    onClick={() => {
+                      setWithdraw(true);
+                      setCancelling(r);
+                    }}
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
@@ -346,6 +440,43 @@ export function RegistrationsPageClient({
           ))}
         </div>
       )}
+
+      <Dialog open={!!cancelling} onOpenChange={(open) => !open && setCancelling(null)}>
+        <DialogContent onClose={() => setCancelling(null)}>
+          <DialogHeader>
+            <DialogTitle>
+              Cancel {cancelling?.child_first_name}&apos;s registration?
+            </DialogTitle>
+            <DialogDescription>
+              {cancelling?.status === "waitlisted"
+                ? "They come off the waitlist, and everyone behind them moves up."
+                : "Their seat opens up for someone else. You can restore it later if there's still room."}
+            </DialogDescription>
+          </DialogHeader>
+          {cancelling?.enrollment?.status === "active" && (
+            <label className="mt-4 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={withdraw}
+                onChange={(e) => setWithdraw(e.target.checked)}
+              />
+              <span>
+                Also take {cancelling.child_first_name} off the {cancelling.program?.name ?? "program"} roster. They
+                won&apos;t be billed again, and a bill that isn&apos;t due yet with nothing paid on it is removed.
+              </span>
+            </label>
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCancelling(null)}>
+              Keep it
+            </Button>
+            <Button variant="destructive" disabled={pending} onClick={confirmCancel}>
+              Cancel registration
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!asking} onOpenChange={(open) => !open && setAsking(null)}>
         <DialogContent onClose={() => setAsking(null)}>

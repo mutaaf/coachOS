@@ -6,6 +6,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { addDays, businessMonth, businessToday } from "@/lib/dates";
+import type { OpsClient } from "@/lib/supabase/types";
 
 /** Days a child who joins mid-month has to pay their first invoice. */
 export const JOINING_GRACE_DAYS = 7;
@@ -33,11 +34,71 @@ export function billableMonth(
  * child enrolled on the 2nd was billed a month that was overdue the day it
  * was made. The joining day is counted in Dallas, not UTC.
  */
-export function invoiceDueDate(month: string, enrolledAt: string | null | undefined): string {
+export function invoiceDueDate(month: string, enrolledAt: string | Date | null | undefined): string {
   const first = `${month}-01`;
   if (!enrolledAt) return first;
   const due = addDays(businessToday(new Date(enrolledAt)), JOINING_GRACE_DAYS);
   return due > first ? due : first;
+}
+
+/**
+ * This month's invoice for a child who has just joined a program, so they are
+ * billed from the day they join rather than from the next run on the 1st. The
+ * same rules as the monthly run: nothing for a free program or one not yet
+ * started, one invoice per child per program, due a week from today.
+ */
+export async function billFirstMonth(
+  supabase: OpsClient,
+  { studentId, programId, parentId }: { studentId: string; programId: string; parentId: string }
+): Promise<{ invoiceId: string | null }> {
+  const month = businessMonth();
+  const { data: program } = await supabase
+    .from("programs")
+    .select("monthly_fee, status, start_date, end_date, schools(status)")
+    .eq("id", programId)
+    .single();
+  if (!program || !billableMonth(program, (program.schools as any)?.status, month)) return { invoiceId: null };
+
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("program_id", programId)
+    .eq("month", month)
+    .limit(1);
+  if (existing?.length) return { invoiceId: existing[0].id };
+
+  const { data: invoice, error } = await supabase
+    .from("invoices")
+    .insert({
+      parent_id: parentId,
+      student_id: studentId,
+      program_id: programId,
+      amount: program.monthly_fee,
+      month,
+      due_date: invoiceDueDate(month, new Date()),
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+
+  // With Stripe on, the family gets the same payment link the monthly run
+  // makes — unless autopay charges them, when a link would let them pay twice.
+  try {
+    const { data: stripeConfig } = await supabase.from("config").select("value").eq("key", "stripe_enabled").maybeSingle();
+    if (stripeConfig?.value === "true") {
+      const { autopayPayersByStudent } = await import("@/lib/autopay");
+      const { createStripeInvoice } = await import("@/lib/stripe-invoices");
+      if (!(await autopayPayersByStudent(supabase)).has(studentId)) await createStripeInvoice(invoice.id);
+    }
+  } catch (err) {
+    console.error("Couldn't create the Stripe invoice:", err);
+  }
+
+  revalidatePath("/payments");
+  revalidatePath("/dashboard");
+  return { invoiceId: invoice.id };
 }
 
 export async function createMonthlyInvoices(month?: string) {

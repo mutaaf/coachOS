@@ -99,7 +99,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/registrations",
     target: "main h1",
     title: "Registrations",
-    body: "New sign-ups from a session's public link. Share the link in a WhatsApp group; parents register themselves, full sessions fill a waitlist, and you add each confirmed child to the roster with one tap. A family already on file is used, not copied — their medical notes go onto the child you already have.",
+    body: "New sign-ups from a session's public link. Share the link in a WhatsApp group; parents register themselves, full sessions fill a waitlist, and you add each confirmed child to the roster with one tap — which also makes their first bill. A family already on file is used, not copied — their medical notes go onto the child you already have. When a place opens, it goes to the next in line; cancelling asks first, can take the child off the roster, and can be undone with Restore.",
   },
   {
     id: "schedule",

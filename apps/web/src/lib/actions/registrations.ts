@@ -7,6 +7,7 @@ import type { Registration } from "@/types/database";
 import { Directory, mergeIntoChild, phoneKey, sameName, type ChildOnFile } from "@/lib/identity";
 import { normalizePhone, NOT_A_PHONE } from "@/lib/roster";
 import { emailRegistration, emailWelcome } from "@/lib/parent-emails";
+import { billFirstMonth } from "@/lib/invoices";
 
 /**
  * Public registration submission.
@@ -125,7 +126,7 @@ export async function submitRegistration(formData: FormData) {
 
 /**
  * Turn a confirmed registration into real records: a parent, a student, the link
- * between them, and an enrollment.
+ * between them, an enrollment, and this month's invoice.
  *
  * A family already on file is used, not copied (lib/identity.ts): the parent
  * by phone however it was typed, the child by that parent's child of the same
@@ -255,6 +256,13 @@ export async function convertRegistration(
 
   if (updateError) return { error: updateError.message };
 
+  // On the roster is billed from today, not from the next run on the 1st.
+  try {
+    await billFirstMonth(supabase, { studentId: studentId!, programId: reg.program_id, parentId: parentId! });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Added to the roster, but the first bill couldn't be made." };
+  }
+
   // On the roster: the welcome email, with the first practice and group chat.
   await emailWelcome(supabase, {
     enrollmentId: enrollment.id,
@@ -269,11 +277,81 @@ export async function convertRegistration(
   return { success: true };
 }
 
+type Supabase = ReturnType<typeof createAdminSupabase>;
+
+/** Whether the program has a free seat — checked here, not trusted from the page. */
+async function seatFree(supabase: Supabase, programId: string): Promise<{ error: string } | { free: boolean }> {
+  const { data, error } = await supabase
+    .from("program_availability")
+    .select("seats_remaining")
+    .eq("program_id", programId)
+    .maybeSingle();
+  if (error) return { error: error.message };
+  return { free: !!data && data.seats_remaining >= 1 };
+}
+
+/** The family at the front of a program's waitlist. */
+async function nextInLine(supabase: Supabase, programId: string) {
+  const { data } = await supabase
+    .from("registrations")
+    .select("id, child_first_name, child_last_name, waitlist_position")
+    .eq("program_id", programId)
+    .eq("status", "waitlisted")
+    .order("waitlist_position", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
 /**
- * Promote the next person off the waitlist, if a seat has actually opened.
- * Re-checks capacity rather than trusting the caller's view of it.
+ * Number the waitlist 1, 2, 3… again, in the order it is already in. Without
+ * this, when #1 got a seat the next family still showed as #2, with nobody
+ * ahead of them.
  */
-export async function promoteFromWaitlist(registrationId: string) {
+async function renumberWaitlist(supabase: Supabase, programId: string) {
+  const { data: waiting } = await supabase
+    .from("registrations")
+    .select("id, waitlist_position")
+    .eq("program_id", programId)
+    .eq("status", "waitlisted")
+    .order("waitlist_position", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+  for (const [i, r] of (waiting || []).entries()) {
+    if (r.waitlist_position !== i + 1) {
+      await supabase.from("registrations").update({ waitlist_position: i + 1 }).eq("id", r.id);
+    }
+  }
+}
+
+/**
+ * Give a registration a seat. One that was on the roster before it was
+ * cancelled goes back on it, and is billed for this month again.
+ */
+async function takeSeat(supabase: Supabase, registrationId: string): Promise<{ error: string } | null> {
+  const { data: reg, error } = await supabase
+    .from("registrations")
+    .update({ status: "confirmed", waitlist_position: null })
+    .eq("id", registrationId)
+    .select("program_id, enrollment_id, student_id, parent_id")
+    .single();
+  if (error) return { error: error.message };
+
+  if (reg.enrollment_id) {
+    await supabase.from("enrollments").update({ status: "active" }).eq("id", reg.enrollment_id);
+    if (reg.student_id && reg.parent_id) {
+      await billFirstMonth(supabase, { studentId: reg.student_id, programId: reg.program_id, parentId: reg.parent_id });
+    }
+  }
+  return null;
+}
+
+/**
+ * Give a waiting family the seat that has opened. The waitlist is first come,
+ * first served: if someone is ahead of them, this says who (`ahead`) and
+ * changes nothing, until the Boss says to go out of turn.
+ */
+export async function promoteFromWaitlist(registrationId: string, opts: { outOfTurn?: boolean } = {}) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
@@ -286,59 +364,176 @@ export async function promoteFromWaitlist(registrationId: string) {
   if (regError || !reg) return { error: regError?.message ?? "Registration not found." };
   if (reg.status !== "waitlisted") return { error: "That registration is not on the waitlist." };
 
-  const { data: availability, error: availError } = await supabase
-    .from("program_availability")
-    .select("seats_remaining")
-    .eq("program_id", reg.program_id)
-    .single();
-
-  if (availError) return { error: availError.message };
-  if (!availability || availability.seats_remaining < 1) {
-    return { error: "That program is still full. Free a seat first." };
+  const first = await nextInLine(supabase, reg.program_id);
+  if (first && first.id !== reg.id && !opts.outOfTurn) {
+    return {
+      ahead: {
+        name: `${first.child_first_name} ${first.child_last_name}`.trim(),
+        position: first.waitlist_position ?? 1,
+      },
+    };
   }
+
+  const seat = await seatFree(supabase, reg.program_id);
+  if ("error" in seat) return seat;
+  if (!seat.free) return { error: "That program is still full. Free a seat first." };
+
+  const taken = await takeSeat(supabase, registrationId);
+  if (taken) return taken;
+  await renumberWaitlist(supabase, reg.program_id);
+
+  revalidatePath("/registrations");
+  revalidatePath("/students");
+  return { success: true };
+}
+
+/** Give the open seat to whoever has waited longest for this program. */
+export async function promoteNextInLine(programId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
+  const supabase = createAdminSupabase();
+
+  const first = await nextInLine(supabase, programId);
+  if (!first) return { error: "Nobody is waiting for this program." };
+
+  const seat = await seatFree(supabase, programId);
+  if ("error" in seat) return seat;
+  if (!seat.free) return { error: "That program is still full. Free a seat first." };
+
+  const taken = await takeSeat(supabase, first.id);
+  if (taken) return taken;
+  await renumberWaitlist(supabase, programId);
+
+  revalidatePath("/registrations");
+  revalidatePath("/students");
+  return { success: true, name: `${first.child_first_name} ${first.child_last_name}`.trim() };
+}
+
+/**
+ * Cancel a registration. Cancelling used to leave a child who was already on
+ * the roster enrolled — and billed every month. With `withdraw`, they come off
+ * the roster too, and the bill that isn't due yet and has nothing paid on it
+ * goes with them. Money already paid, and bills already overdue, are never
+ * touched: those are for the Boss to decide on Payments.
+ */
+export async function cancelRegistration(registrationId: string, opts: { withdraw?: boolean } = {}) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
+  const supabase = createAdminSupabase();
+
+  const { data: reg, error: regError } = await supabase
+    .from("registrations")
+    .select("id, program_id, status, enrollment_id, student_id")
+    .eq("id", registrationId)
+    .single();
+  if (regError || !reg) return { error: regError?.message ?? "Registration not found." };
 
   const { error } = await supabase
     .from("registrations")
-    .update({ status: "confirmed", waitlist_position: null })
+    .update({ status: "cancelled", waitlist_position: null })
     .eq("id", registrationId);
+  if (error) return { error: error.message };
 
+  if (opts.withdraw && reg.enrollment_id) {
+    await supabase.from("enrollments").update({ status: "withdrawn" }).eq("id", reg.enrollment_id).eq("status", "active");
+
+    const { data: bills } = await supabase
+      .from("invoices")
+      .select("id, stripe_invoice_id, payments(id)")
+      .eq("student_id", reg.student_id)
+      .eq("program_id", reg.program_id)
+      .eq("status", "pending");
+    for (const bill of bills || []) {
+      if ((bill.payments as unknown[] | null)?.length) continue;
+      // One already sent through Stripe is out with the family; waive it
+      // rather than lose track of it.
+      if (bill.stripe_invoice_id) await supabase.from("invoices").update({ status: "waived" }).eq("id", bill.id);
+      else await supabase.from("invoices").delete().eq("id", bill.id);
+    }
+  }
+
+  if (reg.status === "waitlisted") await renumberWaitlist(supabase, reg.program_id);
+
+  revalidatePath("/registrations");
+  revalidatePath("/students");
+  revalidatePath("/payments");
+  return { success: true };
+}
+
+/**
+ * Undo a cancel. The family gets their seat back if one is free — back on the
+ * roster and billed, if they were on it — and otherwise goes to the back of
+ * the waitlist. `status` says which.
+ */
+export async function restoreRegistration(registrationId: string) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
+  const supabase = createAdminSupabase();
+
+  const { data: reg, error: regError } = await supabase
+    .from("registrations")
+    .select("id, program_id, status, enrollment_id")
+    .eq("id", registrationId)
+    .single();
+  if (regError || !reg) return { error: regError?.message ?? "Registration not found." };
+  if (reg.status !== "cancelled") return { error: "Only a cancelled registration can be restored." };
+
+  // Left on the roster when cancelled: they still hold their seat.
+  let stillEnrolled = false;
+  if (reg.enrollment_id) {
+    const { data: enrollment } = await supabase
+      .from("enrollments")
+      .select("status")
+      .eq("id", reg.enrollment_id)
+      .maybeSingle();
+    stillEnrolled = enrollment?.status === "active";
+  }
+
+  const seat = await seatFree(supabase, reg.program_id);
+  if ("error" in seat) return seat;
+
+  if (stillEnrolled || seat.free) {
+    const taken = await takeSeat(supabase, registrationId);
+    if (taken) return taken;
+    revalidatePath("/registrations");
+    revalidatePath("/students");
+    revalidatePath("/payments");
+    return { success: true, status: "confirmed" as const };
+  }
+
+  const { data: last } = await supabase
+    .from("registrations")
+    .select("waitlist_position")
+    .eq("program_id", reg.program_id)
+    .eq("status", "waitlisted")
+    .order("waitlist_position", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  const { error } = await supabase
+    .from("registrations")
+    .update({ status: "waitlisted", waitlist_position: (last?.waitlist_position ?? 0) + 1 })
+    .eq("id", registrationId);
   if (error) return { error: error.message };
 
   revalidatePath("/registrations");
-  return { success: true };
+  return { success: true, status: "waitlisted" as const };
 }
 
 export async function setRegistrationStatus(
   registrationId: string,
-  status: "pending" | "confirmed" | "waitlisted" | "cancelled" | "declined"
+  // Cancelling goes through cancelRegistration, which can take the child off
+  // the roster; the waitlist moves only through promoteFromWaitlist.
+  status: "pending" | "confirmed" | "declined"
 ) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
-  const { error } = await supabase
+  const { data: reg, error } = await supabase
     .from("registrations")
-    .update({ status, ...(status === "waitlisted" ? {} : { waitlist_position: null }) })
-    .eq("id", registrationId);
+    .update({ status, waitlist_position: null })
+    .eq("id", registrationId)
+    .select("program_id")
+    .single();
 
   if (error) return { error: error.message };
-
-  revalidatePath("/registrations");
-  return { success: true };
-}
-
-export async function setRegistrationPaymentStatus(
-  registrationId: string,
-  paymentStatus: "unpaid" | "paid" | "refunded" | "waived"
-) {
-  if (!(await signedIn())) return NOT_SIGNED_IN;
-  const supabase = createAdminSupabase();
-
-  const { error } = await supabase
-    .from("registrations")
-    .update({ payment_status: paymentStatus })
-    .eq("id", registrationId);
-
-  if (error) return { error: error.message };
+  await renumberWaitlist(supabase, reg.program_id);
 
   revalidatePath("/registrations");
   return { success: true };
