@@ -258,6 +258,21 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "access",
+    title: "Give someone a login, or take it away",
+    when: "A new helper, or someone who's left",
+    keywords: "access login invite account password forgot remove admin user sign in",
+    href: "/settings",
+    hrefLabel: "Open Settings",
+    tourStep: "access",
+    steps: [
+      { text: "On **Settings**, open the **Access** tab." },
+      { text: "Type their email and tap [[Invite]]. They get an email with a link to choose a password; the link works once, for 24 hours.", tip: "Email slow? Copy the link shown and send it by WhatsApp instead." },
+      { text: "To take someone's access away, tap [[Remove]] next to them. It works at once, even if they're signed in.", tip: "You can't remove yourself, or the last person with access." },
+      { text: "Forgot your password? On the sign-in page tap **Forgot your password?** and you'll get a link to choose a new one." },
+    ],
+  },
+  {
     id: "settings",
     title: "Change your details",
     when: "Zelle number, emails, fee, business name",

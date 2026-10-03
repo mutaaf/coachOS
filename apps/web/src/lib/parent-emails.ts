@@ -160,10 +160,12 @@ function clock(t: string) {
   return `${hour}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
 }
 
-/** "Tuesdays, 3:30–4:30 PM at Field B" from a schedule template. */
-function scheduleText(t: { day_of_week: number; start_time: string; end_time: string; location: string | null }) {
-  const pm = Number(t.end_time.split(":")[0]) >= 12 ? "PM" : "AM";
-  return `${DAYS[t.day_of_week]}, ${clock(t.start_time)}–${clock(t.end_time)} ${pm}${t.location ? ` at ${t.location}` : ""}`;
+const half = (t: string) => (Number(t.split(":")[0]) >= 12 ? "PM" : "AM");
+
+/** "Tuesdays, 3:30–4:30 PM at Field B"; "11 AM–12 PM" when it crosses noon. */
+export function scheduleText(t: { day_of_week: number; start_time: string; end_time: string; location: string | null }) {
+  const start = half(t.start_time) === half(t.end_time) ? clock(t.start_time) : `${clock(t.start_time)} ${half(t.start_time)}`;
+  return `${DAYS[t.day_of_week]}, ${start}–${clock(t.end_time)} ${half(t.end_time)}${t.location ? ` at ${t.location}` : ""}`;
 }
 
 /** What a family needs to know about a program, for the welcome emails. */

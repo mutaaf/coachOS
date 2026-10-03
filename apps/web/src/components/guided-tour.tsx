@@ -202,6 +202,18 @@ function buildSteps(ctx: TourContext | null): Step[] {
     body: "Every address, number and key lives here — your Zelle details, the Gmail that reads Zelle alerts, where replies to receipts go, the business name parents see, the card fee and the switch for real card payments. Each has a Copy button, and a change takes effect as soon as you save.",
   },
   {
+    id: "access",
+    path: "/settings",
+    target: '[data-tour="access-tab"]',
+    title: "Who can sign in",
+    body: (
+      <>
+        Everyone has their own login. Invite someone from <strong>Access</strong> — they get an email to choose a
+        password — or take access away. Nobody can make their own account.
+      </>
+    ),
+  },
+  {
     id: "help",
     path: "/help",
     target: '[data-tour="help-tabs"]',

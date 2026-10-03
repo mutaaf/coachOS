@@ -404,7 +404,7 @@ export function SettingsPageClient({ config, people }: SettingsPageClientProps) 
               </TabsTrigger>
             );
           })}
-          <TabsTrigger value="access" className="gap-2">
+          <TabsTrigger value="access" className="gap-2" data-tour="access-tab">
             <KeyRound className="h-4 w-4" />
             Access
           </TabsTrigger>

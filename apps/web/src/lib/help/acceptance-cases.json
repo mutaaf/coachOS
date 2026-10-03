@@ -2296,6 +2296,72 @@
   "phone": true
  },
  {
+  "id": "ACC-01",
+  "area": "Access & security",
+  "title": "Inviting someone gives them their own login, from a link that works once",
+  "risk": "A shared login hides who did what; a reusable or long-lived link lets the wrong person in.",
+  "severity": "critical",
+  "preconditions": [
+   "Signed in. A spare email address you can open."
+  ],
+  "steps": [
+   "Settings → Access: type the spare address and tap Invite.",
+   "Open the email and follow 'Choose my password'. Choose a password and continue.",
+   "Sign out. Open the same email link again.",
+   "Sign in with the new password."
+  ],
+  "expected": [
+   "The invite email arrives, and the Access list shows the new person ('Hasn't signed in yet').",
+   "The link opens 'Welcome to the team!' and, after choosing a password, lands on the Dashboard.",
+   "Opened again, the link says it has expired or been used.",
+   "The new password works, and the Access list shows when they last signed in."
+  ],
+  "evidence": "Screenshots of the email, the welcome page, and the Access list.",
+  "phone": true
+ },
+ {
+  "id": "ACC-02",
+  "area": "Access & security",
+  "title": "Removing access works at once, and never removes yourself or the last person",
+  "risk": "Someone who has left keeps reading families' details.",
+  "severity": "critical",
+  "preconditions": [
+   "ACC-01 done, with the spare account signed in on another device or a private window."
+  ],
+  "steps": [
+   "Settings → Access: tap Remove next to the spare account and confirm.",
+   "On the other device, refresh any page.",
+   "Try to remove yourself (there should be no button), and check what happens if only one person is left."
+  ],
+  "expected": [
+   "The spare account disappears from the list.",
+   "The other device is sent to sign in, and signing in again says the account doesn't have access.",
+   "There is no Remove next to you, and the last person can't be removed."
+  ],
+  "evidence": "Screenshots of both devices.",
+  "phone": false
+ },
+ {
+  "id": "ACC-03",
+  "area": "Access & security",
+  "title": "Forgot your password works only for people with access, and says the same for anyone",
+  "risk": "A reset that reveals who has an account, or emails strangers.",
+  "severity": "high",
+  "preconditions": [
+   "Signed out."
+  ],
+  "steps": [
+   "On the sign-in page tap 'Forgot your password?', enter your email and send.",
+   "Do the same with an address that has no access."
+  ],
+  "expected": [
+   "Both show the same message ('If … has access, a link … is on its way').",
+   "Only your address gets an email; its link lets you choose a new password and lands on the Dashboard."
+  ],
+  "evidence": "Screenshots of the message and the email.",
+  "phone": true
+ },
+ {
   "id": "PAY-21",
   "area": "Autopay & Stripe",
   "title": "Check the payment page and Payments screen always say when Stripe is in test mode",

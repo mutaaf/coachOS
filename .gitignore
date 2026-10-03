@@ -18,3 +18,6 @@ dist/
 test-results/
 playwright-report/
 tests/screenshots/
+
+# Also a symlink of that name (worktrees link to the main checkout)
+node_modules

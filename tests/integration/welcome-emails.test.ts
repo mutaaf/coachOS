@@ -170,3 +170,24 @@ describe("the emails themselves", () => {
     expect(w.html).toContain("Game-day checklist");
   });
 });
+
+describe("the website's ping, abused", () => {
+  it("a % in the name matches nothing", async () => {
+    const { programId } = await seedProgram({ capacity: 5 });
+    await admin.from("programs").update({ whatsapp_group_url: GROUP }).eq("id", programId);
+    await submitRegistration(form(programId, { parent_email: "" }));
+    const res = await notify(new NextRequest("http://x", {
+      method: "POST",
+      body: JSON.stringify({ program_id: programId, parent_phone: "2145550150", child_first_name: "%" }),
+    }));
+    expect(await res.json()).toEqual({ ok: true, whatsappGroupUrl: null });
+  });
+});
+
+describe("practice times", () => {
+  it("say AM and PM right when a practice crosses noon", async () => {
+    const { scheduleText } = await import("@/lib/parent-emails");
+    expect(scheduleText({ day_of_week: 6, start_time: "11:00", end_time: "12:00", location: null })).toBe("Saturdays, 11 AM–12 PM");
+    expect(scheduleText({ day_of_week: 2, start_time: "15:30", end_time: "16:30", location: "Field B" })).toBe("Tuesdays, 3:30–4:30 PM at Field B");
+  });
+});

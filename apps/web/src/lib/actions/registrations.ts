@@ -92,7 +92,8 @@ export async function submitRegistration(formData: FormData) {
     .select("id, status")
     .eq("program_id", programId)
     .eq("parent_phone", parentPhone)
-    .ilike("child_first_name", childFirstName)
+    // Escaped: a name with % or _ is matched literally.
+    .ilike("child_first_name", childFirstName.replace(/[\\%_]/g, (c) => `\\${c}`))
     .not("status", "in", "(cancelled,declined)")
     .order("created_at", { ascending: false })
     .limit(1)

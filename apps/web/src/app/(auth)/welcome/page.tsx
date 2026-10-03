@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -23,15 +23,23 @@ function Welcome() {
   const [again, setAgain] = useState("");
   const [error, setError] = useState<string | null>(null);
   const invite = params.get("type") === "invite";
+  // One client for the whole page: the session the link creates must be the
+  // one that sets the password.
+  const supabase = useMemo(() => createClient(), []);
+  // The link works once. React may run effects twice in development; a second
+  // check of a spent link would fail and throw the new session away.
+  const checked = useRef(false);
 
   useEffect(() => {
+    if (checked.current) return;
+    checked.current = true;
     const token_hash = params.get("token_hash");
     const type = params.get("type") === "invite" ? "invite" : "recovery";
     if (!token_hash) return setState("bad");
-    createClient()
-      .auth.verifyOtp({ token_hash, type })
+    supabase.auth
+      .verifyOtp({ token_hash, type })
       .then(({ data, error }) => setState(error || !isAdmin(data.user) ? "bad" : "ready"));
-  }, [params]);
+  }, [params, supabase]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +47,7 @@ function Welcome() {
     if (password !== again) return setError("Those two don't match.");
     setError(null);
     setState("saving");
-    const { error } = await createClient().auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password });
     if (error) {
       setError(error.message);
       setState("ready");

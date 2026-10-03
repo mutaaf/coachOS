@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { emailRegistration } from "@/lib/parent-emails";
+import { sameName } from "@/lib/roster";
 
 /**
  * The website (risingstars.training) registers families straight into the
@@ -51,9 +52,10 @@ export async function POST(request: NextRequest) {
       .select("id, status, parent_phone, child_first_name, programs(whatsapp_group_url)")
       .eq("program_id", programId)
       .gte("created_at", new Date(Date.now() - 60 * 60_000).toISOString())
-      .ilike("child_first_name", child)
-      .limit(10);
+      .limit(200);
     for (const r of data || []) {
+      // Compared here, not as a database pattern: "%" must match nothing.
+      if (!sameName(r.child_first_name, child)) continue;
       if (String(r.parent_phone).replace(/\D/g, "").slice(-10) !== digits) continue;
       await emailRegistration(supabase, r.id);
       if (r.status !== "waitlisted") whatsappGroupUrl = (r as any).programs?.whatsapp_group_url ?? null;

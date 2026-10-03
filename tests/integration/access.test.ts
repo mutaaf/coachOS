@@ -1,7 +1,17 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { admin, ensureTestUser, LOCAL } from "../helpers/db";
+import { admin, ensureOutsider, ensureTestUser, LOCAL } from "../helpers/db";
+import { vi } from "vitest";
 import { inviteToCoachOS, removeAccess, listAccess, requestPasswordLink } from "@/lib/actions/access";
+
+// Catch what would be emailed.
+const staffEmails: { to: string; subject: string }[] = [];
+vi.mock("@/lib/staff-email", () => ({
+  sendStaffEmail: async (_db: unknown, opts: { to: string; subject: string }) => {
+    staffEmails.push({ to: opts.to, subject: opts.subject });
+    return true;
+  },
+}));
 
 /**
  * Who can sign in is managed from Settings. An invite makes an admin who
@@ -53,15 +63,31 @@ describe("taking access away", () => {
     const me = "00000000-0000-0000-0000-00000000b055";
     expect(((await removeAccess(me)) as any).error).toMatch(/your own/);
     const user = await find(NEW);
+    // Signed in, with access, before it's taken away.
+    await authAdmin.auth.admin.updateUserById(user!.id, { password: "new-coach-password-1" });
+    const theirs = createClient(LOCAL.url, LOCAL.anonKey, { db: { schema: "ops" }, auth: { persistSession: false } });
+    await theirs.auth.signInWithPassword({ email: NEW, password: "new-coach-password-1" });
+    await admin.from("schools").insert({ name: "Access check school" });
+    expect((await theirs.from("schools").select("id")).data?.length).toBeGreaterThan(0);
+
     expect(((await removeAccess(user!.id)) as any).success).toBe(true);
     expect((await find(NEW))?.app_metadata.role ?? null).toBeNull();
+    // The session they already hold stops working at once — not when its token expires.
+    expect((await theirs.from("schools").select("id")).data ?? []).toEqual([]);
+    await admin.from("schools").delete().eq("name", "Access check school");
   });
 });
 
 describe("forgot your password", () => {
   it("answers the same for anyone, and only emails people with access", async () => {
+    staffEmails.length = 0;
+    await ensureTestUser();
+    await ensureOutsider();
     expect(await requestPasswordLink("nobody@example.test")).toEqual({ success: true });
-    expect(await requestPasswordLink("test-owner@example.test")).toEqual({ success: true });
+    expect(await requestPasswordLink("outsider@example.test")).toEqual({ success: true });
+    expect(await requestPasswordLink("TEST-OWNER@example.test")).toEqual({ success: true });
     expect(((await requestPasswordLink("nope")) as any).error).toBeTruthy();
+    // Only the person with access got a link.
+    expect(staffEmails).toEqual([{ to: "test-owner@example.test", subject: "Your CoachOS password link" }]);
   });
 });

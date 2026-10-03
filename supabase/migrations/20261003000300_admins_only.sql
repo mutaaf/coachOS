@@ -9,7 +9,10 @@
 --
 -- Now both require the admin role, held in app_metadata, which only the
 -- service role can set (a user can edit their user_metadata, never their
--- app_metadata). Grant it with:
+-- app_metadata). The role is read live from auth.users, not from the
+-- caller's token: a token says what was true when it was issued, so taking
+-- someone's access away would otherwise not bite until it expired (an hour).
+-- Grant it with:
 --
 --   supabase.auth.admin.updateUserById(id, { app_metadata: { role: "admin" } })
 --
@@ -22,16 +25,21 @@ CREATE OR REPLACE FUNCTION ops.is_admin()
 RETURNS boolean
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
+  SELECT coalesce(
+    (SELECT raw_app_meta_data ->> 'role' FROM auth.users WHERE id = auth.uid()) = 'admin',
+    false
+  )
 $$;
 
 REVOKE ALL ON FUNCTION ops.is_admin() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION ops.is_admin() TO authenticated, service_role;
 
 -- Every policy on ops that lets "authenticated" in now also asks for the role.
--- ALTER POLICY changes the condition in place, so nothing is dropped.
+-- ALTER POLICY changes the condition in place, so nothing is dropped. The
+-- (SELECT …) wrapper has Postgres evaluate it once per query, not per row.
 DO $$
 DECLARE
   p record;
@@ -42,11 +50,11 @@ BEGIN
      WHERE schemaname = 'ops' AND 'authenticated' = ANY (roles)
   LOOP
     IF p.cmd = 'INSERT' THEN
-      EXECUTE format('ALTER POLICY %I ON ops.%I WITH CHECK (ops.is_admin())', p.policyname, p.tablename);
+      EXECUTE format('ALTER POLICY %I ON ops.%I WITH CHECK ((SELECT ops.is_admin()))', p.policyname, p.tablename);
     ELSIF p.cmd IN ('SELECT', 'DELETE') THEN
-      EXECUTE format('ALTER POLICY %I ON ops.%I USING (ops.is_admin())', p.policyname, p.tablename);
+      EXECUTE format('ALTER POLICY %I ON ops.%I USING ((SELECT ops.is_admin()))', p.policyname, p.tablename);
     ELSE
-      EXECUTE format('ALTER POLICY %I ON ops.%I USING (ops.is_admin()) WITH CHECK (ops.is_admin())', p.policyname, p.tablename);
+      EXECUTE format('ALTER POLICY %I ON ops.%I USING ((SELECT ops.is_admin())) WITH CHECK ((SELECT ops.is_admin()))', p.policyname, p.tablename);
     END IF;
   END LOOP;
 END;
@@ -61,5 +69,8 @@ STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
+  SELECT coalesce(
+    (SELECT raw_app_meta_data ->> 'role' FROM auth.users WHERE id = auth.uid()) = 'admin',
+    false
+  )
 $$;

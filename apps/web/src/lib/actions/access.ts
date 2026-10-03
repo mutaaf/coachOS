@@ -103,9 +103,9 @@ export async function removeAccess(userId: string) {
   if (!target) return { error: "That person doesn't have access." };
   if (admins.length <= 1) return { error: "Someone has to keep access." };
   const supabase = createAdminSupabase();
+  // Takes effect at once: the app and the database both read the role live
+  // (ops.is_admin()), so a session they already hold stops working now.
   await supabase.auth.admin.updateUserById(userId, { app_metadata: { ...target.app_metadata, role: null } });
-  // Sign them out everywhere, now.
-  await supabase.auth.admin.signOut(userId, "global").catch(() => {});
   revalidatePath("/settings");
   return { success: true as const };
 }
