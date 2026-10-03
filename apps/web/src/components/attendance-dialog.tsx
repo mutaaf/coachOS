@@ -8,7 +8,7 @@ import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/
 import { createClient } from "@/lib/supabase/client";
 import { useAction } from "@/lib/use-action";
 import { createAttendanceLink } from "@/lib/actions/attendance-links";
-import { formatBusinessTime, formatDateOnly, sessionDayPhrase } from "@/lib/dates";
+import { businessToday, formatBusinessTime, formatDateOnly, sessionDayPhrase } from "@/lib/dates";
 import { toast } from "sonner";
 import { Link2, Copy } from "lucide-react";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
@@ -30,6 +30,7 @@ const statusStyles: Record<AttendanceStatus, { bg: string; text: string; icon: a
 
 export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDialogProps) {
   const [students, setStudents] = useState<any[]>([]);
+  const [attended, setAttended] = useState<any[]>([]);
   const [records, setRecords] = useState<Record<string, AttendanceStatus>>({});
   // The roster arrives after the dialog opens; without this the list flashes
   // from empty to full and it looks like nobody is enrolled.
@@ -44,6 +45,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
   useEffect(() => {
     if (open && session) {
       setRosterLoading(true);
+      setAttended([]);
       const supabase = createClient();
       // Get enrolled students for this program
       supabase
@@ -56,36 +58,53 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
           setStudents(enrolled);
           setRosterLoading(false);
         });
-      // Get existing attendance
+      // Get existing attendance. Children on it who have since left still
+      // belong on a finished practice's register.
       supabase
         .from("attendance")
-        .select("*")
+        .select("*, students(*)")
         .eq("session_id", session.id)
         .then(({ data }) => {
           const map: Record<string, AttendanceStatus> = {};
           (data || []).forEach((a: any) => { map[a.student_id] = a.status; });
           setRecords(map);
+          setAttended((data || []).map((a: any) => a.students).filter(Boolean));
         });
     }
   }, [open, session]);
 
+  const completed = session?.status === "completed";
+  // Completing a practice weeks away is how a register got lost for one that
+  // hadn't happened. The server refuses too.
+  const upcoming = session?.status === "scheduled" && session.date > businessToday();
+  const roster = completed
+    ? [...students, ...attended.filter((a) => !students.some((s) => s.id === a.id))]
+    : students;
+
+  // On a finished practice a child nobody marked is shown as such, not
+  // assumed present — that would invent attendance after the fact.
+  function statusOf(studentId: string): AttendanceStatus | null {
+    return records[studentId] || (completed ? null : "present");
+  }
+
   function toggleStatus(studentId: string) {
     const order: AttendanceStatus[] = ["present", "absent", "late", "excused"];
-    const current = records[studentId] || "present";
-    const next = order[(order.indexOf(current) + 1) % order.length];
+    const current = statusOf(studentId);
+    const next = current ? order[(order.indexOf(current) + 1) % order.length] : "present";
     setRecords({ ...records, [studentId]: next });
+  }
+
+  function registerOnScreen() {
+    return roster
+      .map((s) => ({ studentId: s.id as string, status: statusOf(s.id) }))
+      .filter((r): r is { studentId: string; status: AttendanceStatus } => r.status !== null);
   }
 
   // Each of these only closes the dialog if the write actually succeeded.
   // They used to close either way, so a failed save looked identical to a
   // successful one and the register was quietly wrong.
   async function handleSave() {
-    const attendanceRecords = students.map((s) => ({
-      studentId: s.id,
-      status: records[s.id] || ("present" as AttendanceStatus),
-    }));
-
-    const ok = await run(() => recordAttendance(session.id, attendanceRecords), {
+    const ok = await run(() => recordAttendance(session.id, registerOnScreen()), {
       success: "Attendance saved",
       error: "Attendance wasn't saved",
     });
@@ -121,17 +140,22 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
     toast.success("Link and passcode copied");
   }
 
+  // Saves the register and completes in one step. Completing used to be its
+  // own button that ignored the register, so pressing it first lost the lot.
   async function handleComplete() {
-    const ok = await run(() => completeSession(session.id), {
-      success: "Session marked complete",
-      error: "The session wasn't marked complete",
+    const ok = await run(() => completeSession(session.id, registerOnScreen()), {
+      success: "Attendance saved and practice complete",
+      error: "The practice wasn't completed",
     });
     if (ok) onOpenChange(false);
   }
 
   const program = session?.programs;
   const school = program?.schools;
-  const presentCount = Object.values(records).filter((s) => s === "present" || s === "late").length;
+  const presentCount = roster.filter((s) => {
+    const status = statusOf(s.id);
+    return status === "present" || status === "late";
+  }).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,7 +165,7 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
         </DialogHeader>
 
         {/* Session Info */}
-        <div className="rounded-xl bg-muted/50 p-4 space-y-1 text-sm">
+        <div data-testid="session-summary" className="rounded-xl bg-muted/50 p-4 space-y-1 text-sm">
           <div className="font-medium">{program?.name}</div>
           <div className="text-muted-foreground">{school?.name}</div>
           <div className="text-muted-foreground">
@@ -153,13 +177,13 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
               {session.status}
             </Badge>
             <span className="text-muted-foreground flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" /> {presentCount}/{students.length}
+              <Users className="h-3.5 w-3.5" /> {presentCount}/{roster.length}
             </span>
           </div>
         </div>
 
-        {/* Attendance List */}
-        {session.status === "scheduled" && (
+        {/* Attendance List — kept on a completed practice so it can be checked and corrected */}
+        {session.status !== "cancelled" && (
           <>
             {coachLink && (
               <div className="rounded-xl border border-green-200 bg-green-50 p-3 space-y-2">
@@ -186,23 +210,30 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
                     <div key={i} className="h-12 rounded-xl border bg-muted/40 animate-pulse" />
                   ))}
                 </div>
-              ) : students.length === 0 ? (
+              ) : roster.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No students enrolled in this program.</p>
               ) : (
-                students.map((student) => {
-                  const status = records[student.id] || "present";
-                  const style = statusStyles[status];
-                  const Icon = style.icon;
+                roster.map((student) => {
+                  const status = statusOf(student.id);
+                  const style = status ? statusStyles[status] : null;
+                  const Icon = style?.icon;
                   return (
                     <button
                       key={student.id}
+                      data-testid="register-row"
                       className="w-full flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors"
                       onClick={() => toggleStatus(student.id)}
                     >
                       <span className="font-medium text-sm">{student.first_name} {student.last_name}</span>
-                      <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
-                        <Icon className="h-3.5 w-3.5" /> {status}
-                      </span>
+                      {style && Icon ? (
+                        <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
+                          <Icon className="h-3.5 w-3.5" /> {status}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-full border border-dashed text-muted-foreground">
+                          not marked
+                        </span>
+                      )}
                     </button>
                   );
                 })
@@ -210,28 +241,43 @@ export function AttendanceDialog({ open, onOpenChange, session }: AttendanceDial
             </div>
             <p className="text-xs text-muted-foreground text-center">Click a student to cycle through status</p>
 
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" size="sm" className="text-red-600" onClick={() => setShowCancel(!showCancel)}>
-                Cancel Session
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleComplete}>
-                Mark Complete
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={issueCoachLink}
-                disabled={pending}
-              >
-                <Link2 className="h-3.5 w-3.5 mr-1" />
-                Coach link
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={pending} className="ml-auto">
-                {pending ? "Saving..." : "Save Attendance"}
-              </Button>
-            </div>
+            {completed ? (
+              <div className="flex gap-2 pt-2">
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={pending || registerOnScreen().length === 0}
+                  className="ml-auto"
+                >
+                  {pending ? "Saving..." : "Save changes"}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" className="text-red-600" onClick={() => setShowCancel(!showCancel)}>
+                  Cancel Session
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={issueCoachLink}
+                  disabled={pending}
+                >
+                  <Link2 className="h-3.5 w-3.5 mr-1" />
+                  Coach link
+                </Button>
+                <Button size="sm" onClick={handleComplete} disabled={pending || upcoming} className="ml-auto">
+                  {pending ? "Saving..." : "Save & complete"}
+                </Button>
+              </div>
+            )}
+            {upcoming && (
+              <p className="text-xs text-muted-foreground text-center">
+                This practice hasn&apos;t happened yet. Take the register and complete it on the day.
+              </p>
+            )}
 
-            {showCancel && (
+            {!completed && showCancel && (
               <div className="flex gap-2">
                 <input
                   className="flex-1 rounded-lg border px-3 py-2 text-sm"

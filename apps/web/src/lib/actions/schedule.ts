@@ -249,9 +249,36 @@ export async function cancelSession(id: string, reason: string) {
   return { data };
 }
 
-export async function completeSession(id: string) {
+/**
+ * Saves the register on screen and completes the practice in one step. It
+ * used to be a separate button that ignored the register, so completing
+ * before saving left the practice with no attendance at all — and it would
+ * complete a practice weeks away.
+ */
+export async function completeSession(id: string, records: AttendanceRecord[] = []) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("date, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (!session) return { error: "That practice wasn't found." };
+  if (session.status === "cancelled") {
+    return { error: "This practice was cancelled, so it can't be completed." };
+  }
+  if (session.date > businessToday()) {
+    return { error: "This practice hasn't happened yet, so it can't be completed." };
+  }
+
+  if (records.length > 0) {
+    const saved = await saveRegister(supabase, id, records);
+    if (saved.error) {
+      revalidatePath("/schedule");
+      return { error: saved.error };
+    }
+  }
 
   const { data, error } = await supabase
     .from("sessions")
@@ -312,10 +339,9 @@ export async function createMakeupSession(formData: FormData) {
 
 // ---------- Attendance ----------
 
-export async function recordAttendance(
-  sessionId: string,
-  records: { studentId: string; status: "present" | "absent" | "late" | "excused" }[]
-) {
+type AttendanceRecord = { studentId: string; status: "present" | "absent" | "late" | "excused" };
+
+export async function recordAttendance(sessionId: string, records: AttendanceRecord[]) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
@@ -323,6 +349,16 @@ export async function recordAttendance(
     return { error: "Session ID and attendance records are required." };
   }
 
+  const result = await saveRegister(supabase, sessionId, records);
+  revalidatePath("/schedule");
+  return result;
+}
+
+async function saveRegister(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  sessionId: string,
+  records: AttendanceRecord[]
+): Promise<{ success: true; error?: undefined } | { error: string }> {
   const errors: string[] = [];
 
   for (const record of records) {
@@ -352,10 +388,7 @@ export async function recordAttendance(
   }
 
   if (errors.length > 0) {
-    revalidatePath("/schedule");
     return { error: `Some attendance records failed: ${errors.join(", ")}` };
   }
-
-  revalidatePath("/schedule");
   return { success: true };
 }
