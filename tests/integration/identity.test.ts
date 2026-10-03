@@ -222,6 +222,47 @@ describe("Bulk Import", () => {
     expect(schools.created).toBe(1);
     expect(schools.errors.map((e) => e.row)).toEqual([0]);
   });
+
+  // Issue #33: the parent's name and phone were asked for and thrown away, so
+  // the child had nobody to message and no invoices.
+  it("saves each student's parent and links them, matching a parent already on file by phone", async () => {
+    const mia = await seedMia();
+
+    const result = await bulkCreateStudents([
+      { first_name: "Leo", last_name: "Garcia", parent_name: "Someone Else", parent_phone: "(915) 500-2487" },
+      { first_name: "Omar", last_name: "Khan", grade: "3rd", parent_name: "Ayesha Khan", parent_phone: "214-555-0150" },
+      { first_name: "Zara", last_name: "Khan", parent_name: "Ayesha Khan", parent_phone: "+1 214 555 0150" },
+    ]);
+    expect(result.errors).toEqual([]);
+    expect(result.created).toBe(3);
+
+    const parentsOf = async (first: string) => {
+      const { data } = await admin
+        .from("students")
+        .select("student_parents(parents(id, first_name, last_name, phone))")
+        .eq("first_name", first)
+        .single();
+      return (data!.student_parents as any[]).map((sp) => sp.parents);
+    };
+
+    expect((await parentsOf("Leo")).map((p) => p.id)).toEqual([mia.parentId]);
+    const omar = await parentsOf("Omar");
+    expect(omar).toMatchObject([{ first_name: "Ayesha", last_name: "Khan", phone: "+12145550150" }]);
+    expect((await parentsOf("Zara")).map((p) => p.id)).toEqual([omar[0].id]);
+    expect(await count("parents")).toBe(2);
+  });
+
+  it("says what's wrong with a parent it can't save instead of dropping them", async () => {
+    const result = await bulkCreateStudents([
+      { first_name: "Omar", last_name: "Khan", parent_name: "Ayesha Khan", parent_phone: "555-01" },
+      { first_name: "Zara", last_name: "Khan", parent_name: "Ayesha Khan" },
+      { first_name: "Adam", last_name: "Khan", parent_phone: "2145550150" },
+    ]);
+    expect(result.created).toBe(0);
+    expect(result.errors.map((e) => e.row)).toEqual([0, 1, 2]);
+    expect(await count("students")).toBe(0);
+    expect(await count("parents")).toBe(0);
+  });
 });
 
 describe("schools and leads", () => {

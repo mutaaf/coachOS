@@ -348,6 +348,7 @@ export const TASKS: HelpTask[] = [
       { text: "Add Parent asks the same when the phone number is already on file, however it was typed." },
       { text: "Phone numbers are saved as one number — (214) 555-0150, 214.555.0150 and +1 214 555 0150 are the same — so WhatsApp always opens the right chat. One that isn't a phone number, like “12”, is refused so you can fix it.", tip: "For a number outside the US, start it with + and the country code." },
       { text: "Add to roster, roster imports and Bulk Import find families already on file by themselves, and never add a school with the same name twice." },
+      { text: "In **Bulk Students**, a parent name and phone on a row saves that parent and links them to the child. A phone already on file links the child to that parent instead of making a copy.", tip: "A parent name with no phone, or a new phone with no name, is held back with a note so you can finish the row." },
     ],
   },
   {
