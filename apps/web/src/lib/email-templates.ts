@@ -1,7 +1,7 @@
 /**
  * The emails parents get — and they should feel like part of the team.
  *
- * Festive by default: a confetti-and-soccer-ball header on the happy ones
+ * Festive by default: a basketball swishing through a hoop under confetti, on the happy ones
  * (registration, welcome, receipts), warm and calm on the one that isn't
  * (a payment that didn't go through — confetti there would read as a joke).
  *
@@ -70,7 +70,7 @@ ${header}
 </td></tr>
 <tr><td style="padding:12px 28px 28px;font-size:16px;line-height:1.6">${body}</td></tr>
 </table>
-<p style="margin:18px 0 0;font-size:13px;color:${MUTED}">⚽ ${esc(brand)} · Questions? Just reply — a real person reads every one.</p>
+<p style="margin:18px 0 0;font-size:13px;color:${MUTED}">🏀 ${esc(brand)} · Questions? Just reply — a real person reads every one.</p>
 </td></tr></table>
 </body></html>`;
 }
@@ -204,7 +204,7 @@ Prefer Zelle? The page has the details, and you won't need to message us when yo
 ${opts.brand}`;
   const html = layout(
     opts.brand,
-    `Set it and forget it ⚽`,
+    `Set it and forget it 🏀`,
     `<p style="margin:0">Hi ${esc(opts.parentName)}, you can now pay each month automatically — from your bank account with no fee, or by card. It takes about a minute.</p>
 <p style="margin:12px 0 0">Prefer Zelle? Your page has the details, and you won't need to message us when you've sent it.</p>
 ${button(opts.payLink, "Set up payments")}`,
@@ -268,7 +268,7 @@ export function registrationEmail(
 ) {
   const fee = opts.monthlyFeeCents ? `${dollars(opts.monthlyFeeCents)} a month` : null;
   if (opts.status === "waitlisted") {
-    const subject = `${opts.childName} is on the list for ${opts.programName} ⚽`;
+    const subject = `${opts.childName} is on the list for ${opts.programName} 🏀`;
     const text = `Hi ${opts.parentName},
 
 ${opts.programName} is full right now, so ${opts.childName} is on the waitlist${opts.waitlistPosition ? ` — number ${opts.waitlistPosition} in line` : ""}.
@@ -300,21 +300,21 @@ ${[["School", opts.schoolName], ["When", opts.schedule], ["First practice", opts
 What's next:
   - ${whatsappLine(opts.whatsappUrl)}
   - We'll send your payment link before the first practice.
-  - Bring water, shin guards and sneakers (cleats if you have them).
+  - Bring a water bottle and court shoes (sneakers with non-marking soles).
 
-See you on the field!
+See you on the court!
 ${opts.brand}`;
   const html = layout(
     opts.brand,
     `${opts.childName} is in! 🎉`,
-    `<p style="margin:0">Woohoo, ${esc(opts.parentName)}! ${esc(opts.childName)} has a spot in <strong>${esc(opts.programName)}</strong>. We can't wait to see them on the field.</p>
+    `<p style="margin:0">Woohoo, ${esc(opts.parentName)}! ${esc(opts.childName)} has a spot in <strong>${esc(opts.programName)}</strong>. We can't wait to see them on the court.</p>
 ${details([["School", opts.schoolName], ["When", opts.schedule], ["First practice", opts.firstPractice], ["Fee", fee]])}
 ${opts.whatsappUrl ? whatsappButton(opts.whatsappUrl) : ""}
 <p style="margin:22px 0 4px;font-weight:700">What's next</p>
 ${checklist([
   ...(opts.whatsappUrl ? [["💬", "Join the group chat — schedule changes, photos and game-day news land there first."] as [string, string]] : [["📬", "Watch your inbox — schedule changes and news come by email and text."] as [string, string]]),
   ["💳", "We'll send your payment link before the first practice."],
-  ["🎒", "Bring water, shin guards and sneakers (cleats if you have them)."],
+  ["🎒", "Bring a water bottle and court shoes (sneakers with non-marking soles)."],
 ])}`,
     { preheader: `${opts.childName} has a spot in ${opts.programName}. Here's what happens next.` }
   );
@@ -340,7 +340,7 @@ ${whatsappLine(opts.whatsappUrl)}
 
 Your payment page (autopay by bank has no fee): ${opts.payLink}
 
-See you on the field!
+See you on the court!
 ${opts.brand}`;
   const html = layout(
     opts.brand,
@@ -352,8 +352,8 @@ ${button(opts.payLink, "💳 Set up payments")}
 <p style="margin:22px 0 4px;font-weight:700">Game-day checklist</p>
 ${checklist([
   ["💧", "A full water bottle"],
-  ["🦵", "Shin guards (required)"],
-  ["👟", "Sneakers or cleats"],
+  ["👕", "Comfy athletic clothes"],
+  ["👟", "Court shoes or sneakers with non-marking soles"],
   ["😄", "A big smile — first practices are all about fun"],
 ])}`,
     { preheader: `${opts.childName} is on the roster! First practice details inside.` }

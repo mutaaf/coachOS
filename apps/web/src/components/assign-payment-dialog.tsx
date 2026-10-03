@@ -484,7 +484,7 @@ export function AssignPaymentDialog({
               <div className="grid grid-cols-[1fr_8rem] gap-3">
                 <div>
                   <Label htmlFor="new-program">New program&rsquo;s name</Label>
-                  <Input id="new-program" placeholder="Fall Soccer" value={program.name} onChange={(e) => setProgram({ ...program, name: e.target.value })} />
+                  <Input id="new-program" placeholder="Fall Basketball" value={program.name} onChange={(e) => setProgram({ ...program, name: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="new-fee">Monthly fee</Label>

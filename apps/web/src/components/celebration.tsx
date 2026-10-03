@@ -84,11 +84,11 @@ export function ConfettiBurst() {
   );
 }
 
-/** A soccer ball that bounces in and settles. Still for reduced motion. */
+/** A basketball that bounces in and settles. Still for reduced motion. */
 export function BouncingBall({ className = "" }: { className?: string }) {
   return (
     <span aria-hidden="true" className={`cs-bounce inline-block select-none ${className}`}>
-      ⚽
+      🏀
       <style>{`
         @keyframes cs-bounce-in {
           0% { transform: translateY(-120%) rotate(-90deg); opacity: 0; }

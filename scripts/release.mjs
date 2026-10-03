@@ -70,7 +70,7 @@ function askClaude() {
 Write notes for version ${version} from the commits below.
 
 Rules:
-- "title": a short, warm pun on youth sports/coaching/soccer (max 6 words). Make it fit what changed.
+- "title": a short, warm basketball pun (hoops, buckets, swish, court, dribble, assist, rebound, slam dunk; max 6 words). Make it fit what changed.
 - "summary": one friendly sentence, or "" if the notes say it all.
 - "notes": only changes she would notice or benefit from, in plain words, each one sentence starting with what she can now do or what's better. Skip tests, CI, refactors, internal tooling. No jargon (no "server action", "migration", "RLS", "API"). Max 6.
 - When a note is about something a tour stop shows, set "tourStep" to one of these ids: ${JSON.stringify(stepsNow)}. New stops this release: ${JSON.stringify(newSteps)} — every new stop should be linked from a note. Otherwise omit tourStep.

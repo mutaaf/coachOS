@@ -92,7 +92,7 @@ export function RegistrationForm({
               ) : (
                 <>
                   Welcome to <strong>{programName}</strong>! We can&apos;t wait to see {result.childName || "them"} on
-                  the field
+                  the court
                   {result.amount ? <> ({`$${result.amount}`} a month — we&apos;ll send your payment link)</> : null}.
                 </>
               )}

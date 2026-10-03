@@ -1733,7 +1733,7 @@
   ],
   "steps": [
    "Go to Messaging > Compose. Click By Program and choose the test program. Confirm only the test parent's name appears as a recipient chip.",
-   "In the message box type exactly, on two lines: 'Test 1 — Tom & Jerry's fees: https://app.risingstars.training/pay/test?a=1&b=2' then on a new line 'Thanks & see you Tuesday! 50% off? #3 ⚽'.",
+   "In the message box type exactly, on two lines: 'Test 1 — Tom & Jerry's fees: https://app.risingstars.training/pay/test?a=1&b=2' then on a new line 'Thanks & see you Tuesday! 50% off? #3 🏀'.",
    "Click 'Send to 1 recipient(s)'. Note the toast.",
    "Open the Outbox tab. Find the card for the test parent and tap the message text to expand it. Compare the name and phone shown on the card with the parent's record.",
    "On the computer, click WhatsApp. Before you press send, compare the prefilled text with what you typed, character by character. Then send it.",
