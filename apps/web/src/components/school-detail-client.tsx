@@ -131,6 +131,15 @@ const DAY_NAMES = [
   "Saturday",
 ];
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-10" → "Oct 2026", for the phone cards; anything else is shown as is. */
+function formatMonth(month: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!m) return month;
+  return `${MONTHS[Number(m[2]) - 1] ?? m[2]} ${m[1]}`;
+}
+
 function formatTime(time: string): string {
   const [hours, minutes] = time.split(":");
   const h = parseInt(hours, 10);
@@ -271,6 +280,20 @@ export function SchoolDetailClient({
     setTemplateDialogOpen(true);
   }
 
+  async function handleWithdraw(student: SchoolStudent) {
+    if (!window.confirm(`Withdraw ${student.first_name} ${student.last_name} from ${student.program_name}?`)) return;
+    const result = await withdrawEnrollment(student.enrollment_id);
+    if (result.error) toast.error(result.error);
+    else { toast.success("Enrollment withdrawn"); router.refresh(); }
+  }
+
+  async function handleWaive(invoiceId: string) {
+    if (!window.confirm("Waive this invoice?")) return;
+    await waiveInvoice(invoiceId);
+    toast.success("Invoice waived");
+    router.refresh();
+  }
+
   async function handleDeleteTemplate(id: string) {
     const result = await deleteScheduleTemplate(id);
     if (result.error) {
@@ -287,26 +310,32 @@ export function SchoolDetailClient({
       <div>
         <Link
           href="/schools"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          className="-ml-1 mb-2 inline-flex min-h-[44px] items-center gap-1.5 px-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Schools
         </Link>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {school.name}
-            </h1>
-            <Badge variant={getStatusBadgeVariant(school.status)}>
-              {school.status}
-            </Badge>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="min-w-0 break-words text-2xl font-bold">
+                {school.name}
+              </h1>
+              <Badge variant={getStatusBadgeVariant(school.status)} className="shrink-0">
+                {school.status}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+              {activeStudentCount} {activeStudentCount === 1 ? "child" : "children"} enrolled ·{" "}
+              {programs.length} {programs.length === 1 ? "session" : "sessions"}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
             {school.status !== "archived" && (
               <Button
                 variant="outline"
-                className="gap-2 text-destructive hover:text-destructive"
+                className="h-11 gap-2 text-destructive hover:text-destructive sm:h-10"
                 onClick={() => setArchiveOpen(true)}
               >
                 <Archive className="h-4 w-4" />
@@ -315,7 +344,7 @@ export function SchoolDetailClient({
             )}
             <Button
               variant="outline"
-              className="gap-2"
+              className={`h-11 gap-2 sm:h-10 ${school.status === "archived" ? "col-span-2" : ""}`}
               onClick={() => setEditDialogOpen(true)}
             >
               <Pencil className="h-4 w-4" />
@@ -327,22 +356,24 @@ export function SchoolDetailClient({
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="students">
-            Students ({uniqueStudentCount})
-          </TabsTrigger>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="h-12 w-max sm:h-10">
+            <TabsTrigger value="overview" className="h-10 px-4 sm:h-8 sm:px-3">Overview</TabsTrigger>
+            <TabsTrigger value="students" className="h-10 px-4 sm:h-8 sm:px-3">
+              Students ({uniqueStudentCount})
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="h-10 px-4 sm:h-8 sm:px-3">Schedule</TabsTrigger>
+            <TabsTrigger value="payments" className="h-10 px-4 sm:h-8 sm:px-3">Payments</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6 mt-6">
+        <TabsContent value="overview" className="space-y-6 mt-4 sm:mt-6">
           {/* Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Contact Info */}
-            <div className="rounded-2xl border bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-medium text-muted-foreground mb-4">
+            <div className="rounded-2xl border bg-white p-4 shadow-sm sm:p-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 sm:mb-4">
                 Contact Information
               </h3>
               <div className="space-y-3">
@@ -357,7 +388,7 @@ export function SchoolDetailClient({
                     <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <a
                       href={`mailto:${school.contact_email}`}
-                      className="text-sm text-primary hover:underline"
+                      className="min-w-0 break-all py-1 text-sm text-primary hover:underline"
                     >
                       {school.contact_email}
                     </a>
@@ -368,7 +399,7 @@ export function SchoolDetailClient({
                     <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <a
                       href={`tel:${school.contact_phone}`}
-                      className="text-sm text-primary hover:underline"
+                      className="py-1 text-sm text-primary hover:underline tabular-nums"
                     >
                       {school.contact_phone}
                     </a>
@@ -385,8 +416,8 @@ export function SchoolDetailClient({
             </div>
 
             {/* Address */}
-            <div className="rounded-2xl border bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-medium text-muted-foreground mb-4">
+            <div className="rounded-2xl border bg-white p-4 shadow-sm sm:p-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 sm:mb-4">
                 Address
               </h3>
               <div className="flex items-start gap-3">
@@ -398,13 +429,13 @@ export function SchoolDetailClient({
             </div>
 
             {/* Notes */}
-            <div className="rounded-2xl border bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-medium text-muted-foreground mb-4">
+            <div className="rounded-2xl border bg-white p-4 shadow-sm sm:p-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 sm:mb-4">
                 Notes
               </h3>
               <div className="flex items-start gap-3">
                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <p className="text-sm whitespace-pre-wrap">
+                <p className="min-w-0 break-words text-sm whitespace-pre-wrap">
                   {school.notes || "No notes added"}
                 </p>
               </div>
@@ -413,18 +444,20 @@ export function SchoolDetailClient({
 
           {/* Programs List */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Sessions</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-lg font-semibold">Sessions</h2>
+                <span className="text-sm text-muted-foreground tabular-nums">
                   {programs.length}{" "}
                   {programs.length === 1 ? "session" : "sessions"}
                 </span>
-                <Button size="sm" variant="outline" onClick={() => setRosterProgramId(null)}>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                <Button variant="outline" className="h-11 sm:h-9" onClick={() => setRosterProgramId(null)}>
                   <Upload className="h-4 w-4 mr-1" />
                   Import roster
                 </Button>
-                <Button size="sm" onClick={handleAddProgram}>
+                <Button className="h-11 sm:h-9" onClick={handleAddProgram}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add session
                 </Button>
@@ -432,12 +465,12 @@ export function SchoolDetailClient({
             </div>
 
             {programs.length === 0 ? (
-              <div className="rounded-2xl border border-dashed bg-white p-8 text-center">
+              <div className="rounded-2xl border border-dashed bg-white p-6 text-center sm:p-8">
                 <GraduationCap className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground mb-3">
                   No sessions at this school yet
                 </p>
-                <Button size="sm" variant="outline" onClick={handleAddProgram}>
+                <Button variant="outline" className="h-11 sm:h-9" onClick={handleAddProgram}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add first session
                 </Button>
@@ -447,23 +480,28 @@ export function SchoolDetailClient({
                 {programs.map((program) => (
                   <div
                     key={program.id}
-                    className="rounded-2xl border bg-white p-5 shadow-sm flex items-center justify-between"
+                    className="flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                         <GraduationCap className="h-5 w-5 text-primary" />
                       </div>
-                      <div>
-                        <h4 className="font-medium text-sm">{program.name}</h4>
-                        <div className="flex items-center gap-3 mt-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="min-w-0 break-words font-medium text-sm">{program.name}</h4>
+                          <Badge variant={getProgramStatusVariant(program.status)} className="shrink-0 sm:hidden">
+                            {program.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
                           {program.season && (
                             <span className="text-xs text-muted-foreground">
                               {program.season}
                             </span>
                           )}
                           {program.start_date && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
+                            <span className="text-xs text-muted-foreground flex items-center gap-1 tabular-nums">
+                              <Calendar className="h-3 w-3 shrink-0" />
                               {formatDateOnly(program.start_date)}
                               {program.end_date &&
                                 ` - ${formatDateOnly(program.end_date)}`}
@@ -472,39 +510,47 @@ export function SchoolDetailClient({
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">
+                    <div className="flex items-center justify-between gap-2 border-t pt-2 sm:justify-end sm:gap-3 sm:border-0 sm:pt-0">
+                      <span className="whitespace-nowrap text-sm font-medium tabular-nums">
                         {Number(program.monthly_fee) > 0
                           ? `${formatCurrency(program.monthly_fee)}/mo`
                           : "Free – no invoices"}
                       </span>
-                      <Badge variant={getProgramStatusVariant(program.status)}>
+                      <Badge variant={getProgramStatusVariant(program.status)} className="hidden sm:inline-flex">
                         {program.status}
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setRosterProgramId(program.id)}
-                        title="Import this session's roster"
-                      >
-                        <Upload className="h-3.5 w-3.5" />
-                        <span className="sr-only">Import roster</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditProgram(program)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDuplicateProgram(program)}
-                        title="Duplicate session"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-2 sm:gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-11 w-11 p-0 sm:h-9 sm:w-auto sm:px-3"
+                          onClick={() => setRosterProgramId(program.id)}
+                          title="Import this session's roster"
+                        >
+                          <Upload className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                          <span className="sr-only">Import roster</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-11 w-11 p-0 sm:h-9 sm:w-auto sm:px-3"
+                          aria-label={`Edit ${program.name}`}
+                          title="Edit session"
+                          onClick={() => handleEditProgram(program)}
+                        >
+                          <Pencil className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-11 w-11 p-0 sm:h-9 sm:w-auto sm:px-3"
+                          aria-label={`Duplicate ${program.name}`}
+                          onClick={() => handleDuplicateProgram(program)}
+                          title="Duplicate session"
+                        >
+                          <Copy className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -514,26 +560,26 @@ export function SchoolDetailClient({
         </TabsContent>
 
         {/* Students Tab */}
-        <TabsContent value="students" className="mt-6">
-          <div className="flex items-center justify-between mb-4">
+        <TabsContent value="students" className="mt-4 sm:mt-6">
+          <div className="flex items-center justify-between gap-3 mb-4">
             <h2 className="text-lg font-semibold">
               Students ({uniqueStudentCount})
             </h2>
-            <Button size="sm" onClick={() => setStudentDialogOpen(true)}>
+            <Button className="h-11 sm:h-9" onClick={() => setStudentDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Add Student
             </Button>
           </div>
 
           {students.length === 0 ? (
-            <div className="rounded-2xl border border-dashed bg-white p-8 text-center">
+            <div className="rounded-2xl border border-dashed bg-white p-6 text-center sm:p-8">
               <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground mb-3">
                 No students enrolled at this school yet
               </p>
               <Button
-                size="sm"
                 variant="outline"
+                className="h-11 sm:h-9"
                 onClick={() => setStudentDialogOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -541,7 +587,79 @@ export function SchoolDetailClient({
               </Button>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
+            <>
+            {/* Phones: one card per enrollment */}
+            <ul className="space-y-3 md:hidden" aria-label="Students">
+              {students.map((student) => (
+                <li
+                  key={student.enrollment_id}
+                  className="rounded-2xl border bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words font-medium">
+                        {student.first_name} {student.last_name}
+                      </p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {[
+                          student.grade ? `Grade ${student.grade}` : null,
+                          student.parent_name,
+                          student.program_name,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "No details yet"}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={getStatusBadgeVariant(student.enrollment_status)}
+                      className="shrink-0"
+                    >
+                      {student.enrollment_status}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-11 gap-1.5"
+                      onClick={() => setEditingStudent(student)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-11 gap-1.5"
+                      onClick={() => setLinkingStudentId(student.id)}
+                    >
+                      <Link2 className="h-4 w-4" />
+                      Link parents
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-11"
+                      onClick={() =>
+                        setEnrollStudent({
+                          id: student.id,
+                          name: `${student.first_name} ${student.last_name}`,
+                        })
+                      }
+                    >
+                      Enroll
+                    </Button>
+                    {student.enrollment_status === "active" && (
+                      <Button
+                        variant="outline"
+                        className="h-11 text-destructive hover:text-destructive"
+                        onClick={() => handleWithdraw(student)}
+                      >
+                        Withdraw
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden rounded-2xl border bg-white shadow-sm overflow-x-auto md:block">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/30">
@@ -606,6 +724,7 @@ export function SchoolDetailClient({
                           size="sm"
                           onClick={() => setEditingStudent(student)}
                           title="Edit student"
+                          aria-label={`Edit ${student.first_name} ${student.last_name}`}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -614,6 +733,7 @@ export function SchoolDetailClient({
                           size="sm"
                           onClick={() => setLinkingStudentId(student.id)}
                           title="Link parents"
+                          aria-label={`Link parents of ${student.first_name} ${student.last_name}`}
                         >
                           <Link2 className="h-3.5 w-3.5" />
                         </Button>
@@ -634,12 +754,7 @@ export function SchoolDetailClient({
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
-                            onClick={async () => {
-                              if (!window.confirm(`Withdraw ${student.first_name} ${student.last_name} from ${student.program_name}?`)) return;
-                              const result = await withdrawEnrollment(student.enrollment_id);
-                              if (result.error) toast.error(result.error);
-                              else { toast.success("Enrollment withdrawn"); router.refresh(); }
-                            }}
+                            onClick={() => handleWithdraw(student)}
                           >
                             Withdraw
                           </Button>
@@ -650,13 +765,14 @@ export function SchoolDetailClient({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </TabsContent>
 
         {/* Schedule Tab */}
-        <TabsContent value="schedule" className="mt-6 space-y-6">
+        <TabsContent value="schedule" className="mt-4 space-y-6 sm:mt-6">
           {scheduleTemplates.length === 0 && upcomingSessions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed bg-white p-12 text-center">
+            <div className="rounded-2xl border border-dashed bg-white p-6 text-center sm:p-12">
               <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-1">No schedule yet</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
@@ -664,8 +780,8 @@ export function SchoolDetailClient({
                 schedule here.
               </p>
               <Button
-                size="sm"
                 variant="outline"
+                className="h-11 sm:h-9"
                 onClick={() => {
                   setEditingTemplate(undefined);
                   setTemplateDialogOpen(true);
@@ -679,10 +795,10 @@ export function SchoolDetailClient({
             <>
               {/* Weekly Schedule */}
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between gap-3 mb-4">
                   <h2 className="text-lg font-semibold">Weekly Schedule</h2>
                   <Button
-                    size="sm"
+                    className="h-11 sm:h-9"
                     onClick={() => {
                       setEditingTemplate(undefined);
                       setTemplateDialogOpen(true);
@@ -700,41 +816,45 @@ export function SchoolDetailClient({
                       return (
                         <div
                           key={dayIndex}
-                          className="rounded-2xl border bg-white p-5 shadow-sm"
+                          className="rounded-2xl border bg-white p-4 shadow-sm sm:p-5"
                         >
-                          <h3 className="text-sm font-semibold mb-3">
+                          <h3 className="text-sm font-semibold mb-2 sm:mb-3">
                             {dayName}
                           </h3>
-                          <div className="space-y-2">
+                          <div className="space-y-1 md:space-y-2">
                             {dayTemplates.map((t) => (
                               <div
                                 key={t.id}
                                 className="group flex items-center gap-2 text-sm"
                               >
                                 <Clock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                                <span className="font-medium">
-                                  {t.program_name}
+                                <span className="flex min-w-0 flex-1 flex-col md:flex-row md:flex-wrap md:items-center md:gap-x-2">
+                                  <span className="break-words font-medium">
+                                    {t.program_name}
+                                  </span>
+                                  <span className="whitespace-nowrap text-muted-foreground tabular-nums">
+                                    {formatTime(t.start_time)} -{" "}
+                                    {formatTime(t.end_time)}
+                                  </span>
                                 </span>
-                                <span className="text-muted-foreground">
-                                  {formatTime(t.start_time)} -{" "}
-                                  {formatTime(t.end_time)}
-                                </span>
-                                <span className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="ml-auto flex shrink-0 items-center gap-2 transition-opacity md:gap-0.5 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0"
+                                    className="h-11 w-11 p-0 md:h-6 md:w-6"
+                                    aria-label={`Edit ${t.program_name}, ${dayName} ${formatTime(t.start_time)}`}
                                     onClick={() => handleEditTemplate(t)}
                                   >
-                                    <Pencil className="h-3 w-3" />
+                                    <Pencil className="h-4 w-4 md:h-3 md:w-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                    className="h-11 w-11 p-0 text-destructive hover:text-destructive md:h-6 md:w-6"
+                                    aria-label={`Delete ${t.program_name}, ${dayName} ${formatTime(t.start_time)}`}
                                     onClick={() => handleDeleteTemplate(t.id)}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-4 w-4 md:h-3 md:w-3" />
                                   </Button>
                                 </span>
                               </div>
@@ -757,7 +877,33 @@ export function SchoolDetailClient({
                   <h2 className="text-lg font-semibold mb-4">
                     Upcoming practices
                   </h2>
-                  <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
+                  {/* Phones: a calendar-tile list. The date is split across two
+                      lines here, so it never doubles the table's text. */}
+                  <ul className="divide-y rounded-2xl border bg-white shadow-sm md:hidden" aria-label="Upcoming practices">
+                    {upcomingSessions.map((session) => (
+                      <li key={session.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-muted/60 py-1.5 leading-tight">
+                          <span className="text-xs font-medium uppercase text-muted-foreground">
+                            {formatDateOnly(session.date, { weekday: "short" })}
+                          </span>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {formatDateOnly(session.date, { month: "short" })}{" "}
+                            {formatDateOnly(session.date, { day: "numeric" })}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-sm font-medium">{session.program_name}</p>
+                          <p className="text-sm text-muted-foreground tabular-nums">
+                            {formatTime(session.start_time)} – {formatTime(session.end_time)}
+                          </p>
+                        </div>
+                        <Badge variant={getStatusBadgeVariant(session.status)} className="shrink-0">
+                          {session.status}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="hidden rounded-2xl border bg-white shadow-sm overflow-x-auto md:block">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b bg-muted/30">
@@ -820,9 +966,9 @@ export function SchoolDetailClient({
         </TabsContent>
 
         {/* Payments Tab */}
-        <TabsContent value="payments" className="mt-6 space-y-6">
+        <TabsContent value="payments" className="mt-4 space-y-4 sm:mt-6 sm:space-y-6">
           {invoices.length === 0 ? (
-            <div className="rounded-2xl border border-dashed bg-white p-12 text-center">
+            <div className="rounded-2xl border border-dashed bg-white p-6 text-center sm:p-12">
               <CreditCard className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-1">No invoices yet</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -832,50 +978,72 @@ export function SchoolDetailClient({
           ) : (
             <>
               {/* Summary Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-100">
-                      <DollarSign className="h-5 w-5 text-yellow-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(pendingTotal)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
-                      <AlertCircle className="h-5 w-5 text-red-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Overdue</p>
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(overdueTotal)}
-                      </p>
+              <div className="grid grid-cols-3 gap-2 md:gap-4">
+                {[
+                  { label: "Pending", total: pendingTotal, Icon: DollarSign, tint: "bg-yellow-100", ink: "text-yellow-600" },
+                  { label: "Overdue", total: overdueTotal, Icon: AlertCircle, tint: "bg-red-100", ink: "text-red-600" },
+                  { label: "Paid", total: paidTotal, Icon: CheckCircle2, tint: "bg-green-100", ink: "text-green-600" },
+                ].map(({ label, total, Icon, tint, ink }) => (
+                  <div key={label} className="min-w-0 rounded-2xl border bg-white p-3 shadow-sm md:p-5">
+                    <div className="flex items-center gap-3">
+                      <div className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl md:flex ${tint}`}>
+                        <Icon className={`h-5 w-5 ${ink}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground md:text-sm">
+                          <Icon className={`h-3.5 w-3.5 shrink-0 md:hidden ${ink}`} />
+                          {label}
+                        </p>
+                        <p className="whitespace-nowrap text-base font-semibold tabular-nums md:text-lg">
+                          {formatCurrency(total)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Paid</p>
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(paidTotal)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
+              {/* Phones: one card per invoice */}
+              <ul className="space-y-3 md:hidden" aria-label="Invoices">
+                {invoices.map((invoice) => {
+                  const open = invoice.status === "pending" || invoice.status === "overdue";
+                  return (
+                    <li key={invoice.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words font-medium">{invoice.student_name}</p>
+                          <p className="mt-0.5 text-sm text-muted-foreground">
+                            {[invoice.program_name, formatMonth(invoice.month)].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <span className="whitespace-nowrap font-semibold tabular-nums">
+                            {formatCurrency(invoice.amount)}
+                          </span>
+                          <Badge variant={getInvoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
+                        </div>
+                      </div>
+                      {open && (
+                        <div className="mt-3 flex gap-2">
+                          <Button className="h-11 flex-1" onClick={() => setPaymentInvoiceId(invoice.id)}>
+                            Record Payment
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="h-11 flex-1 text-muted-foreground"
+                            onClick={() => handleWaive(invoice.id)}
+                          >
+                            Waive
+                          </Button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
               {/* Invoice Table */}
-              <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
+              <div className="hidden rounded-2xl border bg-white shadow-sm overflow-x-auto md:block">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b bg-muted/30">
@@ -921,7 +1089,7 @@ export function SchoolDetailClient({
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm font-medium">
+                          <span className="whitespace-nowrap text-sm font-medium tabular-nums">
                             {formatCurrency(invoice.amount)}
                           </span>
                         </td>
@@ -947,12 +1115,7 @@ export function SchoolDetailClient({
                                 variant="ghost"
                                 size="sm"
                                 className="text-muted-foreground"
-                                onClick={async () => {
-                                  if (!window.confirm("Waive this invoice?")) return;
-                                  await waiveInvoice(invoice.id);
-                                  toast.success("Invoice waived");
-                                  router.refresh();
-                                }}
+                                onClick={() => handleWaive(invoice.id)}
                               >
                                 Waive
                               </Button>

@@ -11,7 +11,7 @@ import { assignUnrecognisedPayment } from "@/lib/actions/payment-assign";
 import type { AssignFamily, AssignSchool } from "@/lib/queries/payment-assign";
 import type { AssignInput } from "@/lib/payment-assign";
 import { formatCurrency, newClientKey } from "@/lib/utils";
-import { ArrowLeft, Check, ChevronRight, Search, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Search, UserPlus, X } from "lucide-react";
 
 /**
  * "Who paid this?" — for money from someone CoachOS doesn't recognise.
@@ -228,7 +228,7 @@ export function AssignPaymentDialog({
         if (!o) reset();
       }}
     >
-      <DialogContent className="max-w-xl" data-testid="assign-payment">
+      <DialogContent className="max-w-xl p-5 sm:p-6" data-testid="assign-payment">
         <DialogHeader>
           <div className="flex items-center gap-2">
             {step !== "who" && (
@@ -236,22 +236,34 @@ export function AssignPaymentDialog({
                 type="button"
                 onClick={back}
                 aria-label="Back"
-                className="-ml-1 rounded-md p-1 text-muted-foreground hover:bg-muted"
+                className="-ml-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
-            <DialogTitle>{title[step]}</DialogTitle>
+            <DialogTitle className="min-w-0 flex-1 text-left leading-snug">{title[step]}</DialogTitle>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => {
+                onOpenChange(false);
+                reset();
+              }}
+              className="-mr-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </DialogHeader>
 
         {/* The money, always in view */}
         {zelle ? (
           <div className="mb-4 rounded-xl bg-violet-50 px-4 py-3 text-violet-950">
-            <p className="text-lg font-semibold">
-              {formatCurrency(zelle.amount)} <span className="font-normal">by Zelle from</span> {zelle.sender}
+            <p className="break-words text-lg font-semibold">
+              <span className="whitespace-nowrap tabular-nums">{formatCurrency(zelle.amount)}</span>{" "}
+              <span className="font-normal">by Zelle from</span> {zelle.sender}
             </p>
-            {zelle.memo && <p className="text-sm">&ldquo;{zelle.memo}&rdquo;</p>}
+            {zelle.memo && <p className="break-words text-sm">&ldquo;{zelle.memo}&rdquo;</p>}
           </div>
         ) : step === "who" ? (
           <div className="mb-4 grid grid-cols-2 gap-3">
@@ -259,6 +271,7 @@ export function AssignPaymentDialog({
               <Label htmlFor="assign-amount">Amount paid</Label>
               <Input
                 id="assign-amount"
+                className="h-11 tabular-nums"
                 inputMode="decimal"
                 placeholder="120.00"
                 value={amount}
@@ -269,6 +282,7 @@ export function AssignPaymentDialog({
               <Label htmlFor="assign-method">How</Label>
               <Select
                 id="assign-method"
+                className="h-11"
                 value={method}
                 onChange={(e) => setMethod(e.target.value as typeof method)}
                 options={[
@@ -281,7 +295,7 @@ export function AssignPaymentDialog({
           </div>
         ) : (
           <p className="mb-4 rounded-xl bg-muted px-4 py-2 font-semibold">
-            {formatCurrency(cents / 100)} by {method}
+            <span className="tabular-nums">{formatCurrency(cents / 100)}</span> by {method}
           </p>
         )}
 
@@ -310,7 +324,7 @@ export function AssignPaymentDialog({
                     className="grid w-full grid-cols-[1fr_auto] items-center gap-2 px-4 py-3 text-left hover:bg-muted/50 disabled:opacity-50"
                   >
                     <span className="min-w-0">
-                      <span className="block font-medium">{f.name}</span>
+                      <span className="block truncate font-medium">{f.name}</span>
                       <span className="block truncate text-sm text-muted-foreground">
                         {f.children.length ? f.children.map((c) => c.first_name).join(", ") : "No children yet"}
                         {" · "}
@@ -344,20 +358,21 @@ export function AssignPaymentDialog({
 
         {step === "new-family" && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="parent-first">Parent first name</Label>
-                <Input id="parent-first" value={parent.first_name} onChange={(e) => setParent({ ...parent, first_name: e.target.value })} />
+                <Input id="parent-first" className="h-11" autoComplete="off" value={parent.first_name} onChange={(e) => setParent({ ...parent, first_name: e.target.value })} />
               </div>
               <div>
                 <Label htmlFor="parent-last">Last name</Label>
-                <Input id="parent-last" value={parent.last_name} onChange={(e) => setParent({ ...parent, last_name: e.target.value })} />
+                <Input id="parent-last" className="h-11" autoComplete="off" value={parent.last_name} onChange={(e) => setParent({ ...parent, last_name: e.target.value })} />
               </div>
             </div>
             <div>
               <Label htmlFor="parent-phone">Phone (for WhatsApp)</Label>
               <Input
                 id="parent-phone"
+                className="h-11"
                 type="tel"
                 inputMode="tel"
                 placeholder="(214) 555-0101"
@@ -367,12 +382,14 @@ export function AssignPaymentDialog({
             </div>
             <div>
               <Label htmlFor="parent-email">Email (optional, for receipts)</Label>
-              <Input id="parent-email" type="email" value={parent.email} onChange={(e) => setParent({ ...parent, email: e.target.value })} />
+              <Input id="parent-email" className="h-11" type="email" value={parent.email} onChange={(e) => setParent({ ...parent, email: e.target.value })} />
             </div>
             {samePhone && (
-              <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
-                That&rsquo;s <strong>{samePhone.name}</strong>&rsquo;s number already.
-                <Button type="button" size="sm" className="ml-2" onClick={() => pickFamily(samePhone)}>
+              <div className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  That&rsquo;s <strong>{samePhone.name}</strong>&rsquo;s number already.
+                </span>
+                <Button type="button" className="h-10 shrink-0" onClick={() => pickFamily(samePhone)}>
                   Use {samePhone.name.split(" ")[0]}&rsquo;s family
                 </Button>
               </div>
@@ -397,8 +414,8 @@ export function AssignPaymentDialog({
               <div className="space-y-2" role="radiogroup" aria-label="Child">
                 {family.children.map((c) => (
                   <label key={c.id} className="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3">
-                    <input type="radio" name="child" checked={childId === c.id} onChange={() => setChildId(c.id)} className="h-4 w-4" />
-                    <span>
+                    <input type="radio" name="child" checked={childId === c.id} onChange={() => setChildId(c.id)} className="h-5 w-5 shrink-0" />
+                    <span className="min-w-0">
                       <span className="font-medium">{c.first_name} {c.last_name}</span>
                       {c.programs.length > 0 && (
                         <span className="block text-sm text-muted-foreground">{c.programs.map((p) => p.name).join(", ")}</span>
@@ -407,20 +424,20 @@ export function AssignPaymentDialog({
                   </label>
                 ))}
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3">
-                  <input type="radio" name="child" checked={childId === NEW} onChange={() => setChildId(NEW)} className="h-4 w-4" />
+                  <input type="radio" name="child" checked={childId === NEW} onChange={() => setChildId(NEW)} className="h-5 w-5 shrink-0" />
                   <span className="font-medium">A child not listed</span>
                 </label>
               </div>
             )}
             {childId === NEW && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="child-first">Child first name</Label>
-                  <Input id="child-first" value={child.first_name} onChange={(e) => setChild({ ...child, first_name: e.target.value })} />
+                  <Input id="child-first" className="h-11" autoComplete="off" value={child.first_name} onChange={(e) => setChild({ ...child, first_name: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="child-last">Last name</Label>
-                  <Input id="child-last" value={child.last_name} onChange={(e) => setChild({ ...child, last_name: e.target.value })} />
+                  <Input id="child-last" className="h-11" autoComplete="off" value={child.last_name} onChange={(e) => setChild({ ...child, last_name: e.target.value })} />
                 </div>
               </div>
             )}
@@ -450,6 +467,7 @@ export function AssignPaymentDialog({
               <Label htmlFor="assign-school">School</Label>
               <Select
                 id="assign-school"
+                className="h-11"
                 value={schoolId}
                 onChange={(e) => {
                   setSchoolId(e.target.value);
@@ -465,7 +483,7 @@ export function AssignPaymentDialog({
             {schoolId === NEW && (
               <div>
                 <Label htmlFor="new-school">New school&rsquo;s name</Label>
-                <Input id="new-school" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
+                <Input id="new-school" className="h-11" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
               </div>
             )}
             {schoolId && (
@@ -473,6 +491,7 @@ export function AssignPaymentDialog({
                 <Label htmlFor="assign-program">Session</Label>
                 <Select
                   id="assign-program"
+                  className="h-11"
                   value={programId}
                   onChange={(e) => chooseProgram(e.target.value)}
                   options={[
@@ -484,15 +503,16 @@ export function AssignPaymentDialog({
               </div>
             )}
             {programId === NEW && (
-              <div className="grid grid-cols-[1fr_8rem] gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
                 <div>
                   <Label htmlFor="new-program">New session&rsquo;s name</Label>
-                  <Input id="new-program" placeholder="Fall Basketball" value={program.name} onChange={(e) => setProgram({ ...program, name: e.target.value })} />
+                  <Input id="new-program" className="h-11" placeholder="Fall Basketball" value={program.name} onChange={(e) => setProgram({ ...program, name: e.target.value })} />
                 </div>
                 <div>
                   <Label htmlFor="new-fee">Monthly fee</Label>
                   <Input
                     id="new-fee"
+                    className="h-11 tabular-nums"
                     inputMode="decimal"
                     value={program.monthly_fee}
                     onChange={(e) => setProgram({ ...program, monthly_fee: e.target.value.replace(/[^\d.]/g, "") })}
@@ -543,7 +563,7 @@ export function AssignPaymentDialog({
             {!placing && family && (
               <button
                 type="button"
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                className="min-h-11 text-left text-sm font-medium text-primary underline-offset-4 hover:underline"
                 onClick={() => {
                   setPlacing(true);
                   go("child");
@@ -566,7 +586,7 @@ function Line({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex gap-2">
       <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-      <span>{children}</span>
+      <span className="min-w-0 break-words">{children}</span>
     </li>
   );
 }

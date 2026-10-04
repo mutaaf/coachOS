@@ -35,7 +35,7 @@ test("editing a Zelle parent's phone keeps them on Zelle", async ({ page }) => {
 
   await signIn(page);
   await page.goto("/students");
-  await page.getByRole("button", { name: /^Parents \(/ }).click();
+  await page.getByRole("tab", { name: /^Parents \(/ }).click();
   await page.getByRole("row", { name: /Amina Khan/ }).getByTitle("Edit parent").click();
 
   await expect(page.getByLabel("Preferred Payment")).toHaveValue("zelle");

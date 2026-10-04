@@ -127,7 +127,7 @@ export function ProgramFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>
             {isEditing ? "Edit session" : defaultValues ? "Duplicate session" : "New session"}
           </DialogTitle>
@@ -249,7 +249,7 @@ export function ProgramFormDialog({
           </div>
 
           {/* Monthly fee and status side by side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
             <div className="space-y-2">
               <Label htmlFor="monthly_fee">Monthly Fee</Label>
               <Input
@@ -278,9 +278,9 @@ export function ProgramFormDialog({
           </div>
 
           {/* Registration — everything a parent sees */}
-          <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+          <div className="space-y-4 rounded-lg border bg-muted/30 p-3 sm:p-4">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium">Open registration</p>
                 <p className="text-xs text-muted-foreground">
                   Gives this session a link parents can use to sign up themselves.
@@ -301,7 +301,7 @@ export function ProgramFormDialog({
               value={registrationOpen ? "true" : "false"}
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
               <div className="space-y-2">
                 <Label htmlFor="capacity">Spots</Label>
                 <Input
@@ -387,16 +387,17 @@ export function ProgramFormDialog({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="h-11 sm:h-10">
               {isSubmitting
                 ? isEditing
                   ? "Saving..."

@@ -109,7 +109,7 @@ test("the school page shows program dates and sessions on their own days", async
   await page.goto(`/schools/${schoolId}`);
   await expect(page.getByText("9/1/2026 - 5/28/2027")).toBeVisible();
 
-  await page.getByRole("button", { name: "Schedule", exact: true }).click();
+  await page.getByRole("tab", { name: "Schedule", exact: true }).click();
   const [y, m, d] = day.split("-").map(Number);
   const short = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
     weekday: "short",

@@ -36,7 +36,7 @@ async function setUp(page: Page) {
 
   await signIn(page);
   await page.goto("/messaging");
-  await page.getByRole("button", { name: "Compose", exact: true }).click();
+  await page.getByRole("tab", { name: "Compose", exact: true }).click();
   await page.getByPlaceholder("Type your message...").fill("Hi {{parent_name}}, practice moves to 5pm.");
   return { lakehill, oakwood };
 }

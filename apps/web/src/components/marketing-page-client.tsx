@@ -36,6 +36,8 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showActivity, setShowActivity] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
+  // Phones show one stage at a time (or all of them), picked from a row of chips.
+  const [stageFilter, setStageFilter] = useState<string>("all");
 
   const pipeline = STAGES.filter((s) => s.value !== "lost").map((stage) => ({
     ...stage,
@@ -117,23 +119,53 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Marketing Pipeline</h1>
           <p className="text-sm text-muted-foreground mt-1">{leads.length} leads total</p>
         </div>
-        <Button onClick={() => setShowAddLead(true)}>
+        <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => setShowAddLead(true)}>
           <Plus className="h-4 w-4 mr-2" /> Add Lead
         </Button>
+      </div>
+
+      {/* Stage picker (phones): one row that scrolls sideways */}
+      <div
+        className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
+        role="group"
+        aria-label="Show stage"
+      >
+        {[
+          { value: "all", label: "All", count: pipeline.reduce((n, st) => n + st.leads.length, 0) },
+          ...pipeline.map((st) => ({ value: st.value, label: st.label, count: st.leads.length })),
+        ].map((chip) => (
+          <button
+            key={chip.value}
+            type="button"
+            aria-pressed={stageFilter === chip.value}
+            onClick={() => setStageFilter(chip.value)}
+            className={`inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-sm font-medium ${
+              stageFilter === chip.value ? "border-foreground bg-foreground text-background" : "bg-white text-foreground"
+            }`}
+          >
+            {chip.label}
+            <span className={`tabular-nums text-xs ${stageFilter === chip.value ? "opacity-80" : "text-muted-foreground"}`}>
+              {chip.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Kanban Board */}
       <div className="flex flex-col md:flex-row gap-4 md:overflow-x-auto pb-4">
         {pipeline.map((stage) => (
-          <div key={stage.value} className="flex-shrink-0 md:w-64">
+          <div
+            key={stage.value}
+            className={`flex-shrink-0 md:block md:w-64 ${stageFilter === "all" || stageFilter === stage.value ? "" : "hidden"}`}
+          >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-sm">{stage.label}</h3>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              <span className="text-xs tabular-nums text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                 {stage.leads.length}
               </span>
             </div>
@@ -141,12 +173,20 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
               {stage.leads.map((lead) => (
                 <div
                   key={lead.id}
-                  className="rounded-xl border bg-card p-3 cursor-pointer hover:shadow-md transition-shadow"
+                  role="button"
+                  tabIndex={0}
+                  className="min-h-11 rounded-xl border bg-card p-3 cursor-pointer hover:shadow-md transition-shadow active:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => openLeadDetail(lead)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openLeadDetail(lead);
+                    }
+                  }}
                 >
-                  <div className="font-medium text-sm">{lead.school_name}</div>
+                  <div className="font-medium text-sm break-words">{lead.school_name}</div>
                   {lead.contact_name && (
-                    <div className="text-xs text-muted-foreground mt-1">{lead.contact_name}</div>
+                    <div className="text-xs text-muted-foreground mt-1 truncate">{lead.contact_name}</div>
                   )}
                   {lead.estimated_students && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -165,6 +205,9 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
               {stage.leads.length === 0 && (
                 <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
                   No leads
+                  {stageFilter === stage.value && (
+                    <span className="mt-1 block">Move a lead here from its details, or tap Add Lead.</span>
+                  )}
                 </div>
               )}
             </div>
@@ -174,7 +217,7 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
 
       {/* Add Lead Dialog */}
       <Dialog open={showAddLead} onOpenChange={setShowAddLead}>
-        <DialogContent onClose={() => setShowAddLead(false)}>
+        <DialogContent onClose={() => setShowAddLead(false)} className="pb-0">
           <DialogHeader><DialogTitle>Add Lead</DialogTitle></DialogHeader>
           <form onSubmit={handleAddLead} className="space-y-4 mt-4">
             <div className="space-y-2">
@@ -193,16 +236,16 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
             </div>
             <div className="space-y-2">
               <Label>Contact Email</Label>
-              <Input name="contact_email" type="email" />
+              <Input name="contact_email" type="email" inputMode="email" />
             </div>
             <div className="space-y-2">
               <Label>Address</Label>
               <Input name="address" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Estimated Students</Label>
-                <Input name="estimated_students" type="number" />
+                <Input name="estimated_students" type="number" inputMode="numeric" />
               </div>
               <div className="space-y-2">
                 <Label>Next Follow-up</Label>
@@ -213,9 +256,9 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
               <Label>Notes</Label>
               <Textarea name="notes" />
             </div>
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => setShowAddLead(false)}>Cancel</Button>
-              <Button type="submit" disabled={pending}>{pending ? "Adding..." : "Add Lead"}</Button>
+            <div className="sticky bottom-0 -mx-6 flex gap-2 border-t bg-background px-6 py-4 sm:justify-end sm:gap-3">
+              <Button type="button" variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowAddLead(false)}>Cancel</Button>
+              <Button type="submit" className="h-11 flex-1 sm:h-10 sm:flex-none" disabled={pending}>{pending ? "Adding..." : "Add Lead"}</Button>
             </div>
           </form>
         </DialogContent>
@@ -227,36 +270,60 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
           {selectedLead && (
             <>
               <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle>{selectedLead.school_name}</DialogTitle>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => setShowEditLead(true)}>
-                      <Pencil className="h-3.5 w-3.5" />
+                <div className="flex items-start justify-between gap-2 pr-8 text-left">
+                  <DialogTitle className="min-w-0 break-words pt-2.5 leading-snug">{selectedLead.school_name}</DialogTitle>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button variant="ghost" size="icon" aria-label="Edit lead" className="h-11 w-11" onClick={() => setShowEditLead(true)}>
+                      <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteLead(selectedLead.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Delete lead"
+                      className="h-11 w-11 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteLead(selectedLead.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 {/* Lead Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                  {selectedLead.contact_name && <div><span className="text-muted-foreground">Contact:</span> {selectedLead.contact_name}</div>}
-                  {selectedLead.contact_phone && <div className="flex items-center gap-1"><Phone className="h-3 w-3" /> {selectedLead.contact_phone}</div>}
-                  {selectedLead.contact_email && <div className="flex items-center gap-1"><Mail className="h-3 w-3" /> {selectedLead.contact_email}</div>}
-                  {selectedLead.address && <div className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {selectedLead.address}</div>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  {selectedLead.contact_name && (
+                    <div className="flex min-h-10 items-center break-words">
+                      <span className="text-muted-foreground mr-1">Contact:</span> {selectedLead.contact_name}
+                    </div>
+                  )}
+                  {selectedLead.contact_phone && (
+                    <a href={`tel:${selectedLead.contact_phone}`} className="flex min-h-10 items-center gap-2 text-primary hover:underline">
+                      <Phone className="h-4 w-4 shrink-0" /> <span className="tabular-nums">{selectedLead.contact_phone}</span>
+                    </a>
+                  )}
+                  {selectedLead.contact_email && (
+                    <a href={`mailto:${selectedLead.contact_email}`} className="flex min-h-10 min-w-0 items-center gap-2 text-primary hover:underline">
+                      <Mail className="h-4 w-4 shrink-0" /> <span className="min-w-0 break-all">{selectedLead.contact_email}</span>
+                    </a>
+                  )}
+                  {selectedLead.address && (
+                    <div className="flex min-h-10 items-center gap-2 break-words">
+                      <MapPin className="h-4 w-4 shrink-0" /> {selectedLead.address}
+                    </div>
+                  )}
                 </div>
 
                 {/* Stage Selector */}
                 <div className="space-y-2">
                   <Label className="text-xs">Stage</Label>
-                  <div className="flex gap-1 flex-wrap">
+                  <div className="flex flex-wrap gap-2">
                     {STAGES.map((s) => (
                       <button
                         key={s.value}
-                        className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
-                          selectedLead.stage === s.value ? s.color + " font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        type="button"
+                        aria-pressed={selectedLead.stage === s.value}
+                        className={`h-10 text-sm px-3.5 rounded-full transition-colors ${
+                          selectedLead.stage === s.value ? s.color + " font-semibold ring-2 ring-inset ring-current" : "bg-muted text-muted-foreground hover:bg-muted/80"
                         }`}
                         onClick={() => handleStageChange(selectedLead.id, s.value)}
                       >
@@ -268,7 +335,7 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
 
                 {/* Convert Button */}
                 {selectedLead.stage !== "signed" && selectedLead.stage !== "lost" && (
-                  <Button variant="outline" size="sm" className="w-full" disabled={pending} onClick={() => handleConvert(selectedLead.id)}>
+                  <Button variant="outline" className="h-11 w-full" disabled={pending} onClick={() => handleConvert(selectedLead.id)}>
                     <CheckCircle className="h-4 w-4 mr-2" /> Convert to School
                   </Button>
                 )}
@@ -276,7 +343,7 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                 {/* Add Activity */}
                 <form onSubmit={handleAddActivity} className="space-y-2 pt-2 border-t">
                   <Label className="text-xs">Log Activity</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                     <Select
                       name="type"
                       options={[
@@ -285,10 +352,10 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                         { value: "email", label: "Email" },
                         { value: "meeting", label: "Meeting" },
                       ]}
-                      className="w-28"
+                      className="h-11 w-28 shrink-0"
                     />
-                    <Input name="description" placeholder="Description..." className="flex-1" required />
-                    <Button type="submit" size="sm">Add</Button>
+                    <Input name="description" placeholder="Description..." className="h-11 min-w-0 flex-1" required />
+                    <Button type="submit" className="h-11 w-full sm:w-auto">Add</Button>
                   </div>
                 </form>
 
@@ -296,12 +363,12 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {activities.map((a) => (
                     <div key={a.id} className="flex gap-3 text-sm">
-                      <div className="flex-shrink-0 w-16 text-xs text-muted-foreground pt-0.5">
+                      <div className="flex-shrink-0 w-20 text-xs tabular-nums text-muted-foreground pt-0.5">
                         {new Date(a.created_at).toLocaleDateString()}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <Badge variant="secondary" className="text-xs mb-0.5">{a.type}</Badge>
-                        <p className="text-sm">{a.description}</p>
+                        <p className="text-sm break-words">{a.description}</p>
                       </div>
                     </div>
                   ))}
@@ -317,7 +384,7 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
 
       {/* Edit Lead Dialog */}
       <Dialog open={showEditLead} onOpenChange={setShowEditLead}>
-        <DialogContent onClose={() => setShowEditLead(false)}>
+        <DialogContent onClose={() => setShowEditLead(false)} className="pb-0">
           <DialogHeader><DialogTitle>Edit Lead</DialogTitle></DialogHeader>
           {selectedLead && (
             <form onSubmit={handleEditLead} className="space-y-4 mt-4">
@@ -337,16 +404,16 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
               </div>
               <div className="space-y-2">
                 <Label>Contact Email</Label>
-                <Input name="contact_email" type="email" defaultValue={selectedLead.contact_email || ""} />
+                <Input name="contact_email" type="email" inputMode="email" defaultValue={selectedLead.contact_email || ""} />
               </div>
               <div className="space-y-2">
                 <Label>Address</Label>
                 <Input name="address" defaultValue={selectedLead.address || ""} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Estimated Students</Label>
-                  <Input name="estimated_students" type="number" defaultValue={selectedLead.estimated_students || ""} />
+                  <Input name="estimated_students" type="number" inputMode="numeric" defaultValue={selectedLead.estimated_students || ""} />
                 </div>
                 <div className="space-y-2">
                   <Label>Next Follow-up</Label>
@@ -357,9 +424,9 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                 <Label>Notes</Label>
                 <Textarea name="notes" defaultValue={selectedLead.notes || ""} />
               </div>
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setShowEditLead(false)}>Cancel</Button>
-                <Button type="submit">Update Lead</Button>
+              <div className="sticky bottom-0 -mx-6 flex gap-2 border-t bg-background px-6 py-4 sm:justify-end sm:gap-3">
+                <Button type="button" variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={() => setShowEditLead(false)}>Cancel</Button>
+                <Button type="submit" className="h-11 flex-1 sm:h-10 sm:flex-none">Update Lead</Button>
               </div>
             </form>
           )}

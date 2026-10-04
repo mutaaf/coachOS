@@ -38,8 +38,8 @@ export function ArchiveSchoolDialog({ open, onOpenChange, schoolId, schoolName, 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)}>
-        <DialogHeader>
-          <DialogTitle>Archive {schoolName}?</DialogTitle>
+        <DialogHeader className="pr-8 text-left">
+          <DialogTitle className="break-words leading-snug">Archive {schoolName}?</DialogTitle>
           <DialogDescription>
             Families at an archived school are not sent any more invoices.
           </DialogDescription>
@@ -47,7 +47,7 @@ export function ArchiveSchoolDialog({ open, onOpenChange, schoolId, schoolName, 
 
         {activeStudents > 0 && (
           <div className="mt-4 flex items-start justify-between gap-4 rounded-lg border bg-muted/30 p-4">
-            <div>
+            <div className="min-w-0">
               <p id="end-enrollments-label" className="text-sm font-medium">
                 End {activeStudents === 1 ? "the 1 child's place" : `all ${activeStudents} children's places`} here too
               </p>
@@ -64,11 +64,11 @@ export function ArchiveSchoolDialog({ open, onOpenChange, schoolId, schoolName, 
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+        <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end sm:gap-3">
+          <Button type="button" variant="outline" className="h-11 sm:h-10" onClick={() => onOpenChange(false)} disabled={pending}>
             Cancel
           </Button>
-          <Button type="button" variant="destructive" onClick={archive} disabled={pending}>
+          <Button type="button" variant="destructive" className="h-11 sm:h-10" onClick={archive} disabled={pending}>
             {pending ? "Archiving..." : "Archive school"}
           </Button>
         </div>

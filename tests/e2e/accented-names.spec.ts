@@ -47,7 +47,7 @@ test("searching without accents finds José Núñez, Lucía Peña and the Garcí
   await search.fill("garcia");
   await expect(page.getByRole("row", { name: /Lucía Peña/ })).toBeVisible();
 
-  await page.getByRole("button", { name: /^Parents \(/ }).click();
+  await page.getByRole("tab", { name: /^Parents \(/ }).click();
   await search.fill("maria garcia");
   await expect(page.getByRole("row", { name: /María García/ })).toBeVisible();
 });

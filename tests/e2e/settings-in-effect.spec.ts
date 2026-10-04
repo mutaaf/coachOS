@@ -29,7 +29,7 @@ async function signIn(page: Page) {
 test("a due day no month has is refused, not saved", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");
-  await page.getByRole("button", { name: /Payments/ }).click();
+  await page.getByRole("tab", { name: /Payments/ }).click();
   await page.getByLabel("Payment Due Day").fill("45");
   await page.getByRole("button", { name: /Save/ }).first().click();
   await expect(page.getByText("Settings weren't saved")).toBeVisible();
@@ -41,7 +41,7 @@ test("a due day no month has is refused, not saved", async ({ page }) => {
 test("a sender that can't send email is refused, not saved", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");
-  await page.getByRole("button", { name: /Messaging/ }).click();
+  await page.getByRole("tab", { name: /Messaging/ }).click();
   await page.getByLabel("Send Email As").fill("garbage");
   await page.getByRole("button", { name: /Save/ }).first().click();
   await expect(page.getByText("Settings weren't saved")).toBeVisible();
@@ -76,7 +76,7 @@ test("a family's payment page names the due day from Settings", async ({ page })
 test("settings nothing used are no longer shown", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");
-  await expect(page.getByRole("button", { name: /Payments/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Payments/ })).toBeVisible();
   for (const label of ["Coach Phone", "Coach Name", "Message Rate Limit (seconds)", "Morning Reminder Time"]) {
     await expect(page.getByText(label, { exact: true })).toHaveCount(0);
   }

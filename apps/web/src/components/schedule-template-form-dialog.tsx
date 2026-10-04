@@ -114,7 +114,7 @@ export function ScheduleTemplateFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>
             {isEditing ? "Edit Schedule Template" : "New Schedule Template"}
           </DialogTitle>
@@ -150,7 +150,8 @@ export function ScheduleTemplateFormDialog({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => toggleDay(i)}
-                    className={`rounded-lg border px-2 py-1.5 text-xs font-medium cursor-pointer transition-colors ${
+                    aria-pressed={active}
+                    className={`h-11 rounded-lg border px-0 text-xs font-medium cursor-pointer transition-colors sm:h-9 ${
                       active
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-background text-foreground border-input hover:bg-accent"
@@ -228,11 +229,11 @@ export function ScheduleTemplateFormDialog({
           </div>
 
           {isEditing && (
-            <label className="flex items-start gap-2 text-sm">
+            <label className="flex items-start gap-3 text-sm">
               <input
                 type="checkbox"
                 name="update_future"
-                className="mt-0.5"
+                className="mt-0.5 h-5 w-5 shrink-0"
                 defaultChecked
                 disabled={isSubmitting}
               />
@@ -244,16 +245,19 @@ export function ScheduleTemplateFormDialog({
             </label>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
+          {/* Pinned to the bottom of the dialog on phones so the keyboard or a
+              long form never hides it. */}
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 grid grid-cols-2 gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex sm:justify-end sm:border-t-0 sm:px-0 sm:pb-0 sm:pt-2">
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || selectedDays.length === 0}>
+            <Button type="submit" className="h-11 sm:h-10" disabled={isSubmitting || selectedDays.length === 0}>
               {isSubmitting
                 ? isEditing
                   ? "Saving..."

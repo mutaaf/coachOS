@@ -91,7 +91,7 @@ test("Parents shows each family's balance, and a name opens the whole family", a
   const { mom } = await garcias();
   await signIn(page);
   await page.goto("/students");
-  await page.getByRole("button", { name: /^Parents \(/ }).click();
+  await page.getByRole("tab", { name: /^Parents \(/ }).click();
 
   for (const name of ["Raquel Garcia", "Miguel Garcia"]) {
     await expect(page.locator("tr", { hasText: name }).getByTestId("parent-balance")).toContainText("$140.00");

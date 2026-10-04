@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import { admin, truncateAll } from "../helpers/db";
 import { saveCatalogProgram, saveSeason, offerSession, setCatalogProgramArchived } from "@/lib/actions/catalog";
 import { getProgramsPage, weeklyTime } from "@/lib/queries/catalog";
@@ -8,11 +8,13 @@ import { getProgramsPage, weeklyTime } from "@/lib/queries/catalog";
  * and starts with an empty roster. Children come later.
  */
 
-afterEach(async () => {
+async function clean() {
   await truncateAll();
   await admin.from("program_catalog").delete().not("id", "is", null);
   await admin.from("seasons").delete().not("id", "is", null);
-});
+}
+beforeEach(clean);
+afterEach(clean);
 
 function form(fields: Record<string, string | string[]>) {
   const f = new FormData();

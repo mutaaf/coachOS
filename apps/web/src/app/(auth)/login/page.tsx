@@ -71,8 +71,8 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-sm border-0 bg-white shadow-lg shadow-black/5 rounded-2xl">
-      <CardHeader className="space-y-3 pb-2">
+    <Card className="w-full max-w-sm border-0 bg-white shadow-lg shadow-black/5 rounded-3xl">
+      <CardHeader className="space-y-3 px-5 pb-2 pt-7 sm:px-6">
         <div className="flex flex-col items-center space-y-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-lg">
             CO
@@ -86,18 +86,18 @@ export default function LoginPage() {
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-5 pb-6 sm:px-6">
         {forgot ? (
           linkSent ? (
             <div className="space-y-3 text-center" data-testid="link-sent">
-              <p>If {email} has access, a link to choose a new password is on its way. 🏀</p>
-              <Button variant="ghost" onClick={() => { setForgot(false); setLinkSent(false); }}>Back to sign in</Button>
+              <p className="break-words">If {email} has access, a link to choose a new password is on its way. 🏀</p>
+              <Button variant="ghost" className="w-full" onClick={() => { setForgot(false); setLinkSent(false); }}>Back to sign in</Button>
             </div>
           ) : (
             <form onSubmit={sendLink} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="forgot-email">Your email</Label>
-                <Input id="forgot-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+                <Input id="forgot-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
               </div>
               <Button type="submit" className="w-full rounded-xl" disabled={isLoading}>
                 {isLoading ? "Sending…" : "Email me a link"}
@@ -117,6 +117,10 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               disabled={isLoading}
             />
           </div>
@@ -142,7 +146,7 @@ export default function LoginPage() {
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
-          <button type="button" onClick={() => setForgot(true)} className="block w-full text-center text-sm text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => setForgot(true)} className="block h-11 w-full rounded-xl text-center text-sm text-muted-foreground hover:text-foreground">
             Forgot your password?
           </button>
         </form>

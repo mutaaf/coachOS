@@ -21,7 +21,7 @@ export function PhoneLink({ phone }: { phone: string }) {
       href={`https://wa.me/${digits}`}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+      className="inline-flex min-h-10 items-center gap-1 py-1 hover:text-foreground hover:underline"
     >
       {label}
     </a>

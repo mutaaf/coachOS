@@ -24,14 +24,90 @@
     --input: 0 0% 89.8%;
     --ring: 211 100% 50%;
     --radius: 12px;
+    /* The notch and the home bar, readable from script (registered below as
+       lengths, so getComputedStyle returns pixels). */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
+}
+
+@property --safe-top {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+@property --safe-bottom {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/*
+ * Shared phone patterns. Use these rather than re-inventing them per page.
+ *
+ *   scroll-row   a row of filters/chips/tabs that scrolls sideways inside
+ *                itself and reaches the screen edges (put it directly in the
+ *                page's px-4 container). Children don't shrink or wrap.
+ *   no-scrollbar hide the scrollbar of a sideways-scrolling row.
+ *   pt-safe / pb-safe / mb-safe
+ *                padding/margin for the notch and the home bar.
+ *   tap          at least 44px tall: the minimum for a finger.
+ */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .scroll-row {
+    @apply no-scrollbar -mx-4 flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain px-4 sm:mx-0 sm:px-0;
+    scroll-padding-inline: 1rem;
+  }
+  .scroll-row > * {
+    flex-shrink: 0;
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  .tap {
+    min-height: 44px;
+  }
+}
+
+/*
+ * Toasts clear the notch and the home bar, and on a phone they sit below the
+ * menu bar instead of over it.
+ */
+[data-sonner-toaster][data-y-position="top"] {
+  top: calc(env(safe-area-inset-top) + 16px) !important;
+}
+[data-sonner-toaster][data-y-position="bottom"] {
+  bottom: calc(env(safe-area-inset-bottom) + 16px) !important;
+}
+@media (max-width: 1023px) {
+  [data-sonner-toaster][data-y-position="top"] {
+    top: calc(env(safe-area-inset-top) + 64px) !important;
   }
 }

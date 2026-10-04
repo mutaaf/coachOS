@@ -42,17 +42,17 @@ function SecretField({ item, value, onChange }: { item: Config; value: string; o
           spellCheck={false}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-10 font-mono"
+          className="h-11 min-w-0 flex-1 font-mono"
         />
         <button
           type="button"
           onClick={() => setShown(!shown)}
           aria-label={shown ? `Hide ${item.label}` : `Show ${item.label}`}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-white text-slate-600 hover:bg-slate-50"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border bg-white text-slate-600 hover:bg-slate-50"
         >
           {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
-        <CopyButton value={value} />
+        <CopyButton value={value} className="h-11" />
       </div>
     </div>
   );
@@ -70,8 +70,9 @@ function ConfigField({
   switch (item.field_type) {
     case "toggle":
       return (
-        <div className="flex items-center justify-between rounded-xl border p-4">
-          <div>
+        // The whole row is the label, so the switch is easy to hit with a thumb.
+        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4">
+          <div className="min-w-0">
             <div className="font-medium text-sm">{item.label}</div>
             {item.description && <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>}
           </div>
@@ -79,7 +80,7 @@ function ConfigField({
             checked={value === "true"}
             onCheckedChange={(checked) => onChange(checked ? "true" : "false")}
           />
-        </div>
+        </label>
       );
     case "number":
       return (
@@ -93,6 +94,7 @@ function ConfigField({
             max={item.key === "payment_due_day" ? 28 : undefined}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            className="h-11 tabular-nums"
           />
         </div>
       );
@@ -105,6 +107,7 @@ function ConfigField({
             type="time"
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            className="h-11 tabular-nums"
           />
         </div>
       );
@@ -117,6 +120,7 @@ function ConfigField({
             options={(item.options || []).map((o) => ({ value: o, label: o }))}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            className="h-11"
           />
         </div>
       );
@@ -157,15 +161,16 @@ function ConfigField({
               inputMode={item.field_type === "phone" ? "tel" : undefined}
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="h-10"
+              className="h-11 min-w-0 flex-1"
             />
-            <CopyButton value={v} />
+            <CopyButton value={v} className="h-11" />
             {open && (
               <a
                 href={open.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                aria-label={open.label}
+                className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
               >
                 <open.icon className="h-4 w-4" />
                 <span className="hidden sm:inline">{open.label}</span>
@@ -259,9 +264,9 @@ function StripeCard({
   const enabled = item("stripe_enabled");
 
   return (
-    <div className="rounded-2xl border bg-card p-6" data-testid="stripe-card">
+    <div className="rounded-2xl border bg-card p-4 sm:p-6" data-testid="stripe-card">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Card &amp; bank payments (Stripe)</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Test mode uses Stripe&apos;s sandbox — nothing real is charged. Switch to live once everything has been
@@ -270,7 +275,7 @@ function StripeCard({
         </div>
         <span
           data-testid="stripe-mode"
-          className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
             savedMode === "live" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
           }`}
         >
@@ -288,7 +293,7 @@ function StripeCard({
         {(["test", "live"] as const).map((mode) => (
           <div
             key={mode}
-            className={`rounded-xl border p-4 ${savedMode === mode ? "border-primary ring-1 ring-primary" : ""}`}
+            className={`min-w-0 rounded-xl border p-4 ${savedMode === mode ? "border-primary ring-1 ring-primary" : ""}`}
           >
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold">{mode === "test" ? "Test (sandbox)" : "Live"}</h3>
@@ -300,14 +305,14 @@ function StripeCard({
                 return it ? <SecretField key={key} item={it} value={values[key] ?? ""} onChange={(v) => onChange(key, v)} /> : null;
               })}
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="h-10" disabled={busy !== null} onClick={() => check(mode)}>
+            <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+              <Button variant="outline" size="sm" className="h-11" disabled={busy !== null} onClick={() => check(mode)}>
                 {busy === `check-${mode}` ? "Checking…" : "Check connection"}
               </Button>
               {savedMode !== mode && (
                 <Button
                   size="sm"
-                  className="h-10"
+                  className="h-11"
                   variant={mode === "live" ? "default" : "outline"}
                   disabled={busy !== null}
                   onClick={() => switchTo(mode)}
@@ -319,7 +324,7 @@ function StripeCard({
             {checks[mode] && (
               <p
                 data-testid={`stripe-check-${mode}`}
-                className={`mt-3 text-sm ${checks[mode]!.ok ? "text-emerald-700" : "text-red-700"}`}
+                className={`mt-3 break-words text-sm ${checks[mode]!.ok ? "text-emerald-700" : "text-red-700"}`}
               >
                 {checks[mode]!.ok ? "✓ " : "✗ "}
                 {checks[mode]!.text}
@@ -328,7 +333,7 @@ function StripeCard({
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-4 break-words text-xs text-muted-foreground">
         Both modes send webhooks to {origin}/api/webhooks/stripe —
         create the webhook in each mode in Stripe and paste its signing secret here. Save before checking or switching.
       </p>
@@ -374,47 +379,52 @@ export function SettingsPageClient({ config, people }: SettingsPageClientProps) 
   }
 
   return (
-    <div>
+    <div className={dirty ? "pb-24 lg:pb-0" : undefined}>
       {dirty && (
-        <div className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-between gap-3 rounded-xl border bg-white p-3 shadow-lg lg:hidden">
+        <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 flex items-center justify-between gap-3 rounded-xl border bg-white p-3 shadow-lg lg:hidden">
           <span className="text-sm font-medium">Unsaved changes</span>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className="h-11 px-6">
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>
       )}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Changes take effect as soon as you save.</p>
+        </div>
         {dirty && (
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className="hidden lg:inline-flex">
             {saving ? "Saving..." : "Save Changes"}
           </Button>
         )}
       </div>
 
       <Tabs defaultValue={categories[0] || "general"}>
-        <TabsList className="mb-4" data-tour="settings-tabs">
+        <div className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+        <TabsList className="h-12 w-max justify-start" data-tour="settings-tabs">
           {categories.map((cat) => {
             const Icon = categoryIcons[cat] || Settings;
             return (
-              <TabsTrigger key={cat} value={cat} className="gap-2">
+              <TabsTrigger key={cat} value={cat} className="h-10 gap-2">
                 <Icon className="h-4 w-4" />
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
               </TabsTrigger>
             );
           })}
-          <TabsTrigger value="access" className="gap-2" data-tour="access-tab">
+          <TabsTrigger value="access" className="h-10 gap-2" data-tour="access-tab">
             <KeyRound className="h-4 w-4" />
             Access
           </TabsTrigger>
         </TabsList>
+        </div>
         <TabsContent value="access">
           <AccessCard people={people} />
         </TabsContent>
 
         {categories.map((cat) => (
           <TabsContent key={cat} value={cat}>
-            <div className="rounded-2xl border bg-card p-6 space-y-6">
+            <div className="space-y-6 rounded-2xl border bg-card p-4 sm:p-6">
               <h2 className="text-lg font-semibold capitalize">{cat} Settings</h2>
               {config
                 .filter((c) => c.category === cat && !STRIPE_KEYS.has(c.key))
@@ -433,7 +443,7 @@ export function SettingsPageClient({ config, people }: SettingsPageClientProps) 
               </div>
             )}
             {cat === "payments" && (
-              <div className="mt-4 rounded-2xl border bg-card p-6">
+              <div className="mt-4 rounded-2xl border bg-card p-4 sm:p-6">
                 <h2 className="text-lg font-semibold">Zelle email setup</h2>
                 <p className="mb-4 mt-1 text-sm text-muted-foreground">
                   Uses the Zelle Alerts Gmail, Bank Alerts Arrive At and Zelle Email Key above — save any change first.

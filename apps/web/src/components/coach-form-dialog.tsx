@@ -61,7 +61,7 @@ export function CoachFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>{isEditing ? "Edit Coach" : "Add Coach"}</DialogTitle>
         </DialogHeader>
 
@@ -89,13 +89,15 @@ export function CoachFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
                 name="phone"
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 required
                 placeholder="(214) 555-0123"
                 defaultValue={coach?.phone ?? ""}
@@ -108,6 +110,8 @@ export function CoachFormDialog({
                 id="email"
                 name="email"
                 type="email"
+                inputMode="email"
+                autoComplete="email"
                 defaultValue={coach?.email ?? ""}
                 disabled={pending}
               />
@@ -135,6 +139,7 @@ export function CoachFormDialog({
                   id="pay_rate"
                   name="pay_rate"
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.01"
                   placeholder="40.00"
@@ -151,7 +156,7 @@ export function CoachFormDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -186,16 +191,19 @@ export function CoachFormDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          {/* Pinned to the bottom of the dialog on phones so the keyboard or a
+              long form never hides it. */}
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 grid grid-cols-2 gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex sm:justify-end sm:border-t-0 sm:px-0 sm:pb-0 sm:pt-2">
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={pending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" className="h-11 sm:h-10" disabled={pending}>
               {pending
                 ? isEditing
                   ? "Saving..."

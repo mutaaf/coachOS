@@ -58,12 +58,12 @@ export default async function JoinPage({ params }: { params: { slug: string } })
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-2xl px-5 py-12 sm:py-16">
+      <div className="mx-auto max-w-2xl px-4 pb-10 pt-8 sm:px-5 sm:py-16">
         <header className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
             {brand}
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="mt-3 break-words text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             {program.name}
           </h1>
           <p className="mt-2 text-lg text-slate-600">{program.school_name}</p>
@@ -97,7 +97,7 @@ export default async function JoinPage({ params }: { params: { slug: string } })
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Cost
               </dt>
-              <dd className="mt-1 text-sm font-medium text-slate-900">
+              <dd className="mt-1 whitespace-nowrap text-sm font-medium tabular-nums text-slate-900">
                 ${Number(program.monthly_fee).toFixed(0)} per month
               </dd>
             </div>
@@ -105,7 +105,7 @@ export default async function JoinPage({ params }: { params: { slug: string } })
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Spots
               </dt>
-              <dd className="mt-1 text-sm font-medium text-slate-900">
+              <dd className="mt-1 text-sm font-medium tabular-nums text-slate-900">
                 {isFull ? (
                   <span className="text-amber-700">
                     {program.waitlist_count > 0

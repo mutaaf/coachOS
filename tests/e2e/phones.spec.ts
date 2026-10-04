@@ -52,7 +52,7 @@ test("a parent's phone is checked, saved as one number, and found by search howe
     .poll(async () => (await admin.from("parents").select("phone")).data)
     .toEqual([{ phone: "+12145551000" }]);
 
-  await page.getByRole("button", { name: /^Parents \(/ }).click();
+  await page.getByRole("tab", { name: /^Parents \(/ }).click();
   await page.getByPlaceholder("Search by name, phone, or email...").fill("(214) 555");
   await expect(page.getByRole("row", { name: /Raquel Garcia/ })).toBeVisible();
   await expect(page.getByRole("row", { name: /Raquel Garcia/ })).toContainText("(214) 555-1000");

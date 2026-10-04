@@ -54,10 +54,10 @@ test("make a program, put it on at a new school in a new season", async ({ page 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 
-  await page.getByRole("button", { name: /^Seasons/ }).click();
+  await page.getByRole("tab", { name: /^Seasons/ }).click();
   await expect(page.getByTestId("season").filter({ hasText: "Fall 2026" })).toContainText("1 session");
 
-  await page.getByRole("button", { name: /^Programs \(/ }).click();
+  await page.getByRole("tab", { name: /^Programs \(/ }).click();
   await session.click();
   await expect(page).toHaveURL(/\/schools\//);
   await expect(page.getByText("Lil Dribblers (K–1)").first()).toBeVisible();

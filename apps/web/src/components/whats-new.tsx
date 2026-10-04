@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { startTour } from "@/components/guided-tour";
 import { createClient } from "@/lib/supabase/client";
 import type { Release } from "@/lib/releases";
@@ -26,7 +26,7 @@ export function ReleaseNotes({ release, onShow }: { release: Release; onShow?: (
         <ul className="space-y-1.5">
           {release.notes.map((n, i) => (
             <li key={i} className="flex items-start justify-between gap-3 text-sm">
-              <span>• {n.text}</span>
+              <span className="min-w-0">• {n.text}</span>
               {n.tourStep && (
                 <button
                   type="button"
@@ -34,7 +34,7 @@ export function ReleaseNotes({ release, onShow }: { release: Release; onShow?: (
                     onShow?.();
                     startTour(n.tourStep);
                   }}
-                  className="shrink-0 font-medium text-primary hover:underline"
+                  className="-my-2 -mr-2 shrink-0 rounded-md px-2 py-2 font-medium text-primary hover:underline"
                 >
                   Show me
                 </button>
@@ -72,7 +72,7 @@ export function WhatsNewDialog({ releases, onDone }: { releases: Release[]; onDo
             <ReleaseNotes key={r.version} release={r} onShow={close} />
           ))}
         </div>
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <DialogFooter className="mt-6">
           {steps.length > 0 && (
             <Button
               variant="outline"
@@ -85,7 +85,7 @@ export function WhatsNewDialog({ releases, onDone }: { releases: Release[]; onDo
             </Button>
           )}
           <Button onClick={close}>Got it</Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
