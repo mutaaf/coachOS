@@ -10,7 +10,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { sendBulkMessages, createMessageTemplate, updateMessageTemplate, deleteMessageTemplate, fetchRecipients } from "@/lib/actions/messages";
 import { toast } from "sonner";
-import { MessageSquare, Send, Users, Plus, Pencil, Trash2, RefreshCw, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
+import { format } from "date-fns";
+import { formatPhone } from "@/lib/utils";
+import { MessageSquare, Send, Users, Plus, Pencil, Trash2, Eye } from "lucide-react";
 import type { MessageTemplate } from "@/types/database";
 import { OutboxPanel } from "@/components/outbox-panel";
 import { initialSelection, recipientReducer, sendableRecipients, type RecipientMode } from "@/lib/recipient-selection";
@@ -38,6 +40,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const [sending, setSending] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
+  const [tab, setTab] = useState(initialTab ?? (outbox.waiting.length > 0 ? "outbox" : "compose"));
 
   async function chooseMode(mode: RecipientMode) {
     dispatch({ type: "mode", mode });
@@ -97,43 +100,50 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
     }
   }
 
+  const tabTrigger = "h-10 px-3 sm:h-8";
+  const statusVariant = (status: string) =>
+    status === "sent" || status === "delivered" ? "success" : status === "failed" ? "destructive" : "secondary";
+  const when = (iso: string) => format(new Date(iso), "MMM d, h:mm a");
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Messaging</h1>
-          <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
-            <span>{stats.totalSent} sent</span>
-            <span>{stats.pendingCount} pending</span>
-            {stats.failedCount > 0 && <span className="text-red-600">{stats.failedCount} failed</span>}
-          </div>
+      <div className="mb-5 sm:mb-6">
+        <h1 className="text-2xl font-bold">Messaging</h1>
+        <div className="mt-1 flex gap-4 text-sm tabular-nums text-muted-foreground">
+          <span>{stats.totalSent} sent</span>
+          <span>{stats.pendingCount} pending</span>
+          {stats.failedCount > 0 && <span className="text-red-600">{stats.failedCount} failed</span>}
         </div>
       </div>
 
-      <Tabs defaultValue={initialTab ?? (outbox.waiting.length > 0 ? "outbox" : "compose")}>
-        <div data-tour="messaging-tabs" className="w-fit">
-        <TabsList>
-          <TabsTrigger value="outbox">
-            Outbox{outbox.waiting.length > 0 ? ` (${outbox.waiting.length})` : ""}
-          </TabsTrigger>
-          <TabsTrigger value="compose">Compose</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={setTab} defaultValue={tab}>
+        {/* Scrolls sideways inside itself on a narrow phone instead of wrapping. */}
+        <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+          <div data-tour="messaging-tabs" className="w-fit">
+            <TabsList className="h-12 sm:h-10">
+              <TabsTrigger value="outbox" className={tabTrigger}>
+                Outbox{outbox.waiting.length > 0 ? ` (${outbox.waiting.length})` : ""}
+              </TabsTrigger>
+              <TabsTrigger value="compose" className={tabTrigger}>Compose</TabsTrigger>
+              <TabsTrigger value="templates" className={tabTrigger}>Templates</TabsTrigger>
+              <TabsTrigger value="history" className={tabTrigger}>History</TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
-        <TabsContent value="outbox">
-          <OutboxPanel waiting={outbox.waiting} done={outbox.done} />
+        <TabsContent value="outbox" className="mt-4">
+          <OutboxPanel waiting={outbox.waiting} done={outbox.done} onCompose={() => setTab("compose")} />
         </TabsContent>
 
-        <TabsContent value="compose">
+        <TabsContent value="compose" className="mt-4">
           <div className="space-y-4">
             {/* Recipient Selection */}
             <div className="rounded-2xl border bg-card p-4 space-y-3">
               <h3 className="font-medium text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Recipients</h3>
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
                 <Button
                   size="sm"
+                  className={modeButton}
                   variant={recipientMode === "all" ? "default" : "outline"}
                   onClick={() => chooseMode("all")}
                 >
@@ -141,6 +151,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 </Button>
                 <Button
                   size="sm"
+                  className={modeButton}
                   variant={recipientMode === "school" ? "default" : "outline"}
                   onClick={() => chooseMode("school")}
                 >
@@ -148,6 +159,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 </Button>
                 <Button
                   size="sm"
+                  className={modeButton}
                   variant={recipientMode === "program" ? "default" : "outline"}
                   onClick={() => chooseMode("program")}
                 >
@@ -156,6 +168,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
               </div>
               {recipientMode === "school" && (
                 <Select
+                  className={field}
                   placeholder="Select a school"
                   options={schools.map((s: any) => ({ value: s.id, label: s.name }))}
                   value={selectedSchoolOrProgram}
@@ -164,6 +177,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
               )}
               {recipientMode === "program" && (
                 <Select
+                  className={field}
                   placeholder="Select a session"
                   options={programs.map((p: any) => ({ value: p.id, label: `${p.school?.name ?? ""} — ${p.name}` }))}
                   value={selectedSchoolOrProgram}
@@ -173,10 +187,10 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
               {recipients.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {recipients.slice(0, 10).map((r, i) => (
-                    <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{r.name}</span>
+                    <span key={i} className="max-w-full truncate text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{r.name}</span>
                   ))}
                   {recipients.length > 10 && (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground">+{recipients.length - 10} more</span>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground tabular-nums">+{recipients.length - 10} more</span>
                   )}
                 </div>
               )}
@@ -186,23 +200,26 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
             <div className="rounded-2xl border bg-card p-4 space-y-3">
               <h3 className="font-medium text-sm flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Message</h3>
               <Select
+                className={field}
                 placeholder="Use a template..."
                 options={templates.map((t) => ({ value: t.id, label: `${t.name} (${t.category})` }))}
                 value={selectedTemplate}
                 onChange={(e) => handleTemplateSelect(e.target.value)}
               />
               <Textarea
+                className="text-base sm:text-sm"
                 placeholder="Type your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={4}
+                rows={5}
               />
-              <div className="flex flex-wrap gap-1.5">
+              {/* One sideways-scrolling row on a phone; wraps where there is room. */}
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
                 {VARIABLES.map((v) => (
                   <button
                     key={v}
                     type="button"
-                    className="text-xs px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                    className="inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-lg bg-muted px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/80 active:bg-muted/70 sm:h-7 sm:rounded-md sm:px-2"
                     onClick={() => setMessage((m) => m + `{{${v}}}`)}
                   >
                     {`{{${v}}}`}
@@ -211,9 +228,10 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{recipients.length} recipient(s)</span>
-              <Button onClick={handleSend} disabled={sending || recipients.length === 0 || !message}>
+            {/* Sticks to the bottom of the screen on a phone so Send is always under her thumb. */}
+            <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+              <span className="text-sm tabular-nums text-muted-foreground">{recipients.length} recipient(s)</span>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={handleSend} disabled={sending || recipients.length === 0 || !message}>
                 <Send className="h-4 w-4 mr-2" />
                 {sending ? "Sending..." : `Send to ${recipients.length} recipient(s)`}
               </Button>
@@ -221,33 +239,39 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
           </div>
         </TabsContent>
 
-        <TabsContent value="templates">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setShowTemplateForm(true)}>
+        <TabsContent value="templates" className="mt-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">Messages you send often, ready to use in Compose.</p>
+            <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => setShowTemplateForm(true)}>
               <Plus className="h-4 w-4 mr-2" /> Add Template
             </Button>
           </div>
+          {templates.length === 0 ? (
+            <div className="rounded-2xl border border-dashed bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+              No templates yet. Add one for a message you send often — a reminder, a welcome, a payment nudge.
+            </div>
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {templates.map((tmpl) => (
-              <div key={tmpl.id} className="rounded-2xl border bg-card p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{tmpl.name}</h3>
-                  <Badge variant="secondary">{tmpl.category}</Badge>
+              <div key={tmpl.id} className="flex flex-col rounded-2xl border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="min-w-0 font-medium leading-snug [overflow-wrap:anywhere]">{tmpl.name}</h3>
+                  <Badge variant="secondary" className="shrink-0">{tmpl.category}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-3">{tmpl.body}</p>
-                <div className="flex flex-wrap gap-1">
+                <p className="mt-2 text-sm text-muted-foreground line-clamp-3 [overflow-wrap:anywhere]">{tmpl.body}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
                   {tmpl.variables.map((v) => (
                     <span key={v} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{`{{${v}}}`}</span>
                   ))}
                 </div>
-                <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="ghost" onClick={() => { setMessage(tmpl.body); }}>
-                    <Eye className="h-3.5 w-3.5 mr-1" /> Use
+                <div className="mt-auto grid grid-cols-3 gap-2 pt-3 sm:flex">
+                  <Button variant="ghost" className={templateAction} onClick={() => { setMessage(tmpl.body); setTab("compose"); }}>
+                    <Eye className="h-4 w-4 mr-1.5 sm:h-3.5 sm:w-3.5 sm:mr-1" /> Use
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setEditingTemplate(tmpl); setShowTemplateForm(true); }}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                  <Button variant="ghost" className={templateAction} onClick={() => { setEditingTemplate(tmpl); setShowTemplateForm(true); }}>
+                    <Pencil className="h-4 w-4 mr-1.5 sm:h-3.5 sm:w-3.5 sm:mr-1" /> Edit
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-red-600" onClick={async () => {
+                  <Button variant="ghost" className={`${templateAction} text-red-600 hover:text-red-700`} onClick={async () => {
                     if (!window.confirm(`Delete the "${tmpl.name}" template?`)) return;
                     try {
                       await deleteMessageTemplate(tmpl.id);
@@ -257,24 +281,25 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                       toast.error("Not deleted", { description: err instanceof Error ? err.message : undefined });
                     }
                   }}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                    <Trash2 className="h-4 w-4 mr-1.5 sm:h-3.5 sm:w-3.5 sm:mr-1" /> Delete
                   </Button>
                 </div>
               </div>
             ))}
           </div>
+          )}
 
           <Dialog open={showTemplateForm} onOpenChange={(open) => { setShowTemplateForm(open); if (!open) setEditingTemplate(null); }}>
-            <DialogContent onClose={() => { setShowTemplateForm(false); setEditingTemplate(null); }}>
+            <DialogContent className="p-5 sm:p-6" onClose={() => { setShowTemplateForm(false); setEditingTemplate(null); }}>
               <DialogHeader><DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle></DialogHeader>
               <form onSubmit={handleCreateTemplate} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Name *</label>
-                  <input name="name" required defaultValue={editingTemplate?.name || ""} key={editingTemplate?.id || "new"} className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                  <label htmlFor="template-name" className="text-sm font-medium">Name *</label>
+                  <input id="template-name" name="name" required defaultValue={editingTemplate?.name || ""} key={editingTemplate?.id || "new"} className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-base sm:h-10 sm:text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category *</label>
-                  <Select name="category" defaultValue={editingTemplate?.category || "reminder"} key={`cat-${editingTemplate?.id || "new"}`} options={[
+                  <Select className={field} name="category" defaultValue={editingTemplate?.category || "reminder"} key={`cat-${editingTemplate?.id || "new"}`} options={[
                     { value: "reminder", label: "Reminder" },
                     { value: "payment", label: "Payment" },
                     { value: "welcome", label: "Welcome" },
@@ -284,61 +309,81 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Message Body *</label>
-                  <Textarea name="body" required rows={4} placeholder="Hi {{parent_name}}, ..." defaultValue={editingTemplate?.body || ""} key={`body-${editingTemplate?.id || "new"}`} />
+                  <Textarea className="text-base sm:text-sm" name="body" required rows={5} placeholder="Hi {{parent_name}}, ..." defaultValue={editingTemplate?.body || ""} key={`body-${editingTemplate?.id || "new"}`} />
                   <div className="flex flex-wrap gap-1">
                     {VARIABLES.map((v) => (
                       <span key={v} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground cursor-default">{`{{${v}}}`}</span>
                     ))}
                   </div>
                 </div>
-                <div className="flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => { setShowTemplateForm(false); setEditingTemplate(null); }}>Cancel</Button>
-                  <Button type="submit">{editingTemplate ? "Update Template" : "Create Template"}</Button>
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end sm:gap-3">
+                  <Button type="button" variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => { setShowTemplateForm(false); setEditingTemplate(null); }}>Cancel</Button>
+                  <Button type="submit" className="h-11 w-full sm:h-10 sm:w-auto">{editingTemplate ? "Update Template" : "Create Template"}</Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="history">
+        <TabsContent value="history" className="mt-4">
           {log.length === 0 ? (
-            <div className="text-center py-16">
-              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No messages sent yet</h3>
+            <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
+              <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-medium mb-1">No messages sent yet</h3>
+              <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+                Every message you send from the Outbox is listed here, so you can see who has heard from you.
+              </p>
             </div>
           ) : (
-            <div className="rounded-2xl border bg-card overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Time</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Recipient</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Message</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {log.map((entry: any) => (
-                    <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="p-4 text-sm">{new Date(entry.sent_at).toLocaleString()}</td>
-                      <td className="p-4 text-sm font-medium">{entry.recipient_name || entry.recipient_phone}</td>
-                      <td className="p-4 text-sm text-muted-foreground hidden md:table-cell max-w-xs truncate">{entry.message}</td>
-                      <td className="p-4">
-                        <Badge variant={
-                          entry.status === "sent" || entry.status === "delivered" ? "success" :
-                          entry.status === "failed" ? "destructive" : "secondary"
-                        }>
-                          {entry.status}
-                        </Badge>
-                      </td>
+            <>
+              {/* Phones: one card per message. */}
+              <ul className="space-y-2 md:hidden">
+                {log.map((entry: any) => (
+                  <li key={entry.id} className="rounded-2xl border bg-card p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 font-medium leading-snug [overflow-wrap:anywhere]">
+                        {entry.recipient_name || formatPhone(entry.recipient_phone)}
+                      </p>
+                      <Badge variant={statusVariant(entry.status)} className="shrink-0">{entry.status}</Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{when(entry.sent_at)}</p>
+                    <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground [overflow-wrap:anywhere]">{entry.message}</p>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="hidden rounded-2xl border bg-card overflow-x-auto md:block">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Time</th>
+                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Recipient</th>
+                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Message</th>
+                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {log.map((entry: any) => (
+                      <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="p-4 text-sm whitespace-nowrap tabular-nums">{when(entry.sent_at)}</td>
+                        <td className="p-4 text-sm font-medium">{entry.recipient_name || formatPhone(entry.recipient_phone)}</td>
+                        <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">{entry.message}</td>
+                        <td className="p-4">
+                          <Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+const field = "h-11 text-base sm:h-10 sm:text-sm";
+const modeButton = "h-11 px-2 sm:h-9 sm:px-3";
+const templateAction = "h-11 px-2 sm:h-9 sm:px-3";
