@@ -38,10 +38,17 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/students" className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          href="/students"
+          className="-ml-1 mb-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm text-muted-foreground hover:text-foreground sm:min-h-0"
+        >
           <ArrowLeft className="h-4 w-4" /> Students & Parents
         </Link>
-        <h1 className="text-2xl font-bold">The {parent.last_name || parent.first_name} family</h1>
+        <h1 className="break-words text-2xl font-bold">The {parent.last_name || parent.first_name} family</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {children.length === 1 ? "1 child" : `${children.length} children`} ·{" "}
+          {guardians.length === 1 ? "1 parent" : `${guardians.length} parents`} — what they owe, and what you&apos;ve sent them.
+        </p>
       </div>
 
       <div data-tour="family-balance" className="rounded-2xl border bg-card p-5">
@@ -68,21 +75,27 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
           <div className="min-w-0 sm:max-w-sm">
             <p className="mb-1 text-sm text-muted-foreground">Their payment page</p>
             <div className="flex items-center gap-2">
-              <code className="min-w-0 truncate rounded bg-muted px-2 py-1 text-xs">{payLink}</code>
-              <CopyButton value={payLink} label="Copy link" />
+              <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{payLink}</code>
+              <CopyButton value={payLink} label="Copy link" size="md" className="sm:h-10 sm:px-3 sm:text-xs" />
             </div>
           </div>
         </div>
         {open.length > 0 && (
           <ul className="mt-4 divide-y border-t text-sm">
             {open.map((inv) => (
-              <li key={inv.id} className="flex items-center justify-between gap-3 py-2">
-                <span>
+              <li key={inv.id} className="flex items-center justify-between gap-3 py-2.5">
+                <span className="hidden min-w-0 sm:inline">
                   {inv.studentName} · {inv.programName} · {inv.month}
                 </span>
-                <span className="flex items-center gap-2">
+                <span className="min-w-0 sm:hidden">
+                  <span className="block truncate font-medium">
+                    {inv.studentName} · {inv.month}
+                  </span>
+                  <span className="block truncate text-muted-foreground">{inv.programName}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
                   <Badge variant={invoiceVariant[inv.status] || "secondary"}>{inv.status}</Badge>
-                  <span className="font-medium tabular-nums">{money(inv.balanceCents)}</span>
+                  <span className="whitespace-nowrap font-medium tabular-nums">{money(inv.balanceCents)}</span>
                 </span>
               </li>
             ))}
@@ -99,7 +112,7 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
             <ul className="space-y-3">
               {children.map((c) => (
                 <li key={c.id}>
-                  <div className="flex items-center gap-2 font-medium">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
                     {c.first_name} {c.last_name}
                     {c.grade && (
                       <span className="inline-flex items-center gap-1 text-sm font-normal text-muted-foreground">
@@ -130,7 +143,7 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
           <ul className="space-y-3">
             {guardians.map((g) => (
               <li key={g.id}>
-                <div className="font-medium">
+                <div className="break-words font-medium">
                   {g.id === parent.id ? (
                     `${g.first_name} ${g.last_name}`
                   ) : (
@@ -140,11 +153,11 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
                   )}
                   <span className="font-normal text-muted-foreground"> ({g.relationship})</span>
                 </div>
-                <div className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
+                <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <PhoneLink phone={g.phone} />
                   {g.email && (
-                    <span className="inline-flex items-center gap-1">
-                      <Mail className="h-3 w-3" /> {g.email}
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                      <Mail className="h-3 w-3 shrink-0" /> <span className="truncate">{g.email}</span>
                     </span>
                   )}
                   <span>Pays by {g.preferred_payment}</span>
@@ -161,7 +174,35 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
         {invoices.length === 0 ? (
           <p className="text-sm text-muted-foreground">No invoices yet.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y md:hidden">
+            {invoices.map((inv) => (
+              <li key={inv.id} className="flex items-start justify-between gap-3 py-3 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">
+                    {inv.studentName} · {inv.month}
+                  </p>
+                  <p className="truncate text-muted-foreground">
+                    {inv.programName} · due {formatDateOnly(inv.due_date)}
+                  </p>
+                  <p className="mt-0.5 whitespace-nowrap tabular-nums text-muted-foreground">
+                    {inv.balanceCents > 0 ? (
+                      <>
+                        <span className="font-medium text-foreground">{money(inv.balanceCents)}</span> left of{" "}
+                        {formatCurrency(inv.amount)}
+                      </>
+                    ) : (
+                      formatCurrency(inv.amount)
+                    )}
+                  </p>
+                </div>
+                <Badge variant={invoiceVariant[inv.status] || "secondary"} className="shrink-0">
+                  {inv.status}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
@@ -192,6 +233,7 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 
@@ -203,13 +245,13 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
           <ul className="divide-y">
             {messages.map((m) => (
               <li key={m.id} className="py-2.5 text-sm">
-                <div className="mb-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  <MessageCircle className="h-3.5 w-3.5" />
+                <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                  <MessageCircle className="h-3.5 w-3.5 shrink-0" />
                   {m.recipient_name && <span>To {m.recipient_name}</span>}
                   <span>· {formatBusinessTime(m.created_at)}</span>
                   <span>· {messageStatus[m.status] ?? m.status}</span>
                 </div>
-                <p className="whitespace-pre-wrap">{m.message}</p>
+                <p className="whitespace-pre-wrap break-words">{m.message}</p>
               </li>
             ))}
           </ul>

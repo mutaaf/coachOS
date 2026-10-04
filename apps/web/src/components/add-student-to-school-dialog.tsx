@@ -183,7 +183,7 @@ export function AddStudentToSchoolDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Student to {schoolName}</DialogTitle>
+          <DialogTitle className="break-words pr-6 leading-snug">Add Student to {schoolName}</DialogTitle>
           <DialogDescription>
             Select an existing student or create a new one, then enroll them in a
             session.
@@ -195,7 +195,7 @@ export function AddStudentToSchoolDialog({
           <button
             type="button"
             onClick={() => setMode("existing")}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`h-10 flex-1 rounded-md px-3 text-sm font-medium transition-colors sm:h-8 ${
               mode === "existing"
                 ? "bg-white shadow-sm text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -206,7 +206,7 @@ export function AddStudentToSchoolDialog({
           <button
             type="button"
             onClick={() => setMode("new")}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`h-10 flex-1 rounded-md px-3 text-sm font-medium transition-colors sm:h-8 ${
               mode === "new"
                 ? "bg-white shadow-sm text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -223,6 +223,8 @@ export function AddStudentToSchoolDialog({
               <Label>Student</Label>
               <Select
                 options={allStudents}
+                aria-label="Student"
+                className="h-11 text-base sm:h-10 sm:text-sm"
                 placeholder="Select a student"
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -240,6 +242,8 @@ export function AddStudentToSchoolDialog({
               ) : (
                 <Select
                   options={programOptions}
+                  aria-label="Session"
+                  className="h-11 text-base sm:h-10 sm:text-sm"
                   placeholder="Select a session"
                   value={selectedProgramId}
                   onChange={(e) => setSelectedProgramId(e.target.value)}
@@ -249,10 +253,11 @@ export function AddStudentToSchoolDialog({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:gap-3 sm:border-0 sm:px-0 sm:pb-0 sm:pt-2">
               <Button
                 type="button"
                 variant="outline"
+                className="h-11 sm:h-10"
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
               >
@@ -260,6 +265,7 @@ export function AddStudentToSchoolDialog({
               </Button>
               <Button
                 type="submit"
+                className="h-11 sm:h-10"
                 disabled={isPending || !selectedStudentId || !selectedProgramId || programOptions.length === 0}
               >
                 {isPending ? "Enrolling..." : "Enroll Student"}
@@ -269,7 +275,7 @@ export function AddStudentToSchoolDialog({
         ) : (
           /* ---- New Student Mode ---- */
           <form onSubmit={handleCreateAndEnroll} className="mt-2 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="first_name">
                   First Name <span className="text-destructive">*</span>
@@ -279,6 +285,8 @@ export function AddStudentToSchoolDialog({
                   name="first_name"
                   required
                   placeholder="First name"
+                  autoComplete="off"
+                  className="h-11 text-base sm:h-10 sm:text-sm"
                   disabled={isPending}
                 />
               </div>
@@ -291,6 +299,8 @@ export function AddStudentToSchoolDialog({
                   name="last_name"
                   required
                   placeholder="Last name"
+                  autoComplete="off"
+                  className="h-11 text-base sm:h-10 sm:text-sm"
                   disabled={isPending}
                 />
               </div>
@@ -303,6 +313,7 @@ export function AddStudentToSchoolDialog({
                   id="grade"
                   name="grade"
                   options={gradeOptions}
+                  className="h-11 text-base sm:h-10 sm:text-sm"
                   defaultValue=""
                   disabled={isPending}
                 />
@@ -313,6 +324,7 @@ export function AddStudentToSchoolDialog({
                   id="date_of_birth"
                   name="date_of_birth"
                   type="date"
+                  className="h-11 min-w-0 appearance-none px-2.5 text-base sm:h-10 sm:px-3 sm:text-sm"
                   disabled={isPending}
                 />
               </div>
@@ -324,6 +336,7 @@ export function AddStudentToSchoolDialog({
                 id="medical_notes"
                 name="medical_notes"
                 placeholder="Allergies, conditions..."
+                className="text-base sm:text-sm"
                 rows={2}
                 disabled={isPending}
               />
@@ -340,6 +353,8 @@ export function AddStudentToSchoolDialog({
               ) : (
                 <Select
                   name="program_id"
+                  aria-label="Session"
+                  className="h-11 text-base sm:h-10 sm:text-sm"
                   options={programOptions}
                   placeholder="Select a session"
                   required
@@ -361,16 +376,17 @@ export function AddStudentToSchoolDialog({
               />
             )}
 
-            <div className={asking ? "hidden" : "flex justify-end gap-2 pt-2"}>
+            <div className={asking ? "hidden" : "sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:gap-3 sm:border-0 sm:px-0 sm:pb-0 sm:pt-2"}>
               <Button
                 type="button"
                 variant="outline"
+                className="h-11 sm:h-10"
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending || programOptions.length === 0}>
+              <Button type="submit" className="h-11 sm:h-10" disabled={isPending || programOptions.length === 0}>
                 {isPending ? "Creating..." : "Create & Enroll"}
               </Button>
             </div>

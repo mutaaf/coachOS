@@ -92,32 +92,33 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)}>
         <DialogHeader>
-          <DialogTitle>{parent ? "Edit Parent" : "Add Parent"}</DialogTitle>
+          <DialogTitle className="pr-6">{parent ? "Edit Parent" : "Add Parent"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
-              <Input id="first_name" name="first_name" required defaultValue={parent?.first_name} />
+              <Input id="first_name" name="first_name" required autoComplete="off" className="h-11 text-base sm:h-10 sm:text-sm" defaultValue={parent?.first_name} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="last_name">Last Name *</Label>
-              <Input id="last_name" name="last_name" required defaultValue={parent?.last_name} />
+              <Input id="last_name" name="last_name" required autoComplete="off" className="h-11 text-base sm:h-10 sm:text-sm" defaultValue={parent?.last_name} />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone *</Label>
-            <Input id="phone" name="phone" type="tel" required defaultValue={parent?.phone} />
+            <Input id="phone" name="phone" type="tel" inputMode="tel" required autoComplete="off" className="h-11 text-base sm:h-10 sm:text-sm" defaultValue={parent?.phone} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" defaultValue={parent?.email || ""} />
+            <Input id="email" name="email" type="email" autoComplete="off" className="h-11 text-base sm:h-10 sm:text-sm" defaultValue={parent?.email || ""} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="preferred_payment">Preferred Payment</Label>
             <Select
               id="preferred_payment"
               name="preferred_payment"
+              className="h-11 text-base sm:h-10 sm:text-sm"
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
               options={[
@@ -131,18 +132,18 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
           {paymentMethod === "venmo" && (
             <div className="space-y-2">
               <Label htmlFor="venmo_handle">Venmo Handle</Label>
-              <Input id="venmo_handle" name="venmo_handle" placeholder="@username" defaultValue={parent?.venmo_handle || ""} />
+              <Input id="venmo_handle" name="venmo_handle" placeholder="@username" className="h-11 text-base sm:h-10 sm:text-sm" defaultValue={parent?.venmo_handle || ""} />
             </div>
           )}
           {paymentMethod === "zelle" && (
             <div className="space-y-2">
               <Label htmlFor="zelle_identifier">Zelle Email/Phone</Label>
-              <Input id="zelle_identifier" name="zelle_identifier" defaultValue={parent?.zelle_identifier || ""} />
+              <Input id="zelle_identifier" name="zelle_identifier" className="h-11 text-base sm:h-10 sm:text-sm" defaultValue={parent?.zelle_identifier || ""} />
             </div>
           )}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" name="notes" defaultValue={parent?.notes || ""} />
+            <Textarea id="notes" name="notes" className="text-base sm:text-sm" defaultValue={parent?.notes || ""} />
           </div>
           {asking && (
             <SamePersonPrompt
@@ -156,9 +157,9 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
               disabled={pending}
             />
           )}
-          <div className={asking ? "hidden" : "flex justify-end gap-3 pt-2"}>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={pending}>{pending ? "Saving..." : parent ? "Update" : "Add Parent"}</Button>
+          <div className={asking ? "hidden" : "sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:gap-3 sm:border-0 sm:px-0 sm:pb-0 sm:pt-2"}>
+            <Button type="button" variant="outline" className="h-11 sm:h-10" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="h-11 sm:h-10" disabled={pending}>{pending ? "Saving..." : parent ? "Update" : "Add Parent"}</Button>
           </div>
         </form>
       </DialogContent>
