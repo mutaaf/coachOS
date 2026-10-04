@@ -86,17 +86,19 @@ export function BulkImportDialog({ open, onOpenChange, entityType }: BulkImportD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl" onClose={() => onOpenChange(false)}>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>{TITLES[entityType]}</DialogTitle>
           <DialogDescription>{DESCRIPTIONS[entityType]}</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="quick-entry">
-          <TabsList className="mb-4">
-            <TabsTrigger value="quick-entry">Quick Entry</TabsTrigger>
-            <TabsTrigger value="paste">Paste & Import</TabsTrigger>
-          </TabsList>
+          <div className="-mx-6 mb-4 mt-4 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+            <TabsList className="h-12 w-max sm:h-10">
+              <TabsTrigger value="quick-entry" className="h-10 px-4 sm:h-8 sm:px-3">Quick Entry</TabsTrigger>
+              <TabsTrigger value="paste" className="h-10 px-4 sm:h-8 sm:px-3">Paste & Import</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="quick-entry">
             <QuickEntryGrid columns={columns} onImport={onImport} />

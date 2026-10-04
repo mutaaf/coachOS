@@ -82,20 +82,22 @@ export function EnrollStudentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)}>
         <DialogHeader>
-          <DialogTitle>Enroll {studentName}</DialogTitle>
+          <DialogTitle className="break-words pr-6 leading-snug">Enroll {studentName}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <p className="text-sm text-muted-foreground">Select a program to enroll this student in.</p>
+          <p className="text-sm text-muted-foreground">Select a session to enroll this student in.</p>
           <Select
             groups={programGroups}
-            placeholder="Select a program"
+            aria-label="Session"
+            className="h-11 text-base sm:h-10 sm:text-sm"
+            placeholder="Select a session"
             value={selectedProgram}
             onChange={(e) => setSelectedProgram(e.target.value)}
             required
           />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={pending || !selectedProgram}>
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:gap-3 sm:border-0 sm:px-0 sm:pb-0 sm:pt-2">
+            <Button type="button" variant="outline" className="h-11 sm:h-10" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="h-11 sm:h-10" disabled={pending || !selectedProgram}>
               {pending ? "Enrolling..." : "Enroll"}
             </Button>
           </div>

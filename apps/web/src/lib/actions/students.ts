@@ -264,7 +264,7 @@ export async function enrollStudent(studentId: string, programId: string) {
     .maybeSingle();
 
   if (existing) {
-    return { error: "Student is already enrolled in this program." };
+    return { error: "Student is already enrolled in this session." };
   }
 
   const { data, error } = await supabase

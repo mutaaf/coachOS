@@ -108,8 +108,8 @@ test("a parent opens their link, signed out, and sees what is owed and how to pa
   await expect(page.getByRole("button", { name: /bank account.*no fee/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /card.*3% card fee/i })).toBeVisible();
   // Both places she accepts Zelle, each copyable on its own.
-  await expect(page.getByRole("button", { name: /972-900-0292.*Copy/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /anum@example\.test.*Copy/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy 972-900-0292" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy anum@example.test" })).toBeVisible();
 });
 
 test("a parent can say whose Zelle account the money comes from", async ({ page }) => {

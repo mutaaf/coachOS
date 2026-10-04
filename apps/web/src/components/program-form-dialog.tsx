@@ -34,6 +34,12 @@ interface ProgramFormDialogProps {
   defaultValues?: Partial<Program>;
   /** Marketing-site listings this program can be shown as. */
   websiteListings?: WebsiteListingOption[];
+  /** Default Monthly Fee from Settings, filled in for a new program. */
+  defaultMonthlyFee?: string;
+  /** Programs (made once) a session can be of; picking one fills the form. */
+  catalog?: { id: string; name: string; description: string; default_monthly_fee: number; default_capacity: number }[];
+  /** Seasons a session can belong to. */
+  seasons?: { id: string; name: string; status: string }[];
 }
 
 const statusOptions = [
@@ -51,6 +57,9 @@ export function ProgramFormDialog({
   program,
   defaultValues,
   websiteListings = [],
+  defaultMonthlyFee = "",
+  catalog = [],
+  seasons = [],
 }: ProgramFormDialogProps) {
   const router = useRouter();
   const isEditing = !!program;
@@ -104,7 +113,7 @@ export function ProgramFormDialog({
       }
 
       toast.success(
-        isEditing ? "Program updated successfully" : "Program created successfully"
+        isEditing ? "Session updated" : "Session created"
       );
       onOpenChange(false);
       router.refresh();
@@ -118,16 +127,16 @@ export function ProgramFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>
-            {isEditing ? "Edit Program" : defaultValues ? "Duplicate Program" : "New Program"}
+            {isEditing ? "Edit session" : defaultValues ? "Duplicate session" : "New session"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the program details below."
+              ? "Update the session details below."
               : defaultValues
-                ? "Create a copy of this program. Choose the target school."
-                : "Add a new program to a school."}
+                ? "Create a copy of this session. Choose the school it goes to."
+                : "Put a program on at a school."}
           </DialogDescription>
         </DialogHeader>
 
@@ -148,9 +157,36 @@ export function ProgramFormDialog({
             </div>
           )}
 
-          {/* Program name */}
+          {catalog.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="catalog_id">Program</Label>
+              <Select
+                id="catalog_id"
+                name="catalog_id"
+                defaultValue={(defaults as any)?.catalog_id ?? ""}
+                disabled={isSubmitting}
+                onChange={(e) => {
+                  // Picking a program fills in its name, usual fee, places and description.
+                  const c = catalog.find((x) => x.id === e.target.value);
+                  const form = e.currentTarget.form;
+                  if (!c || !form) return;
+                  const set = (name: string, v: string) => {
+                    const el = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null;
+                    if (el && (!el.value || name === "name")) el.value = v;
+                  };
+                  set("name", c.name);
+                  set("monthly_fee", String(c.default_monthly_fee));
+                  set("capacity", String(c.default_capacity));
+                  set("public_description", c.description);
+                }}
+                options={[{ value: "", label: "Not from a program" }, ...catalog.map((c) => ({ value: c.id, label: c.name }))]}
+              />
+            </div>
+          )}
+
+          {/* Session name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Program Name</Label>
+            <Label htmlFor="name">Name</Label>
             <Input
               id="name"
               name="name"
@@ -164,13 +200,28 @@ export function ProgramFormDialog({
           {/* Season */}
           <div className="space-y-2">
             <Label htmlFor="season">Season</Label>
-            <Input
-              id="season"
-              name="season"
-              placeholder="e.g. Spring 2026"
-              defaultValue={defaults?.season ?? ""}
-              disabled={isSubmitting}
-            />
+            {seasons.length > 0 ? (
+              <Select
+                id="season"
+                name="season_id"
+                defaultValue={(defaults as any)?.season_id ?? seasons.find((x) => x.status === "active")?.id ?? ""}
+                disabled={isSubmitting}
+                options={[
+                  { value: "", label: "No season" },
+                  ...seasons
+                    .filter((x) => x.status !== "closed" || x.id === (defaults as any)?.season_id)
+                    .map((x) => ({ value: x.id, label: x.name })),
+                ]}
+              />
+            ) : (
+              <Input
+                id="season"
+                name="season"
+                placeholder="e.g. Fall 2026 — or make seasons on Programs"
+                defaultValue={defaults?.season ?? ""}
+                disabled={isSubmitting}
+              />
+            )}
           </div>
 
           {/* Date fields side by side */}
@@ -198,7 +249,7 @@ export function ProgramFormDialog({
           </div>
 
           {/* Monthly fee and status side by side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
             <div className="space-y-2">
               <Label htmlFor="monthly_fee">Monthly Fee</Label>
               <Input
@@ -208,7 +259,7 @@ export function ProgramFormDialog({
                 min="0"
                 step="0.01"
                 placeholder="120.00"
-                defaultValue={defaults?.monthly_fee ?? 120}
+                defaultValue={defaults?.monthly_fee ?? defaultMonthlyFee}
                 required
                 disabled={isSubmitting}
               />
@@ -227,12 +278,12 @@ export function ProgramFormDialog({
           </div>
 
           {/* Registration — everything a parent sees */}
-          <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+          <div className="space-y-4 rounded-lg border bg-muted/30 p-3 sm:p-4">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium">Open registration</p>
                 <p className="text-xs text-muted-foreground">
-                  Gives this program a link parents can use to sign up themselves.
+                  Gives this session a link parents can use to sign up themselves.
                   Anyone past the cap joins the waitlist.
                 </p>
               </div>
@@ -250,7 +301,7 @@ export function ProgramFormDialog({
               value={registrationOpen ? "true" : "false"}
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
               <div className="space-y-2">
                 <Label htmlFor="capacity">Spots</Label>
                 <Input
@@ -268,7 +319,7 @@ export function ProgramFormDialog({
                 <Input
                   id="location"
                   name="location"
-                  placeholder="Where sessions happen"
+                  placeholder="Where practices happen"
                   defaultValue={defaults?.location ?? ""}
                   disabled={isSubmitting}
                 />
@@ -300,7 +351,7 @@ export function ProgramFormDialog({
               />
               <p className="text-xs text-muted-foreground">
                 In the group: tap its name → Invite via link → Copy link. Families who sign up get it in their
-                welcome email. Leave empty if this program has no group — nobody will be sent to WhatsApp.
+                welcome email. Leave empty if this session has no group — nobody will be sent to WhatsApp.
               </p>
             </div>
 
@@ -315,7 +366,7 @@ export function ProgramFormDialog({
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Links this program to a listing on risingstars.training, so the site
+                  Links this session to a listing on risingstars.training, so the site
                   shows real remaining spots instead of typed text.
                 </p>
               </div>
@@ -328,7 +379,7 @@ export function ProgramFormDialog({
             <Textarea
               id="notes"
               name="notes"
-              placeholder="Optional notes about this program..."
+              placeholder="Optional notes about this session..."
               rows={3}
               defaultValue={defaults?.notes ?? ""}
               disabled={isSubmitting}
@@ -336,23 +387,24 @@ export function ProgramFormDialog({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="h-11 sm:h-10">
               {isSubmitting
                 ? isEditing
                   ? "Saving..."
                   : "Creating..."
                 : isEditing
                   ? "Save Changes"
-                  : "Create Program"}
+                  : "Create Session"}
             </Button>
           </div>
         </form>

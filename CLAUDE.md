@@ -221,11 +221,19 @@ something new bites — that is the point of it.**
 | Every action is guarded, and a test enforces it | All but six actions were callable signed out, holding the service role — anyone with an action id (they ship in page bundles) could read or change rosters and payments. Each now starts with `signedIn()`/`requireSignedIn()`; `tests/integration/action-guards.test.ts` calls every export signed out and fails if one opens a database client. A public action goes in its `PUBLIC` list with the reason. Work the cron needs lives in plain modules (`lib/invoices.ts`, `lib/stripe-invoices.ts`), never behind a guarded action. |
 | Signed in is not admin | Accounts are shared with the marketing site. CoachOS, `ops.is_admin()` on every ops policy, and `public.is_admin()` all require `app_metadata.role = 'admin'` (`lib/admin.ts`), which only the service role can set. Sign-up is disabled in the project's auth settings. Grant access from Settings → Access, never by turning sign-up back on. |
 | Payment history never cascades | Deleting a withdrawn child once took their paid invoice and its payment with it. `invoices.student_id`, `invoices.parent_id` and `payments.invoice_id` are `ON DELETE RESTRICT`, so anything that clears data deletes payments, then invoices, then people. Children with history are archived (`status = 'inactive'`), not deleted. |
+| Phones first, and `<main>` is the scroller | She runs the business from her phone. Check 375, 390 and 430 wide in portrait. Too-wide content scrolls `<main>` sideways while `document.scrollWidth` looks fine — measure `main.scrollWidth - main.clientWidth`. Use the shared patterns: `DialogFooter` for dialog actions, `.scroll-row` for chip/filter rows, `.pt-safe`/`.pb-safe` near the notch and home bar, `hidden md:block` table + `md:hidden` cards. A size class on `Button` needs its `sm:` twin (`h-11 sm:h-11`) or the size's `sm:h-10` wins on tablets. Tabs are `role="tab"` — find them with `getByRole("tab")`. |
+| Migrations can merge out of date order | Two PRs each add a migration that sorts last when checked; whichever merges second is older than main's newest. Ship once refused such a migration and deployed nothing. PRs still check order; Ship skips that check and runs `supabase db push --include-all`. Migrations must not depend on a sibling PR's migration. |
 | Functions run in `sfo1` | The database is in North California. They defaulted to `iad1`, so every query crossed the country. |
 
 ---
 
 ## Working as an agent
+
+**Vocabulary.** On screen: a **Program** is made once (`ops.program_catalog`);
+a **Session** is a program at a school in a season (a row of `ops.programs`);
+a **Practice** is one date (a row of `ops.sessions`); a **Season** groups a
+term (`ops.seasons`). The table names predate the words — don't rename them.
+Parents still read "program" (join page, pay page, emails, the website).
 
 Agents open pull requests all day; each merges itself when Checks pass and
 ships straight to the owner. See [docs/RELEASING.md](./docs/RELEASING.md).

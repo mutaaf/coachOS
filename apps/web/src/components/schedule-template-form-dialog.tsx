@@ -114,25 +114,25 @@ export function ScheduleTemplateFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>
             {isEditing ? "Edit Schedule Template" : "New Schedule Template"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the schedule template details below."
-              : "Add a recurring schedule for a program. Select multiple days to create one template per day."}
+              : "Add a weekly practice time for a session. Select multiple days to create one template per day."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="program_id">Program</Label>
+            <Label htmlFor="program_id">Session</Label>
             <Select
               id="program_id"
               name="program_id"
               options={programOptions}
-              placeholder="Select a program"
+              placeholder="Select a session"
               defaultValue={template?.program_id ?? ""}
               required
               disabled={isSubmitting}
@@ -150,7 +150,8 @@ export function ScheduleTemplateFormDialog({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => toggleDay(i)}
-                    className={`rounded-lg border px-2 py-1.5 text-xs font-medium cursor-pointer transition-colors ${
+                    aria-pressed={active}
+                    className={`h-11 rounded-lg border px-0 text-xs font-medium cursor-pointer transition-colors sm:h-9 ${
                       active
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-background text-foreground border-input hover:bg-accent"
@@ -200,12 +201,17 @@ export function ScheduleTemplateFormDialog({
                     value: c.id,
                     label: `${c.first_name} ${c.last_name}`,
                   })),
+                  // Without this, a coach since made inactive fell back to
+                  // "Not assigned" and saving cleared them.
+                  ...(template?.coach_id && !coaches.some((c) => c.id === template.coach_id)
+                    ? [{ value: template.coach_id, label: "A coach no longer active" }]
+                    : []),
                 ]}
-                defaultValue={(template as { coach_id?: string })?.coach_id ?? ""}
+                defaultValue={template?.coach_id ?? ""}
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
-                Who normally runs this slot. Each session can be changed
+                Who normally runs this slot. Each practice can be changed
                 individually when someone covers.
               </p>
             </div>
@@ -222,16 +228,36 @@ export function ScheduleTemplateFormDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          {isEditing && (
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="update_future"
+                className="mt-0.5 h-5 w-5 shrink-0"
+                defaultChecked
+                disabled={isSubmitting}
+              />
+              <span>
+                Also change the practices already on the calendar. Past and
+                cancelled practices stay as they were, and so does anyone
+                covering a practice.
+              </span>
+            </label>
+          )}
+
+          {/* Pinned to the bottom of the dialog on phones so the keyboard or a
+              long form never hides it. */}
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 grid grid-cols-2 gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex sm:justify-end sm:border-t-0 sm:px-0 sm:pb-0 sm:pt-2">
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || selectedDays.length === 0}>
+            <Button type="submit" className="h-11 sm:h-10" disabled={isSubmitting || selectedDays.length === 0}>
               {isSubmitting
                 ? isEditing
                   ? "Saving..."

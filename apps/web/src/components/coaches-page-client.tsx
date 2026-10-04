@@ -46,23 +46,23 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <UserCheck className="h-6 w-6 text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Coaches</h1>
-            <p className="text-sm text-muted-foreground">
-              Who runs the sessions, and what they&apos;re owed.
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <UserCheck className="mt-1.5 hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight">Coaches</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Who runs the practices, and what they&apos;re owed.
             </p>
           </div>
         </div>
-        <Button onClick={openNew}>
+        <Button onClick={openNew} className="h-11 w-full shrink-0 sm:h-10 sm:w-auto">
           <Plus className="h-4 w-4 mr-1" /> Add Coach
         </Button>
       </div>
 
       {/* Summary */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Active
@@ -71,21 +71,21 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Covering sessions
+            Covering practices
           </p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{totals.covering}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4">
+        <div className="col-span-2 rounded-xl border bg-card p-4 sm:col-span-1">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Owed for sessions run
+            Owed for practices run
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
+          <p className="mt-1 whitespace-nowrap text-2xl font-semibold tabular-nums">
             {formatCurrency(totals.owed)}
           </p>
           {totals.unpriced > 0 && (
             <p className="mt-1 text-xs text-amber-700">
               {totals.unpriced} coach{totals.unpriced === 1 ? "" : "es"} without a
-              per-session rate isn&apos;t counted
+              per-practice rate isn&apos;t counted
             </p>
           )}
         </div>
@@ -97,10 +97,10 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
           <UserCheck className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-medium">No coaches yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Add the people who run your sessions, then assign them to a weekly slot on
+            Add the people who run your practices, then assign them to a weekly slot on
             the schedule.
           </p>
-          <Button className="mt-4" size="sm" onClick={openNew}>
+          <Button className="mt-4 h-11 sm:h-9" size="sm" onClick={openNew}>
             <Plus className="h-4 w-4 mr-1" /> Add the first coach
           </Button>
         </div>
@@ -113,7 +113,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">
+                  <span className="min-w-0 break-words font-medium">
                     {coach.first_name} {coach.last_name}
                   </span>
                   <span
@@ -135,19 +135,19 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
                   {coach.email && (
                     <a
                       href={`mailto:${coach.email}`}
-                      className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+                      className="inline-flex min-w-0 max-w-full items-center gap-1 hover:text-foreground hover:underline"
                     >
-                      <Mail className="h-3 w-3" />
-                      {coach.email}
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{coach.email}</span>
                     </a>
                   )}
                   {coach.source && <span>via {coach.source}</span>}
                 </p>
 
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-muted-foreground tabular-nums">
                   {coach.sessions_completed} run · {coach.sessions_upcoming} upcoming
                   {coach.owed !== null && (
-                    <> · owed {formatCurrency(coach.owed)}</>
+                    <> · owed <span className="whitespace-nowrap">{formatCurrency(coach.owed)}</span></>
                   )}
                   {coach.owed === null && coach.pay_rate !== null && (
                     <> · {formatCurrency(Number(coach.pay_rate))}/hour, hours not tracked</>
@@ -156,22 +156,27 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
                 </p>
 
                 {coach.notes && (
-                  <p className="mt-1 text-sm text-muted-foreground">{coach.notes}</p>
+                  <p className="mt-1 break-words text-sm text-muted-foreground">{coach.notes}</p>
                 )}
               </div>
 
-              <div className="flex items-center gap-1">
+              {/* Real, labelled buttons on phones; compact icons from sm up. */}
+              <div className="grid grid-cols-2 gap-2 border-t pt-3 sm:flex sm:items-center sm:gap-1 sm:border-t-0 sm:pt-0">
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="h-11 border sm:h-9 sm:border-0"
                   aria-label={`Edit ${coach.first_name} ${coach.last_name}`}
                   onClick={() => openEdit(coach)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
+                  <span className="ml-2 sm:hidden">Edit</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="h-11 border text-destructive hover:text-destructive sm:h-9 sm:border-0"
+                  aria-label={`Remove ${coach.first_name} ${coach.last_name}`}
                   disabled={pending}
                   onClick={() =>
                     run(() => deleteCoach(coach.id), {
@@ -181,6 +186,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
                   }
                 >
                   <Trash2 className="h-3.5 w-3.5" />
+                  <span className="ml-2 sm:hidden">Remove</span>
                 </Button>
               </div>
             </div>

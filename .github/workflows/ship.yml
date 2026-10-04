@@ -44,6 +44,8 @@ jobs:
       - name: Rules for this push, with the merged PR's labels
         env:
           BASE: ${{ github.event.before }}
+          # Two PRs can each sort last when checked and merge in either order.
+          ORDER_CHECK: "0"
           GH_TOKEN: ${{ github.token }}
         run: |
           export LABELS=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '[.[0].labels[].name]' 2>/dev/null || echo '[]')
@@ -82,7 +84,9 @@ jobs:
           supabase link --project-ref "$SUPABASE_PROJECT_REF" "${pw[@]}"
           # The CLI was once linked to a different project; never push without checking.
           test "$(cat supabase/.temp/project-ref)" = "$SUPABASE_PROJECT_REF"
-          supabase db push --yes "${pw[@]}"
+          # --include-all: a migration merged after a newer-dated one (two PRs
+          # in flight at once) is still applied rather than refused.
+          supabase db push --yes --include-all "${pw[@]}"
 
       - name: Deploy to production
         id: deploy

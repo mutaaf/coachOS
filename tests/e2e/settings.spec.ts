@@ -29,7 +29,7 @@ test("keys are hidden until asked for, and copy without being shown", async ({ p
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await signIn(page);
   await page.goto("/settings");
-  await page.getByRole("button", { name: /Payments/ }).click();
+  await page.getByRole("tab", { name: /Payments/ }).click();
 
   const key = page.locator("#cfg-zelle_inbound_secret");
   await expect(key).toHaveAttribute("type", "password");
@@ -44,7 +44,7 @@ test("keys are hidden until asked for, and copy without being shown", async ({ p
 test("an address changed in Settings is used everywhere at once, no deploy", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");
-  await page.getByRole("button", { name: /Payments/ }).click();
+  await page.getByRole("tab", { name: /Payments/ }).click();
 
   await page.getByLabel("Zelle Alerts Gmail").fill("owner.zelle@example.test");
   await page.getByLabel("Bank Alerts Arrive At").fill("owner.bank@example.test");
@@ -71,7 +71,7 @@ test("an address changed in Settings is used everywhere at once, no deploy", asy
 test("an address that isn't one is refused, not saved", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");
-  await page.getByRole("button", { name: /Payments/ }).click();
+  await page.getByRole("tab", { name: /Payments/ }).click();
   await page.getByLabel("Zelle Alerts Gmail").fill("owner-at-gmail");
   await page.getByRole("button", { name: /Save/ }).first().click();
   await expect(page.getByText("Settings weren't saved")).toBeVisible();

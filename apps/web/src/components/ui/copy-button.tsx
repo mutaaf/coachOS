@@ -35,7 +35,7 @@ export function CopyButton({
       }}
       className={cn(
         "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border bg-white font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-40",
-        size === "sm" ? "h-10 px-3 text-xs" : "h-11 px-4 text-sm",
+        size === "sm" ? "h-11 px-3 text-xs sm:h-10" : "h-11 px-4 text-sm",
         className
       )}
     >

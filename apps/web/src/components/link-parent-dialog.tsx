@@ -67,7 +67,7 @@ export function LinkParentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)}>
         <DialogHeader>
-          <DialogTitle>Link Parents — {studentName}</DialogTitle>
+          <DialogTitle className="break-words pr-6 leading-snug">Link Parents — {studentName}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           {/* Current linked parents */}
@@ -75,15 +75,17 @@ export function LinkParentDialog({
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Linked Parents</p>
               {linkedParents.map((parent) => (
-                <div key={parent.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <span className="text-sm font-medium">{parent.first_name} {parent.last_name}</span>
+                <div key={parent.id} className="flex items-center justify-between gap-2 rounded-lg border py-1 pl-3 pr-1">
+                  <div className="min-w-0">
+                    <span className="break-words text-sm font-medium">{parent.first_name} {parent.last_name}</span>
                     <span className="text-xs text-muted-foreground ml-2">({parent.relationship})</span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    className="h-11 w-11 shrink-0 p-0 text-destructive hover:text-destructive sm:h-9 sm:w-9"
+                    aria-label={`Unlink ${parent.first_name} ${parent.last_name}`}
+                    title="Unlink parent"
                     onClick={() => handleUnlink(parent.id)}
                   >
                     <X className="h-4 w-4" />
@@ -102,6 +104,8 @@ export function LinkParentDialog({
               <Select
                 value={selectedParentId}
                 onChange={(e) => setSelectedParentId(e.target.value)}
+                aria-label="Parent"
+                className="h-11 text-base sm:h-10 sm:text-sm"
                 placeholder="Select a parent..."
                 options={availableParents.map((p) => ({
                   value: p.id,
@@ -111,6 +115,8 @@ export function LinkParentDialog({
               <Select
                 value={relationship}
                 onChange={(e) => setRelationship(e.target.value)}
+                aria-label="Relationship"
+                className="h-11 text-base sm:h-10 sm:text-sm"
                 options={[
                   { value: "mother", label: "Mother" },
                   { value: "father", label: "Father" },
@@ -118,7 +124,7 @@ export function LinkParentDialog({
                   { value: "other", label: "Other" },
                 ]}
               />
-              <Button onClick={handleLink} disabled={!selectedParentId || loading} size="sm" className="w-full">
+              <Button onClick={handleLink} disabled={!selectedParentId || loading} className="h-11 w-full sm:h-10">
                 {loading ? "Linking..." : "Link Parent"}
               </Button>
             </div>

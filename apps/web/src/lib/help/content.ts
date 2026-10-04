@@ -43,6 +43,22 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "programs",
+    title: "Make a program and put it on at a school",
+    when: "Once per program, then each season at each school",
+    keywords: "program session season new offer school put on add create fee places ages practice weekly time",
+    href: "/programs",
+    hrefLabel: "Open Programs",
+    tourStep: "programs",
+    steps: [
+      { text: "Go to **Programs** and tap [[New program]]. Give it a name, a description for parents, the ages it's for, its usual monthly fee and usual places, then tap [[Make program]].", tip: "You make each program once. Every school it runs at uses it." },
+      { text: "On the program, tap [[Put it on at a school]]. Pick the school — or **+ A new school** — and the season, or make a new one like **Fall 2026**." },
+      { text: "Add the dates it starts and ends, and a weekly practice time if you know it. The fee and places start at the program's usual ones — change them for this school if you need to. Tap [[Add session]]." },
+      { text: "That's a session: the program at that school for that season. Its practices are the dates on **Schedule**." },
+      { text: "Its roster starts empty. Import a roster, share the sign-up link from the school's page, or record a payment from someone new and add the child as you go." },
+    ],
+  },
+  {
     id: "import",
     title: "Add a session's families",
     when: "When a new session starts",
@@ -97,8 +113,8 @@ export const TASKS: HelpTask[] = [
     hrefLabel: "Open Compose",
     tourStep: "messaging-tabs",
     steps: [
-      { text: "Go to **Messaging** → **Compose**. Tap [[All Parents]], [[By School]] or [[By Program]]." },
-      { text: "For a school or program, pick it from the list. The parents it will go to appear underneath — check the names.", tip: "Switching between All Parents, By School and By Program clears the list, so pick again after switching. Send stays grey until you do." },
+      { text: "Go to **Messaging** → **Compose**. Tap [[All Parents]], [[By School]] or [[By Session]]." },
+      { text: "For a school or session, pick it from the list. The parents it will go to appear underneath — check the names.", tip: "Switching between All Parents, By School and By Session clears the list, so pick again after switching. Send stays grey until you do." },
       { text: "Write the message, or pick one from **Use a template...**. Tap [[Send to 12 recipient(s)]] and send them from the **Outbox**." },
     ],
   },
@@ -144,8 +160,23 @@ export const TASKS: HelpTask[] = [
       { text: "For a Zelle, tap [[Who paid this?]] on it. For cash or Venmo, tap [[Record Payment]] at the top right of Payments and enter the amount." },
       { text: "Tap [[Someone new]]. The parent's name is filled in from the Zelle — check it, and add their phone (that's how WhatsApp reaches them).", tip: "If the phone is already on file, CoachOS says whose it is and offers that family instead, so you never make a family twice." },
       { text: "Enter the child's first name." },
-      { text: "Pick the school — or **+ A new school** and type its name. Then the program — or **+ A new program**, with its name and monthly fee (it starts at the amount paid)." },
+      { text: "Pick the school — or **+ A new school** and type its name. Then the session — or **+ A new session**, with its name and monthly fee (it starts at the amount paid)." },
       { text: "Read the summary: everything it will add, and whether this pays the month in full. Tap [[Record]].", tip: "Nothing is saved until that last tap, and it all saves together — if anything's missing, nothing is half-made." },
+    ],
+  },
+  {
+    id: "paid-ahead",
+    title: "A family paid ahead, or paid too much",
+    when: "Money comes in that nothing is owed for yet",
+    keywords: "credit ahead advance early extra overpaid overpayment too much paid up next month balance",
+    href: "/payments",
+    hrefLabel: "Open Payments",
+    tourStep: "record-payment",
+    steps: [
+      { text: "Record it as usual: [[Who paid this?]] on a Zelle, or [[Record Payment]] at the top right of Payments for cash or Venmo. Tap the family." },
+      { text: "The summary says how much goes on what they owe, and that the rest is **kept as credit**. Tap [[Record]]." },
+      { text: "**Credit on file** on Payments lists every family with credit. Their payment page shows it too, and doesn't ask them to send anything while they owe nothing." },
+      { text: "When next month's invoices are made, the credit pays them first, by itself. Nothing for you to do.", tip: "Total Revenue counts the money once, when it came in — not again when the credit is used." },
     ],
   },
   {
@@ -159,7 +190,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Payments**, find the family's invoice and tap **Record Payment** on its row." },
       { text: "The amount still owed is filled in — change it if they paid part. Pick the method and tap [[Record Payment]]." },
-      { text: "It turns {paid} when fully paid, and a receipt is emailed if they have an email.", tip: "CoachOS won't take $0, a negative amount or more than they owe — that keeps your books right." },
+      { text: "It turns {paid} when fully paid, and a receipt is emailed if they have an email.", tip: "CoachOS won't take $0, a negative amount or more than this invoice is for. If they paid extra, record it with Record Payment at the top right instead — the rest is kept as their credit." },
       { text: "Typed it wrong? Open **Payment History** and tap the pencil on that payment. The same rule applies: more than $0, and no more than the invoice is for once its other payments are counted." },
     ],
   },
@@ -174,7 +205,7 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "On **Payments**, find the family's row and tap the 🔗 link icon — their payment page link is copied." },
       { text: "Paste it into a WhatsApp message to them." },
-      { text: "On their page they choose **Bank account** (free) or **Card** (the fee is shown first). After that it's automatic on the 1st.", tip: "They can turn it off or switch card ↔ bank on the same page." },
+      { text: "On their page they choose **Bank account** (free) or **Card** (the fee is shown first). After that it's automatic on the day each invoice is due.", tip: "They can turn it off or switch card ↔ bank on the same page." },
     ],
   },
   {
@@ -189,6 +220,21 @@ export const TASKS: HelpTask[] = [
       { text: "Nothing to do straight away — a message is already waiting in your **Outbox**, and an email has gone to the family if they have one." },
       { text: "Send that Outbox message on WhatsApp." },
       { text: "Their payment page shows what went wrong, with buttons to use another card, switch to bank, or pay by Zelle. CoachOS tries again within a day of them updating it." },
+    ],
+  },
+  {
+    id: "family-owes",
+    title: "“What do we owe?” — one family",
+    when: "When a parent asks on WhatsApp",
+    keywords: "family owe owes balance how much garcia parent asks children siblings messages link left to pay",
+    href: "/students",
+    hrefLabel: "Open Students & Parents",
+    tourStep: "families",
+    steps: [
+      { text: "Go to **Students & Parents** and open **Parents**. **Balance** shows what each family still owes, for all their children together. Type the name or phone in the search box to find them fast." },
+      { text: "Tap the parent's name — or a child's name on **Students** — to open their family." },
+      { text: "**They owe** is the answer, with each unpaid invoice and what's left on it underneath.", tip: "A bank payment still on its way isn't counted as owed; it's shown on its own line. Credit they have on file is shown too." },
+      { text: "Tap [[Copy link]] and paste their payment page into your WhatsApp reply. The family page also shows both parents, each child's sessions, every invoice and the messages you've sent them." },
     ],
   },
   {
@@ -217,36 +263,37 @@ export const TASKS: HelpTask[] = [
       { text: "On **Registrations**, copy the session's sign-up link." },
       { text: "Share it however you like — WhatsApp, Instagram, a flyer. Parents register themselves and get a celebration and a \"you're in\" email; when full, they join a waitlist automatically. Either way, a message for them — they're in, or their place in line — waits in your **Outbox**." },
       { text: "Add each confirmed child to the roster with one tap. They get a welcome email with the first practice and their payment page, a welcome message waits in your **Outbox**, and this month's bill is made — due a week later. It shows **Paid** once the money is recorded on Payments.", tip: "Don't want the welcome message? Turn off **Welcome Messages** in Settings → Messaging." },
-      { text: "When a place opens, tap **Give a seat to next in line** on the program. The waitlist reads #1 first; giving a seat to anyone else asks before skipping the family ahead of them. The family is emailed, and a \"a spot opened\" message waits in your **Outbox**." },
-      { text: "The ✕ cancels a registration after asking. For a child on the roster, leave “Also take them off the roster” ticked so they aren't billed again. Changed your mind? Tap **Restore**.", tip: "Restore gives back the seat if one is free; if the program has filled, the child goes to the back of the waitlist." },
+      { text: "When a place opens, tap **Give a seat to next in line** on the session. The waitlist reads #1 first; giving a seat to anyone else asks before skipping the family ahead of them. The family is emailed, and a \"a spot opened\" message waits in your **Outbox**." },
+      { text: "The ✕ cancels a registration after asking. For a child on the roster, leave “Also take them off the roster” ticked so they aren't billed again. Changed your mind? Tap **Restore**.", tip: "Restore gives back the seat if one is free; if the session has filled, the child goes to the back of the waitlist." },
     ],
   },
   {
     id: "whatsapp-group",
-    title: "Give a program its WhatsApp group",
+    title: "Give a session its WhatsApp group",
     when: "So new families land in the right group chat",
     keywords: "whatsapp group chat invite link program session welcome email",
     href: "/schools",
     hrefLabel: "Open Schools",
     tourStep: "schools",
     steps: [
-      { text: "In WhatsApp, open the program's group, tap its name, then **Invite via link** → **Copy link**." },
-      { text: "In CoachOS, open the school, then **Edit** on the program, and paste it into **WhatsApp group invite link**. Save." },
+      { text: "In WhatsApp, open the session's group, tap its name, then **Invite via link** → **Copy link**." },
+      { text: "In CoachOS, open the school, then **Edit** on the session, and paste it into **WhatsApp group invite link**. Save." },
       { text: "From then on, families who get a place see a [[💬 Join the team group chat]] button when they sign up, and in their welcome email.", tip: "No link? Nobody is sent to WhatsApp — they get email and texts instead. The waitlist never gets the link." },
     ],
   },
   {
     id: "attendance",
     title: "Take attendance, or let a coach do it",
-    when: "At each session",
-    keywords: "attendance register coach link passcode session present absent",
+    when: "At each practice",
+    keywords: "attendance register coach link passcode session present absent complete completed correct fix",
     href: "/schedule",
     hrefLabel: "Open Schedule",
     tourStep: "schedule",
     steps: [
-      { text: "On **Schedule**, tap the session." },
-      { text: "Tap each child to mark them present, absent, late or excused, then tap [[Save Attendance]]." },
-      { text: "For a coach instead: tap [[Coach link]], then [[Copy link and passcode]], and send it to them. The message says which day's session it is. It stops working after 12 hours." },
+      { text: "On **Schedule**, tap the practice." },
+      { text: "Tap each child to mark them present, absent, late or excused, then tap [[Save & complete]]. That saves the register and marks the practice done in one go.", tip: "A practice can only be completed on the day or after it." },
+      { text: "Got someone wrong? Tap the completed practice: the register is still there. Change the child and tap [[Save changes]]." },
+      { text: "For a coach instead: tap [[Coach link]], then [[Copy link and passcode]], and send it to them. The message says which day's practice it is. It works until a few hours after the practice ends — the box tells you exactly when — so you can send it the night before.", tip: "Cancelling the practice turns the link off, so a coach can't take a register for a practice that isn't happening." },
     ],
   },
   {
@@ -258,9 +305,23 @@ export const TASKS: HelpTask[] = [
     hrefLabel: "Open Schedule",
     tourStep: "schedule",
     steps: [
-      { text: "On **Schedule**, tap the session, then [[Cancel Session]]." },
+      { text: "On **Schedule**, tap the practice, then [[Cancel practice]]." },
       { text: "Type a reason (“gym closed”) and confirm. No practice reminder goes out for it." },
       { text: "A message to each family on the roster, with your reason, is waiting in your **Outbox**. Send them from there.", careful: true },
+    ],
+  },
+  {
+    id: "weekly-time",
+    title: "Change a weekly practice time or coach",
+    when: "A practice moves to 9:15, or a new coach takes over",
+    keywords: "change time day weekly template schedule coach covering substitute move practice duplicate",
+    href: "/schedule",
+    hrefLabel: "Open Schedule",
+    tourStep: "schedule",
+    steps: [
+      { text: "On **Schedule**, tap [[Manage Templates]], then the pencil next to the weekly practice." },
+      { text: "Change the day, time or coach. Leave **Also change the practices already on the calendar** ticked and tap [[Save Changes]].", tip: "Past and cancelled practices stay as they were. Adding practices again never makes a second one on the same day." },
+      { text: "Just one practice covered by someone else? Tap that practice and pick them under **Coach**. That's who it counts towards on Coaches." },
     ],
   },
   {
@@ -286,7 +347,7 @@ export const TASKS: HelpTask[] = [
     tourStep: "schools",
     steps: [
       { text: "Free session: open the school, tap ✎ on the session and set the monthly fee to **0**. It shows “Free – no invoices”." },
-      { text: "Session over: set its status to **Completed** or **Cancelled**, or give it an end date. No month after it is invoiced.", tip: "A program's end date can't be before its start date." },
+      { text: "Session over: set its status to **Completed** or **Cancelled**, or give it an end date. No month after it is invoiced.", tip: "A session's end date can't be before its start date." },
       { text: "School stopping: open it and tap [[Archive]]. Its families get no more invoices, and you can end the children's places there at the same time.", careful: true },
     ],
   },
@@ -318,6 +379,7 @@ export const TASKS: HelpTask[] = [
       { text: "Add Parent asks the same when the phone number is already on file, however it was typed." },
       { text: "Phone numbers are saved as one number — (214) 555-0150, 214.555.0150 and +1 214 555 0150 are the same — so WhatsApp always opens the right chat. One that isn't a phone number, like “12”, is refused so you can fix it.", tip: "For a number outside the US, start it with + and the country code." },
       { text: "Add to roster, roster imports and Bulk Import find families already on file by themselves, and never add a school with the same name twice." },
+      { text: "In **Bulk Students**, a parent name and phone on a row saves that parent and links them to the child. A phone already on file links the child to that parent instead of making a copy.", tip: "A parent name with no phone, or a new phone with no name, is held back with a note so you can finish the row." },
     ],
   },
   {
@@ -366,13 +428,13 @@ export const TASKS: HelpTask[] = [
   {
     id: "settings",
     title: "Change your details",
-    when: "Zelle number, emails, fee, business name",
-    keywords: "settings change zelle number email reply business name card fee",
+    when: "Zelle number, emails, fees, due day, business name",
+    keywords: "settings change zelle number email reply sender business name card fee monthly fee due day",
     href: "/settings",
     hrefLabel: "Open Settings",
     tourStep: "settings",
     steps: [
-      { text: "In **Settings**, Payments has your Zelle details, the card fee and where Zelle alerts go; Messaging has where email replies go; General has the business name." },
+      { text: "In **Settings**, Payments has the day invoices are due (1 to 28), the fee a new session starts with, your Zelle details, the card fee and where Zelle alerts go; Messaging has who emails come from and where replies go; General has the business name." },
       { text: "Change what you need and tap [[Save]] — it takes effect everywhere at once. Each address has a Copy button.", tip: "Leave the Stripe card to Mutaaf — it switches between test and live payments.", careful: true },
     ],
   },
@@ -380,7 +442,7 @@ export const TASKS: HelpTask[] = [
 
 /** Things CoachOS does by itself, so she knows what not to do. */
 export const AUTOMATIC: { when: string; what: string; detail: string }[] = [
-  { when: "On the 1st", what: "Every family is invoiced for the month.", detail: "One invoice per child, for the session's monthly fee. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are skipped. A child who joins mid-month has a week to pay." },
+  { when: "On the 1st", what: "Every family is invoiced for the month.", detail: "One invoice per child, for the session's monthly fee, due on the Payment Due Day in Settings (the 1st unless you change it). Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are skipped. A child who joins mid-month has a week to pay." },
   { when: "About 1 pm", what: "Autopay families are charged.", detail: "Once a day; siblings are one charge. Bank payments show {processing} for a few days." },
   { when: "Within 15 min", what: "Forwarded Zelle payments are recorded.", detail: "Matched to the family and marked paid. If CoachOS isn't sure, it asks you." },
   { when: "Each payment", what: "A receipt is emailed", detail: "to families who've given an email. Their replies come to your inbox." },
@@ -396,22 +458,26 @@ export const GLOSSARY: { term: string; meaning: string }[] = [
   { term: "{overdue}", meaning: "Past due and unpaid. One reminder goes out automatically." },
   { term: "{paid}", meaning: "Fully paid. A receipt was emailed if the family has an email." },
   { term: "{waived}", meaning: "You let this one go. Nothing is owed." },
+  { term: "**Program**", meaning: "Something you offer, made once on Programs — like Lil Dribblers (K–1). It has a name, ages, a usual fee and usual places." },
+  { term: "**Session**", meaning: "A program put on at one school for a season, with its own dates, fee, places and roster. Families sign up for a session." },
+  { term: "**Practice**", meaning: "One date of a session, on Schedule. Take attendance on it, cancel it, or send its coach a link." },
+  { term: "**Season**", meaning: "The term sessions run in, like Fall 2026. It groups everything running at the same time." },
   { term: "**Outbox**", meaning: "Messages ready to send from your phone. CoachOS writes them; you press send." },
   { term: "**Payment page**", meaning: "Each family's private page: what they owe, Zelle details, autopay. Only people with the link see it." },
-  { term: "**Autopay**", meaning: "A family saves a bank account (free) or card (small fee) once and pays on the 1st by itself." },
-  { term: "**Test mode**", meaning: "Practice mode: card and bank payments aren't real. Shown by an amber badge. Mutaaf switches it to live." },
+  { term: "**Autopay**", meaning: "A family saves a bank account (free) or card (small fee) once and pays on the due day by itself." },
+  { term: "**Test mode**", meaning: "Pretend payments: card and bank payments aren't real. Shown by an amber badge. Mutaaf switches it to live." },
 ];
 
 /** Ways to try everything safely while Stripe is in test mode. */
 export const PRACTICE: { id: string; title: string; why: string; steps: HelpStep[] }[] = [
   {
     id: "p-family",
-    title: "Make a practice family",
+    title: "Make a test family",
     why: "Everything else uses it. Use your own phone and email so you see exactly what parents see.",
     steps: [
-      { text: "Go to **Schools** → [[Import a roster]]. Make a new school called **PRACTICE – delete me** and a session called **Practice**, fee **$1**." },
+      { text: "Go to **Schools** → [[Import a roster]]. Make a new school called **PRACTICE – delete me** and a session called **Test session**, fee **$1**." },
       { text: "Paste this, with your own phone number: **Child Name, Parent Name, Phone** on the first line, then **Test Kid, Your Name, your-number**. Tap [[Read roster]], then Import." },
-      { text: "On **Students**, open your practice parent and add your email so you get receipts.", tip: "When you're done practising, ask Mutaaf to remove the practice school. Every active child is invoiced on the 1st." , careful: true },
+      { text: "On **Students**, open your test parent and add your email so you get receipts.", tip: "When you're done trying things, ask Mutaaf to remove the practice school. Every active child is invoiced on the 1st." , careful: true },
     ],
   },
   {
@@ -426,7 +492,7 @@ export const PRACTICE: { id: string; title: string; why: string; steps: HelpStep
   },
   {
     id: "p-card",
-    title: "Practise autopay with a test card",
+    title: "Try autopay with a test card",
     why: "Stripe's test cards behave like real ones but no money moves.",
     steps: [
       { text: "On your practice payment page, tap **Card**." },
@@ -436,7 +502,7 @@ export const PRACTICE: { id: string; title: string; why: string; steps: HelpStep
   },
   {
     id: "p-bank",
-    title: "Practise autopay by bank",
+    title: "Try autopay by bank",
     why: "Bank payments are free for families and take a few days.",
     steps: [
       { text: "On the payment page tap **Bank account**, then in Stripe's bank list choose **Test Institution** and finish." },
@@ -445,7 +511,7 @@ export const PRACTICE: { id: string; title: string; why: string; steps: HelpStep
   },
   {
     id: "p-zelle",
-    title: "Practise a Zelle payment",
+    title: "Try a Zelle payment",
     why: "Zelle is real money, so keep it to $1.",
     steps: [
       { text: "Have someone Zelle you **$1**, or record a pretend one: on **Payments**, tap **Record Payment** on your practice invoice and choose Zelle." },
@@ -454,7 +520,7 @@ export const PRACTICE: { id: string; title: string; why: string; steps: HelpStep
   },
   {
     id: "p-fail",
-    title: "Practise a failed payment",
+    title: "Try a failed payment",
     why: "So you know what a family sees when a card is declined.",
     steps: [
       { text: "On the payment page, tap **Use a different card** and enter **4000 0000 0000 0341**." },

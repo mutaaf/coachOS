@@ -36,7 +36,7 @@ async function setUp(page: Page) {
 
   await signIn(page);
   await page.goto("/messaging");
-  await page.getByRole("button", { name: "Compose", exact: true }).click();
+  await page.getByRole("tab", { name: "Compose", exact: true }).click();
   await page.getByPlaceholder("Type your message...").fill("Hi {{parent_name}}, practice moves to 5pm.");
   return { lakehill, oakwood };
 }
@@ -52,7 +52,7 @@ test("By School → By Program sends only to the program picked", async ({ page 
   await expect(card.getByText("Lena Test")).toBeVisible();
   await expect(page.getByRole("button", { name: "Send to 2 recipient(s)" })).toBeEnabled();
 
-  await page.getByRole("button", { name: "By Program" }).click();
+  await page.getByRole("button", { name: "By Session" }).click();
   // Nothing picked yet: the placeholder shows, nobody is listed, and Send waits.
   await expect(card.locator("select")).toHaveValue("");
   await expect(card.getByText("Lena Test")).toHaveCount(0);

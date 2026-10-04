@@ -1,5 +1,6 @@
 import { getSchools, getImportOptions } from "@/lib/queries/schools";
 import { SchoolsPageClient } from "@/components/schools-page-client";
+import { getDefaultMonthlyFee } from "@/lib/queries/config";
 
 // Every dashboard page reads live business data behind a login, so it must be
 // rendered per request. Without this Next prerenders it at build time and the
@@ -10,11 +11,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export default async function SchoolsPage() {
-  const [schools, importOptions] = await Promise.all([getSchools(), getImportOptions()]);
+  const [schools, importOptions, defaultMonthlyFee] = await Promise.all([
+    getSchools(),
+    getImportOptions(),
+    getDefaultMonthlyFee(),
+  ]);
 
   return (
     <div className="space-y-0">
-      <SchoolsPageClient schools={schools} importOptions={importOptions} />
+      <SchoolsPageClient schools={schools} importOptions={importOptions} defaultMonthlyFee={defaultMonthlyFee} />
     </div>
   );
 }

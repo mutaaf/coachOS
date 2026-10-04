@@ -58,7 +58,7 @@ export function SchoolFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>{isEditing ? "Edit School" : "Add School"}</DialogTitle>
         </DialogHeader>
 
@@ -88,7 +88,7 @@ export function SchoolFormDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="contact_name">Contact Name</Label>
               <Input
@@ -136,16 +136,17 @@ export function SchoolFormDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="h-11 sm:h-10">
               {isSubmitting
                 ? isEditing
                   ? "Saving..."

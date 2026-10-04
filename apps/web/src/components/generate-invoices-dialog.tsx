@@ -47,21 +47,21 @@ export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onClose={() => onOpenChange(false)}>
+      <DialogContent className="p-5 sm:p-6" onClose={() => onOpenChange(false)}>
         <DialogHeader>
           <DialogTitle>Generate Monthly Invoices</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <p className="text-sm text-muted-foreground">
-            Creates an invoice for every child in a program that runs that month. Free programs, programs that are finished or cancelled, archived schools, and invoices that already exist are left out.
+            Creates an invoice for every child in a session that runs that month. Free sessions, sessions that are finished or cancelled, archived schools, and invoices that already exist are left out.
           </p>
           <div className="space-y-2">
             <Label htmlFor="month">Month</Label>
-            <Input id="month" name="month" type="month" defaultValue={defaultMonth} />
+            <Input id="month" name="month" type="month" className="h-11" defaultValue={defaultMonth} />
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button type="button" variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="h-11 w-full sm:h-10 sm:w-auto" disabled={loading}>
               {loading ? "Generating..." : "Generate Invoices"}
             </Button>
           </div>

@@ -21,3 +21,6 @@ tests/screenshots/
 
 # Also a symlink of that name (worktrees link to the main checkout)
 node_modules
+
+# Agents' working copies
+.claude/worktrees/

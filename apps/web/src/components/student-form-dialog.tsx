@@ -102,7 +102,7 @@ export function StudentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center justify-center gap-2 pr-6 sm:justify-start">
             <GraduationCap className="h-5 w-5" />
             {isEditing ? "Edit Student" : "Add Student"}
           </DialogTitle>
@@ -114,7 +114,7 @@ export function StudentFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="first_name">
                 First Name <span className="text-destructive">*</span>
@@ -124,6 +124,8 @@ export function StudentFormDialog({
                 name="first_name"
                 required
                 placeholder="First name"
+                autoComplete="off"
+                className="h-11 text-base sm:h-10 sm:text-sm"
                 defaultValue={student?.first_name || ""}
               />
             </div>
@@ -136,6 +138,8 @@ export function StudentFormDialog({
                 name="last_name"
                 required
                 placeholder="Last name"
+                autoComplete="off"
+                className="h-11 text-base sm:h-10 sm:text-sm"
                 defaultValue={student?.last_name || ""}
               />
             </div>
@@ -148,6 +152,7 @@ export function StudentFormDialog({
                 id="grade"
                 name="grade"
                 options={gradeOptions}
+                className="h-11 text-base sm:h-10 sm:text-sm"
                 defaultValue={student?.grade || ""}
               />
             </div>
@@ -157,6 +162,7 @@ export function StudentFormDialog({
                 id="date_of_birth"
                 name="date_of_birth"
                 type="date"
+                className="h-11 min-w-0 appearance-none px-2.5 text-base sm:h-10 sm:px-3 sm:text-sm"
                 defaultValue={student?.date_of_birth || ""}
               />
             </div>
@@ -169,6 +175,7 @@ export function StudentFormDialog({
               name="medical_notes"
               placeholder="Allergies, conditions, medications..."
               rows={2}
+              className="text-base sm:text-sm"
               defaultValue={student?.medical_notes || ""}
             />
           </div>
@@ -180,6 +187,7 @@ export function StudentFormDialog({
               name="notes"
               placeholder="Additional notes..."
               rows={2}
+              className="text-base sm:text-sm"
               defaultValue={student?.notes || ""}
             />
           </div>
@@ -197,16 +205,17 @@ export function StudentFormDialog({
             />
           )}
 
-          <div className={asking ? "hidden" : "flex justify-end gap-3 pt-2"}>
+          <div className={asking ? "hidden" : "sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:gap-3 sm:border-0 sm:px-0 sm:pb-0 sm:pt-2"}>
             <Button
               type="button"
               variant="outline"
+              className="h-11 sm:h-10"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" className="h-11 sm:h-10" disabled={isPending}>
               {isPending
                 ? isEditing
                   ? "Saving..."

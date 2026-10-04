@@ -4,6 +4,7 @@ import { normalizePhone, phoneKey, sameName } from "@/lib/roster";
 import { openInvoicesForFamily, recalculateInvoiceStatus, toCents } from "@/lib/invoice-status";
 import { allocateGreedily, applyReceipt, rememberableKey } from "@/lib/zelle";
 import { emailReceipt } from "@/lib/parent-emails";
+import { addFamilyCredit } from "@/lib/family-credit";
 
 /**
  * A payment from someone CoachOS doesn't recognise, put where it belongs.
@@ -34,7 +35,7 @@ export interface Placement {
 export interface AssignInput {
   source: PaymentSource;
   parent: ParentChoice;
-  /** Required when the family has nothing open to pay. */
+  /** Required for someone new. A family on file who owes nothing is credited instead. */
   placement?: Placement;
   /** Made when the dialog opened, so a double tap records the money once. */
   key?: string;
@@ -129,7 +130,7 @@ export async function assignPayment(
     }
     if (!("id" in student) && !s(student.first_name)) return { error: "Enter the child's first name." };
     if ("monthly_fee" in pl.program && !(Number(pl.program.monthly_fee) > 0)) {
-      return { error: "Enter the new program's monthly fee." };
+      return { error: "Enter the new session's monthly fee." };
     }
 
     const { data, error } = await supabase.rpc("place_family", {
@@ -145,19 +146,17 @@ export async function assignPayment(
     parentId = (data as any).parent_id;
     created = (data as any).created ?? [];
   } else if (!parentId) {
-    return { error: "Say which child this is for, and their program." };
+    return { error: "Say which child this is for, and their session." };
   }
 
   // The payment ------------------------------------------------------------
+  // What isn't owed yet — all of it, for a family who has paid — is kept as
+  // their credit, and the next invoice run spends it.
   const open = await openInvoicesForFamily(supabase, parentId!);
-  if (open.length === 0) {
-    return { error: "This family has nothing to pay. Add the child and program it's for." };
-  }
   const { picked, leftoverCents } = allocateGreedily(open, cents);
-  const note = leftoverCents > 0 ? `$${(leftoverCents / 100).toFixed(2)} more than was owed — not applied to anything.` : null;
 
   if (receipt) {
-    const applied = await applyReceipt(supabase, receipt, parentId!, picked, note);
+    const applied = await applyReceipt(supabase, receipt, parentId!, picked, leftoverCents);
     if ("error" in applied) return { error: applied.error! };
     // Their next payment matches by itself — unless all the bank gave was one word.
     const key = rememberableKey(receipt.sender_name);
@@ -177,7 +176,7 @@ export async function assignPayment(
           amount: c / 100,
           method: src.method,
           received_at: src.receivedAt || new Date().toISOString(),
-          notes: [s(src.note), note].filter(Boolean).join(" ") || null,
+          notes: s(src.note) || null,
           // On the first only: it is the one a second copy of the form collides with.
           client_key: i === 0 ? s(input.key) || null : null,
         })
@@ -191,6 +190,18 @@ export async function assignPayment(
       if (error) return { error: error.message };
       paymentIds.push(data.id);
       await recalculateInvoiceStatus(supabase, invoice.id);
+    }
+    if (leftoverCents > 0) {
+      const credited = await addFamilyCredit(supabase, {
+        parentId: parentId!,
+        cents: leftoverCents,
+        method: src.method,
+        // With nothing owed the credit is the only row, so it carries the key.
+        clientKey: picked.length === 0 ? s(input.key) || null : null,
+        note: s(src.note) || null,
+      });
+      if ("error" in credited) return { error: credited.error };
+      if (!credited.added) return (await recordedWithKey(supabase, input.key!))!;
     }
     await emailReceipt(supabase, {
       paymentIds,
@@ -217,10 +228,14 @@ async function recordedWithKey(supabase: OpsClient, key: string): Promise<Assign
     .select("invoices(parent_id)")
     .eq("client_key", key)
     .maybeSingle();
-  if (!data) return null;
+  // Money paid ahead is a credit, not a payment, and carries the key itself.
+  const { data: credit } = data
+    ? { data: null }
+    : await supabase.from("family_credits").select("parent_id").eq("client_key", key).maybeSingle();
+  if (!data && !credit) return null;
   return {
     success: true,
-    parentId: (data.invoices as any)?.parent_id,
+    parentId: credit?.parent_id ?? (data!.invoices as any)?.parent_id,
     created: [],
     reusedParent: null,
     appliedCents: 0,

@@ -2,6 +2,8 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import { getStripeSettings, stripeReady } from "@/lib/stripe-client";
 import { openInvoicesForFamily, toCents } from "@/lib/invoice-status";
 import type { AutopayMethod } from "@/lib/autopay";
+import { readDueDay } from "@/lib/invoices";
+import { familyCreditCents } from "@/lib/family-credit";
 
 export function maskEmail(email: string | null): string | null {
   if (!email || !email.includes("@")) return null;
@@ -44,12 +46,15 @@ export interface PayPageData {
   open: PayPageLine[];
   processing: PayPageLine[];
   openCents: number;
-  monthlyCents: number;
+  /** Paid ahead or over: goes on their next invoice. */
+  creditCents: number;
   stripeEnabled: boolean;
   /** Stripe is in its sandbox: say so on the page, so nobody mistakes a test for a charge. */
   testMode: boolean;
   cardFeePercent: number;
   zelleRecipient: string | null;
+  /** The day of the month each month's fee falls due, from Settings. */
+  dueDay: number;
   businessName: string;
   zelleNames: string[];
   /** Set when an automatic payment failed and is waiting for a new card or account. */
@@ -76,17 +81,15 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
 
   const { data: links } = await supabase
     .from("student_parents")
-    .select("student_id, students(first_name, enrollments(status, programs(monthly_fee)))")
+    .select("student_id, students(first_name, enrollments(status))")
     .eq("parent_id", parent.id);
 
   const childNames: string[] = [];
-  let monthlyCents = 0;
   const studentIds: string[] = [];
   for (const link of (links || []) as any[]) {
     studentIds.push(link.student_id);
     const active = (link.students?.enrollments || []).filter((e: any) => e.status === "active");
     if (active.length > 0) childNames.push(link.students.first_name);
-    for (const e of active) monthlyCents += toCents(e.programs?.monthly_fee ?? 0);
   }
 
   const toLine = (inv: any, balanceCents: number): PayPageLine => ({
@@ -120,6 +123,7 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
       "card_fee_percent",
       "zelle_recipient",
       "business_name",
+      "payment_due_day",
     ]);
   const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
 
@@ -153,11 +157,12 @@ export async function getPayPage(token: string): Promise<PayPageData | null> {
     open,
     processing,
     openCents: open.reduce((s, l) => s + l.balanceCents, 0),
-    monthlyCents,
+    creditCents: Math.max(await familyCreditCents(supabase, parent.id), 0),
     stripeEnabled: stripeReady(stripe),
     testMode: stripe.mode === "test",
     cardFeePercent: Number(c.card_fee_percent) > 0 ? Number(c.card_fee_percent) : 0,
     zelleRecipient: c.zelle_recipient?.trim() || null,
+    dueDay: readDueDay(c.payment_due_day),
     businessName:
       c.business_name && c.business_name !== "CoachOS" ? c.business_name : "Rising Stars Youth Academy",
     // First name and an initial: enough for the family to recognise, not a

@@ -95,6 +95,12 @@ export function addDays(iso: string, days: number): string {
   return `${moved.getUTCFullYear()}-${mm}-${dd}`;
 }
 
+/** A day of the month as people say it: 1st, 2nd, 3rd, 11th, 22nd. */
+export function dayOfMonthLabel(day: number): string {
+  const suffix = day % 100 >= 11 && day % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][day % 10] || "th";
+  return `${day}${suffix}`;
+}
+
 /** Day of the week for a YYYY-MM-DD, 0 = Sunday. */
 export function dayOfWeek(iso: string): number {
   const [y, m, d] = parts(iso);
@@ -128,6 +134,54 @@ export function businessWeek(offset = 0, now: Date = new Date()): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(sunday, i));
 }
 
+/**
+ * The moment a stored day and time happen where the sessions are, e.g. a
+ * practice ending at "17:00" on "2026-10-06" in Dallas. The server runs in UTC,
+ * so reading the time as its own would put every practice five or six hours
+ * early.
+ */
+export function businessInstant(iso: string, time: string): Date {
+  const [y, m, d] = parts(iso);
+  const [h, min] = time.split(":").map(Number);
+  const asUtc = Date.UTC(y, m - 1, d, h, min);
+  // Guess with the offset at that wall time, then correct once for a DST change.
+  let instant = asUtc - offsetAt(new Date(asUtc));
+  instant = asUtc - offsetAt(new Date(instant));
+  return new Date(instant);
+}
+
+/** How far the business's clock is ahead of UTC at a moment, in ms (negative in Dallas). */
+function offsetAt(at: Date): number {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: BUSINESS_TIMEZONE,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    })
+      .formatToParts(at)
+      .map((x) => [x.type, Number(x.value)])
+  );
+  const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return wall - Math.floor(at.getTime() / 1000) * 1000;
+}
+
+/** A moment as she reads it on the business's clock, e.g. "Tue, Oct 6, 11:00 PM". */
+export function formatBusinessTime(at: Date | string): string {
+  return new Date(at).toLocaleString("en-US", {
+    timeZone: BUSINESS_TIMEZONE,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** "Good morning" and so on, by the business's clock rather than the server's. */
 export function greeting(now: Date = new Date()): string {
   const hour = businessHour(now);
@@ -144,11 +198,11 @@ export function dayLabel(iso: string, now: Date = new Date()): string {
 }
 
 /**
- * A session's day as a message names it: "today's session", "tomorrow's
- * session", or "the session on Tuesday, October 6".
+ * A practice's day as a message names it: "today's practice", "tomorrow's
+ * practice", or "the practice on Tuesday, October 6".
  */
 export function sessionDayPhrase(iso: string, now: Date = new Date()): string {
-  if (iso === businessToday(now)) return "today's session";
-  if (iso === businessTomorrow(now)) return "tomorrow's session";
-  return `the session on ${formatDateOnly(iso, { weekday: "long", month: "long", day: "numeric" })}`;
+  if (iso === businessToday(now)) return "today's practice";
+  if (iso === businessTomorrow(now)) return "tomorrow's practice";
+  return `the practice on ${formatDateOnly(iso, { weekday: "long", month: "long", day: "numeric" })}`;
 }

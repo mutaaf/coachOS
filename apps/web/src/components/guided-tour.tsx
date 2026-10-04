@@ -64,7 +64,14 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/dashboard",
     target: '[data-tour="dashboard-stats"]',
     title: "Today at a glance",
-    body: "Active students, money in this month, how many payments are overdue and what they add up to, and the sessions coming up. Below are today's sessions and anything that needs you — tap See all to open every overdue payment.",
+    body: "Active students, money in this month, how many payments are overdue and what they add up to, and the practices coming up. Below are today's practices and anything that needs you — tap See all to open every overdue payment.",
+  },
+  {
+    id: "programs",
+    path: "/programs",
+    target: '[data-tour="programs-tabs"]',
+    title: "Programs, sessions and seasons",
+    body: "Make each program once — its name, ages and usual fee — then put it on at a school as a session. Practices are a session's dates, and a season groups everything running that term.",
   },
   {
     id: "schools-import",
@@ -85,7 +92,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schools",
     target: "main h1",
     title: "Schools and sessions",
-    body: "Each school holds its sessions. Open a school to change a session's monthly fee (0 makes it free, with no invoices), set its weekly schedule, import more children, or share its registration link. Archiving a school stops its invoices, and can end its children's places too.",
+    body: "Each school holds its sessions. Open a school to change a session's monthly fee (0 makes it free, with no invoices), set its weekly practice time, import more children, or share its registration link. Archiving a school stops its invoices, and can end its children's places too.",
   },
   {
     id: "students",
@@ -93,6 +100,20 @@ function buildSteps(ctx: TourContext | null): Step[] {
     target: "main h1",
     title: "Students and parents",
     body: "Every child and the parents linked to them. Fix a phone number here — however it's typed, it's saved as one number, so WhatsApp opens the right chat — add a parent, or move a child between sessions. Siblings share one parent, so a family gets one link and one charge. Adding someone already on file asks \"Is this the same Mia?\" first, so nobody is added twice. A child who has left can be archived: off the list, with every payment kept.",
+  },
+  {
+    id: "families",
+    path: "/students",
+    target: '[data-tour="student-tabs"]',
+    title: "What does a family owe?",
+    body: (
+      <>
+        <strong>Parents</strong> shows each family&apos;s <strong>Balance</strong> — what they still owe, for every
+        child. Tap a parent&apos;s or child&apos;s name to open their family: the children and where they play, both
+        parents, each invoice and what&apos;s left on it, the messages you&apos;ve sent them, and their payment link to
+        copy.
+      </>
+    ),
   },
   {
     id: "registrations",
@@ -106,7 +127,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schedule",
     target: "main h1",
     title: "Schedule and attendance",
-    body: "Your sessions by week. Take attendance here, or send a coach a link and passcode so they can do it on their phone at the gym. Cancelling a practice writes a message to every family on its roster — it waits in your Outbox to send.",
+    body: "Your practices by week. Take attendance here — Save & complete saves the register and marks the practice done — or send a coach a link and passcode so they can do it on their phone at the gym. A completed practice keeps its register, so you can check it and fix a mistake. The link works until a few hours after the practice ends, and cancelling the practice turns it off and writes a message to every family on its roster — it waits in your Outbox to send. Pick who ran each practice under Coach — that's what their pay counts. Changing a weekly time or coach in Manage Templates moves the practices already on the calendar too.",
   },
   {
     id: "payments-autopay",
@@ -117,7 +138,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         <strong>Send payment links</strong> prepares a message for each family with their own payment page. From
         there they can pay automatically by bank (no fee) or card (with the card fee). Once they do, they&apos;re
-        charged on the 1st each month, they get a receipt, and there&apos;s nothing for you to chase. Families with two
+        charged on the due day each month, they get a receipt, and there&apos;s nothing for you to chase. Families with two
         children get one charge.
       </>
     ),
@@ -151,7 +172,8 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         Cash, Venmo, or a Zelle from someone not set up yet? <strong>Record Payment</strong> (top right) (or{" "}
         <strong>Who paid this?</strong> on a Zelle) asks who paid — and if they&apos;re new, adds the family, child,
-        school and program as you go, then records the money. It shows you everything before saving.
+        school and session as you go, then records the money. It shows you everything before saving. Paid ahead, or
+        more than they owe? The extra is kept as their <strong>credit</strong> and pays their next invoice by itself.
       </>
     ),
   },
@@ -164,7 +186,9 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         <strong>Pending</strong>: not due yet. <strong>Processing</strong>: a bank payment is on its way — nothing to
         do. <strong>Overdue</strong>: past due; a reminder goes out once, automatically. <strong>Paid</strong> and{" "}
-        <strong>Waived</strong> are done. The link icon on each row copies that family&apos;s payment page.
+        <strong>Waived</strong> are done. <strong>Balance</strong> is what&apos;s left to pay after any part
+        payments. The link icon on each row copies that family&apos;s payment page; tap the parent&apos;s name to see
+        the whole family.
       </>
     ),
   },
@@ -173,7 +197,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/payments",
     target: '[data-tour="generate-invoices"]',
     title: "Monthly invoices make themselves",
-    body: "Every family is invoiced on the 1st automatically. Use this only to bill a month early, or to catch up a child who joined after the 1st — they get a week to pay. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are never invoiced.",
+    body: "Every family is invoiced on the 1st automatically, due on the Payment Due Day in Settings. Use this only to bill a month early, or to catch up a child who joined after the 1st — they get a week to pay. Free sessions, finished or cancelled ones, months outside a session's dates and archived schools are never invoiced.",
   },
   {
     id: "outbox",
@@ -213,7 +237,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/settings",
     target: '[data-tour="settings-tabs"]',
     title: "Settings",
-    body: "Every address, number and key lives here — your Zelle details, the Gmail that reads Zelle alerts, where replies to receipts go, the business name parents see, the card fee and the switch for real card payments. Each has a Copy button, and a change takes effect as soon as you save.",
+    body: "Every address, number and key lives here — the day invoices are due, the fee a new session starts with, your Zelle details, the Gmail that reads Zelle alerts, who emails come from and where replies go, the business name parents see, the card fee and the switch for real card payments. Each has a Copy button, and a change takes effect as soon as you save.",
   },
   {
     id: "access",
@@ -451,8 +475,24 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
     let cardAt: { top: number; left: number } | null = null;
 
     if (narrow) {
-      const cardTop = vh - edge - card.height;
-      box.bottom = Math.min(box.bottom, cardTop - gap);
+      // Docked along the bottom, clear of the home bar — unless the element
+      // sits so low that the card would cover it (the last thing on a page
+      // that can't scroll any further); then the card docks at the top and
+      // the spotlight starts below it.
+      const insets = getComputedStyle(document.documentElement);
+      const sab = parseFloat(insets.getPropertyValue("--safe-bottom")) || 0;
+      const sat = parseFloat(insets.getPropertyValue("--safe-top")) || 0;
+      const bottomDock = vh - edge - sab - card.height;
+      const enough = Math.min(rect.height + pad * 2, 64);
+      if (box.top + enough <= bottomDock - gap) {
+        cardAt = { top: bottomDock, left: edge };
+        box.bottom = Math.min(box.bottom, bottomDock - gap);
+      } else {
+        const topDock = edge + sat;
+        cardAt = { top: topDock, left: edge };
+        box.top = Math.max(box.top, topDock + card.height + gap);
+        box.bottom = Math.max(box.bottom, box.top + 24);
+      }
     } else if (box.bottom + gap + card.height <= vh - edge) {
       cardAt = { top: box.bottom + gap, left: clamp(box.left, edge, vw - card.width - edge) };
     } else if (box.top - gap - card.height >= edge) {
@@ -500,11 +540,20 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
       <div
         ref={cardRef}
         className={
-          narrow || !rect
-            ? `fixed inset-x-3 ${rect ? "bottom-3" : "bottom-3 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"} rounded-2xl bg-white p-5 shadow-2xl`
-            : "fixed w-[380px] rounded-2xl bg-white p-5 shadow-2xl"
+          // On a short phone the card is capped and its text scrolls, so the
+          // element it explains always keeps some of the screen.
+          "flex max-h-[min(65dvh,32rem)] flex-col rounded-2xl bg-white p-4 shadow-2xl sm:p-5 " +
+          (narrow || !rect
+            ? `fixed inset-x-3 ${rect ? "bottom-[calc(0.75rem+env(safe-area-inset-bottom))]" : "bottom-[calc(0.75rem+env(safe-area-inset-bottom))] sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"}`
+            : "fixed w-[380px]")
         }
-        style={!narrow && rect && layout?.card ? layout.card : undefined}
+        style={
+          rect && layout?.card
+            ? narrow
+              ? { top: layout.card.top, bottom: "auto" }
+              : layout.card
+            : undefined
+        }
       >
         <div className="flex items-start justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
@@ -514,29 +563,31 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
             type="button"
             onClick={finish}
             aria-label="Close the tour"
-            className="-m-1 rounded p-1 text-slate-400 hover:text-slate-600"
+            className="-m-2.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         <h2 id="tour-title" className="mt-1 text-lg font-semibold text-slate-900">
           {step.title}
         </h2>
-        <div className="mt-2 text-sm leading-relaxed text-slate-600">{step.body}</div>
+        <div className="-mr-2 mt-2 min-h-0 overflow-y-auto overscroll-contain pr-2 text-sm leading-relaxed text-slate-600">
+          {step.body}
+        </div>
 
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <button type="button" onClick={finish} className="text-sm text-slate-500 hover:text-slate-700">
+        <div className="mt-4 flex shrink-0 items-center justify-between gap-2">
+          <button type="button" onClick={finish} className="-ml-2 h-10 rounded-lg px-2 text-sm text-slate-500 hover:text-slate-700">
             {last ? "" : "Skip tour"}
           </button>
           <div className="flex gap-2">
             {index! > 0 && (
-              <Button variant="outline" size="sm" className="h-10" onClick={() => setIndex(index! - 1)}>
+              <Button variant="outline" size="sm" className="h-11 sm:h-10" onClick={() => setIndex(index! - 1)}>
                 Back
               </Button>
             )}
             <Button
               size="sm"
-              className="h-10"
+              className="h-11 min-w-[5rem] sm:h-10"
               disabled={waiting}
               onClick={() => (last ? finish() : setIndex(index! + 1))}
             >
@@ -546,7 +597,7 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
         </div>
 
         {/* Progress */}
-        <div className="mt-4 flex gap-1" aria-hidden>
+        <div className="mt-4 flex shrink-0 gap-1" aria-hidden>
           {STEPS.map((s, i) => (
             <span key={s.id} className={`h-1 flex-1 rounded-full ${i <= index! ? "bg-orange-500" : "bg-slate-200"}`} />
           ))}

@@ -26,8 +26,11 @@ ALTER TABLE emails ADD CONSTRAINT emails_kind_check
 DELETE FROM config
  WHERE key IN ('day_before_reminder_time', 'morning_reminder_time', 'message_rate_limit_seconds');
 
+-- Welcome Messages was hidden because nothing read it; adding a child to the
+-- roster now reads it, so it is back on the Settings page.
 UPDATE config
-   SET description = 'Put a welcome message in the Outbox when you add a child who signed up to the roster'
+   SET category = 'messaging',
+       description = 'Put a welcome message in the Outbox when you add a child who signed up to the roster'
  WHERE key = 'welcome_message_enabled';
 
 UPDATE config

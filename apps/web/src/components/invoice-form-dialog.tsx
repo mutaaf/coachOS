@@ -46,23 +46,25 @@ export function InvoiceFormDialog({ open, onOpenChange, invoice }: InvoiceFormDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onClose={() => onOpenChange(false)}>
+      <DialogContent className="p-5 sm:p-6" onClose={() => onOpenChange(false)}>
         <DialogHeader>
           <DialogTitle>Edit Invoice</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1">
+          <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1 break-words">
             <div><span className="text-muted-foreground">Student:</span> {invoice.students?.first_name} {invoice.students?.last_name}</div>
             <div><span className="text-muted-foreground">Parent:</span> {invoice.parents?.first_name} {invoice.parents?.last_name}</div>
-            <div><span className="text-muted-foreground">Program:</span> {invoice.programs?.name}</div>
+            <div><span className="text-muted-foreground">Session:</span> {invoice.programs?.name}</div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount *</Label>
               <Input
                 id="amount"
                 name="amount"
+                className="h-11 tabular-nums"
+                inputMode="decimal"
                 type="number"
                 step="0.01"
                 required
@@ -74,6 +76,7 @@ export function InvoiceFormDialog({ open, onOpenChange, invoice }: InvoiceFormDi
               <Select
                 id="status"
                 name="status"
+                className="h-11"
                 required
                 defaultValue={invoice.status}
                 options={[
@@ -86,12 +89,13 @@ export function InvoiceFormDialog({ open, onOpenChange, invoice }: InvoiceFormDi
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
               <Label htmlFor="due_date">Due Date *</Label>
               <Input
                 id="due_date"
                 name="due_date"
+                className="h-11"
                 type="date"
                 required
                 defaultValue={invoice.due_date}
@@ -102,6 +106,7 @@ export function InvoiceFormDialog({ open, onOpenChange, invoice }: InvoiceFormDi
               <Input
                 id="month"
                 name="month"
+                className="h-11"
                 type="month"
                 required
                 defaultValue={invoice.month}
@@ -114,9 +119,9 @@ export function InvoiceFormDialog({ open, onOpenChange, invoice }: InvoiceFormDi
             <Textarea id="notes" name="notes" defaultValue={invoice.notes || ""} />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button type="button" variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="h-11 w-full sm:h-10 sm:w-auto" disabled={loading}>
               {loading ? "Saving..." : "Save Changes"}
             </Button>
           </div>

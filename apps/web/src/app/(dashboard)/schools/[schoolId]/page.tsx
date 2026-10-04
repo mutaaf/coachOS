@@ -1,3 +1,4 @@
+import { getProgramsPage } from "@/lib/queries/catalog";
 import { notFound } from "next/navigation";
 import {
   getSchoolWithPrograms,
@@ -8,6 +9,7 @@ import {
 import { getSchools } from "@/lib/queries/schools";
 import { getParents } from "@/lib/queries/students";
 import { getWebsiteListings } from "@/lib/queries/registrations";
+import { getDefaultMonthlyFee } from "@/lib/queries/config";
 import { SchoolDetailClient } from "@/components/school-detail-client";
 
 // Every dashboard page reads live business data behind a login, so it must be
@@ -38,6 +40,8 @@ export default async function SchoolDetailPage({
     allSchools,
     allParents,
     websiteListings,
+    defaultMonthlyFee,
+    catalogPage,
   ] = await Promise.all([
     getSchoolStudents(params.schoolId),
     getSchoolSessions(params.schoolId),
@@ -45,6 +49,8 @@ export default async function SchoolDetailPage({
     getSchools(),
     getParents(),
     getWebsiteListings(),
+    getDefaultMonthlyFee(),
+    getProgramsPage(),
   ]);
 
   return (
@@ -58,6 +64,9 @@ export default async function SchoolDetailPage({
       allSchools={allSchools}
       allParents={allParents}
       websiteListings={websiteListings}
+      defaultMonthlyFee={defaultMonthlyFee}
+      catalog={catalogPage.programs.filter((p) => p.status === "active")}
+      seasons={catalogPage.seasons}
     />
   );
 }

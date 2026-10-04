@@ -186,7 +186,7 @@ export function RegistrationsPageClient({
         toast.success(
           result.status === "confirmed"
             ? `Restored — ${r.child_first_name} has a seat`
-            : `Restored — the program is full, so ${r.child_first_name} is back on the waitlist`
+            : `Restored — the session is full, so ${r.child_first_name} is back on the waitlist`
         );
         router.refresh();
       } finally {
@@ -203,10 +203,10 @@ export function RegistrationsPageClient({
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <ClipboardList className="h-6 w-6 text-muted-foreground" />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Registrations</h1>
+      <div className="flex items-start gap-3">
+        <ClipboardList className="mt-1 hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold">Registrations</h1>
           <p className="text-sm text-muted-foreground">
             Everything parents submitted, and who&apos;s waiting for a seat.
           </p>
@@ -220,7 +220,7 @@ export function RegistrationsPageClient({
         </h2>
         {availability.length === 0 ? (
           <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-            No active programs yet. Create one under Schools, set its capacity, and turn on
+            No active sessions yet. Put a program on at a school under Programs, set its capacity, and turn on
             registration to get a shareable link.
           </p>
         ) : (
@@ -249,11 +249,11 @@ export function RegistrationsPageClient({
                     />
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-muted-foreground">
                     <span>
                       {p.seats_taken}/{p.capacity} filled
                     </span>
-                    <span>
+                    <span className={full && p.waitlist_count > 0 ? "font-medium text-amber-700" : undefined}>
                       {full
                         ? `${p.waitlist_count} waiting`
                         : `${p.seats_remaining} left`}
@@ -262,8 +262,7 @@ export function RegistrationsPageClient({
 
                   {p.waitlist_count > 0 && p.seats_remaining > 0 && (
                     <Button
-                      size="sm"
-                      className="mt-3 w-full"
+                      className="mt-3 h-11 w-full sm:h-9"
                       disabled={pending}
                       onClick={() => giveSeatToNext(p)}
                     >
@@ -276,9 +275,9 @@ export function RegistrationsPageClient({
                     <button
                       type="button"
                       onClick={() => copyLink(p.public_slug!)}
-                      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-medium hover:bg-accent"
+                      className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg border px-2 text-sm font-medium hover:bg-accent sm:h-9 sm:text-xs"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3.5 w-3.5" />
                       Copy registration link
                     </button>
                   )}
@@ -290,27 +289,32 @@ export function RegistrationsPageClient({
       </section>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={
-              filter === f
-                ? "rounded-full bg-primary px-3 py-1 text-xs font-medium capitalize text-primary-foreground"
-                : "rounded-full border px-3 py-1 text-xs font-medium capitalize hover:bg-accent"
-            }
-          >
-            {f} {counts[f] ? `(${counts[f]})` : ""}
-          </button>
-        ))}
-        <div className="ml-auto min-w-[200px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+              className={
+                filter === f
+                  ? "h-11 shrink-0 whitespace-nowrap rounded-full bg-primary px-4 text-sm font-medium capitalize tabular-nums text-primary-foreground sm:h-8 sm:px-3 sm:text-xs"
+                  : "h-11 shrink-0 whitespace-nowrap rounded-full border bg-card px-4 text-sm font-medium capitalize tabular-nums hover:bg-accent sm:h-8 sm:px-3 sm:text-xs"
+              }
+            >
+              {f} {counts[f] ? `(${counts[f]})` : ""}
+            </button>
+          ))}
+        </div>
+        <div className="w-full sm:ml-auto sm:w-auto sm:min-w-[200px]">
           <Select
+            aria-label="Session"
+            className="h-11 text-base sm:h-10 sm:text-sm"
             value={programFilter}
             onChange={(e) => setProgramFilter(e.target.value)}
             options={[
-              { value: "all", label: "All programs" },
+              { value: "all", label: "All sessions" },
               ...availability.map((p) => ({ value: p.program_id, label: p.name })),
             ]}
           />
@@ -319,9 +323,28 @@ export function RegistrationsPageClient({
 
       {/* Registrations */}
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Nothing here yet.
-        </p>
+        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          {filter === "all" && programFilter === "all" ? (
+            <p>
+              Nothing here yet. Copy a session&apos;s registration link above and send it to parents — what they
+              submit shows up here.
+            </p>
+          ) : (
+            <>
+              <p>Nothing here yet.</p>
+              <Button
+                variant="outline"
+                className="mt-3 h-11 sm:h-9"
+                onClick={() => {
+                  setFilter("all");
+                  setProgramFilter("all");
+                }}
+              >
+                Show all registrations
+              </Button>
+            </>
+          )}
+        </div>
       ) : (
         <div className="space-y-2">
           {visible.map((r) => (
@@ -331,11 +354,11 @@ export function RegistrationsPageClient({
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">
+                  <span className="break-words font-medium">
                     {r.child_first_name} {r.child_last_name}
                   </span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLES[r.status]}`}
+                    className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLES[r.status]}`}
                   >
                     {r.status}
                     {r.status === "waitlisted" && r.waitlist_position
@@ -348,13 +371,13 @@ export function RegistrationsPageClient({
                   {r.invoice?.status === "overdue" && <Badge variant="warning">Overdue</Badge>}
                 </div>
 
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 break-words text-sm text-muted-foreground">
                   {r.program?.name}
                   {r.program?.school?.name ? ` · ${r.program.school.name}` : ""}
                   {r.child_grade ? ` · ${r.child_grade} grade` : ""}
                 </p>
 
-                <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0 text-sm text-muted-foreground">
                   <span>
                     {r.parent_first_name} {r.parent_last_name}
                   </span>
@@ -362,10 +385,10 @@ export function RegistrationsPageClient({
                   {r.parent_email && (
                     <a
                       href={`mailto:${r.parent_email}`}
-                      className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+                      className="inline-flex min-h-11 min-w-0 max-w-full sm:min-h-0 items-center gap-1 hover:text-foreground hover:underline"
                     >
-                      <Mail className="h-3 w-3" />
-                      {r.parent_email}
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{r.parent_email}</span>
                     </a>
                   )}
                 </p>
@@ -375,10 +398,11 @@ export function RegistrationsPageClient({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 sm:flex-wrap">
                 {r.status === "waitlisted" && (
                   <Button
                     size="sm"
+                    className="h-11 flex-1 sm:h-9 sm:flex-none"
                     variant="outline"
                     disabled={pending}
                     onClick={() => giveSeat(r)}
@@ -391,6 +415,7 @@ export function RegistrationsPageClient({
                 {r.status === "pending" && (
                   <Button
                     size="sm"
+                    className="h-11 flex-1 sm:h-9 sm:flex-none"
                     variant="outline"
                     disabled={pending}
                     onClick={() =>
@@ -405,6 +430,7 @@ export function RegistrationsPageClient({
                 {r.status === "confirmed" && !r.enrollment_id && (
                   <Button
                     size="sm"
+                    className="h-11 flex-1 sm:h-9 sm:flex-none"
                     disabled={pending}
                     onClick={() => addToRoster(r)}
                   >
@@ -414,7 +440,7 @@ export function RegistrationsPageClient({
                 )}
 
                 {r.status === "cancelled" && (
-                  <Button size="sm" variant="outline" disabled={pending} onClick={() => restore(r)}>
+                  <Button size="sm" variant="outline" className="h-11 flex-1 sm:h-9 sm:flex-none" disabled={pending} onClick={() => restore(r)}>
                     <RotateCcw className="mr-1 h-3.5 w-3.5" />
                     Restore
                   </Button>
@@ -423,6 +449,7 @@ export function RegistrationsPageClient({
                 {r.status !== "cancelled" && r.status !== "declined" && (
                   <Button
                     size="sm"
+                    className="ml-auto h-11 w-11 shrink-0 border p-0 sm:ml-0 sm:h-9 sm:w-9 sm:border-0"
                     variant="ghost"
                     disabled={pending}
                     aria-label={`Cancel ${r.child_first_name}'s registration`}
@@ -432,7 +459,7 @@ export function RegistrationsPageClient({
                       setCancelling(r);
                     }}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -457,21 +484,21 @@ export function RegistrationsPageClient({
             <label className="mt-4 flex items-start gap-2 text-sm">
               <input
                 type="checkbox"
-                className="mt-0.5"
+                className="mt-0.5 h-5 w-5 shrink-0"
                 checked={withdraw}
                 onChange={(e) => setWithdraw(e.target.checked)}
               />
               <span>
-                Also take {cancelling.child_first_name} off the {cancelling.program?.name ?? "program"} roster. They
+                Also take {cancelling.child_first_name} off the {cancelling.program?.name ?? "session"} roster. They
                 won&apos;t be billed again, and a bill that isn&apos;t due yet with nothing paid on it is removed.
               </span>
             </label>
           )}
-          <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCancelling(null)}>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" className="h-11 sm:h-10" onClick={() => setCancelling(null)}>
               Keep it
             </Button>
-            <Button variant="destructive" disabled={pending} onClick={confirmCancel}>
+            <Button variant="destructive" className="h-11 sm:h-10" disabled={pending} onClick={confirmCancel}>
               Cancel registration
             </Button>
           </div>

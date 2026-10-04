@@ -172,7 +172,7 @@ export function AttendanceSheet({ token }: { token: string }) {
           <button
             type="submit"
             disabled={busy || passcode.length < 6}
-            className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3.5 font-medium text-white disabled:opacity-40"
+            className="mt-4 h-14 w-full rounded-xl bg-slate-900 px-4 font-medium text-white active:bg-slate-800 disabled:opacity-40"
           >
             {busy ? "Checking…" : "Open register"}
           </button>
@@ -185,19 +185,19 @@ export function AttendanceSheet({ token }: { token: string }) {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-lg px-4 py-8 pb-32">
+      <div className="mx-auto max-w-lg px-4 pt-8 pb-[calc(8rem+env(safe-area-inset-bottom))]">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
             Rising Stars
           </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-2 break-words text-2xl font-bold tracking-tight text-slate-900">
             {session!.program_name}
           </h1>
           <p className="mt-1 text-slate-600">
             {session!.school_name}
             {session!.location ? ` · ${session!.location}` : ""}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm tabular-nums text-slate-500">
             {new Date(`${session!.date}T12:00:00`).toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
@@ -207,7 +207,11 @@ export function AttendanceSheet({ token }: { token: string }) {
           </p>
         </header>
 
-        <p className="mt-6 text-sm font-medium text-slate-700">
+        {/* Stays in view while scrolling a long roster. */}
+        <p
+          aria-live="polite"
+          className="sticky top-0 z-10 -mx-4 mt-4 border-b border-transparent bg-slate-50/95 px-4 py-3 text-base font-semibold tabular-nums text-slate-800 backdrop-blur"
+        >
           {present} of {roster.length} here
         </p>
 
@@ -216,7 +220,7 @@ export function AttendanceSheet({ token }: { token: string }) {
             Nobody is enrolled in this program yet.
           </p>
         ) : (
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-1 space-y-2">
             {roster.map((child) => {
               const status = marks[child.student_id] ?? "present";
               return (
@@ -226,10 +230,10 @@ export function AttendanceSheet({ token }: { token: string }) {
                     onClick={() => cycle(child.student_id)}
                     // Big tap target: this is used standing up, on a phone,
                     // usually in a noisy gym.
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left active:scale-[0.99] transition-transform"
+                    className="flex min-h-[64px] w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left active:scale-[0.99] active:bg-slate-50 transition-transform"
                   >
                     <span className="min-w-0">
-                      <span className="block font-medium text-slate-900">
+                      <span className="block break-words text-base font-medium text-slate-900">
                         {child.first_name} {child.last_name}
                       </span>
                       {child.medical_notes && (
@@ -239,7 +243,7 @@ export function AttendanceSheet({ token }: { token: string }) {
                       )}
                     </span>
                     <span
-                      className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-semibold ${STATUS_STYLE[status]}`}
+                      className={`w-20 shrink-0 rounded-lg border px-2 py-2.5 text-center text-sm font-semibold ${STATUS_STYLE[status]}`}
                     >
                       {STATUS_LABEL[status]}
                     </span>
@@ -257,7 +261,7 @@ export function AttendanceSheet({ token }: { token: string }) {
 
       {/* Save stays reachable without scrolling back up. */}
       {roster.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <div className="mx-auto max-w-lg">
             {error && (
               <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
@@ -267,7 +271,7 @@ export function AttendanceSheet({ token }: { token: string }) {
             <button
               onClick={save}
               disabled={busy}
-              className={`w-full rounded-xl px-4 py-3.5 font-medium text-white disabled:opacity-50 ${
+              className={`h-14 w-full rounded-xl px-4 text-base font-semibold text-white disabled:opacity-50 ${
                 saved ? "bg-green-600" : "bg-slate-900"
               }`}
             >

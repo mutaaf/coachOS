@@ -65,14 +65,14 @@ test("the whole run-book, start to finish", async ({ page }) => {
 
   await test.step("add the program and open registration", async () => {
     await page.goto(`/schools/${school!.id}`);
-    await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+    await page.getByRole("button", { name: /add session|add first session/i }).first().click();
 
     await page.locator("#name").fill(PROGRAM);
     await page.locator("#monthly_fee").fill("150");
     await page.locator("#capacity").fill("2"); // small, so the waitlist is reachable
     await page.locator("#location").fill("Al-Noor Gym");
     await page.getByRole("switch", { name: /open registration/i }).click();
-    await page.getByRole("button", { name: "Create Program", exact: true }).click();
+    await page.getByRole("button", { name: "Create Session", exact: true }).click();
 
     await expect
       .poll(async () => {
@@ -163,7 +163,7 @@ test("the whole run-book, start to finish", async ({ page }) => {
     });
 
     await page.goto("/schedule");
-    await page.getByRole("button", { name: /generate sessions/i }).click();
+    await page.getByRole("button", { name: /add practices/i }).click();
 
     await expect
       .poll(async () => {

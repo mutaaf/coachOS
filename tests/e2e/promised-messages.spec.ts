@@ -43,8 +43,8 @@ test("cancelling a practice puts a message to each family in the Outbox", async 
   if (dayOfWeek(today) === 6) await page.getByRole("button", { name: "Next week" }).click();
   await page.locator(`[data-testid="schedule-day"][data-date="${tomorrow}"]`).getByText("Rainy Hoops").click();
 
-  await page.getByRole("button", { name: "Cancel Session" }).click();
-  await expect(page.getByText("Each family in this program gets a message in your Outbox")).toBeVisible();
+  await page.getByRole("button", { name: "Cancel practice" }).click();
+  await expect(page.getByText("Each family on this session's roster gets a message in your Outbox")).toBeVisible();
   await page.getByPlaceholder(/Reason/).fill("gym closed");
   await page.getByRole("button", { name: "Confirm Cancel" }).click();
   await expect(page.getByText("1 family is waiting in your Outbox to be told")).toBeVisible();
@@ -59,7 +59,7 @@ test("cancelling a practice puts a message to each family in the Outbox", async 
 test("Settings no longer offers reminder times that nothing uses", async ({ page }) => {
   await signIn(page);
   await page.goto("/settings");
-  await page.getByRole("button", { name: "Messaging" }).click();
+  await page.getByRole("tab", { name: "Messaging" }).click();
   await expect(page.getByText("Practice Reminders", { exact: true })).toBeVisible();
   await expect(page.getByText(/Reminder Time/)).toHaveCount(0);
   await expect(page.getByText("Message Rate Limit (seconds)")).toHaveCount(0);

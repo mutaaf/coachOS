@@ -31,7 +31,7 @@ export function AccessCard({ people }: { people: Person[] }) {
   }
 
   return (
-    <div className="space-y-6 rounded-2xl border bg-card p-6" data-testid="access-card">
+    <div className="space-y-6 rounded-2xl border bg-card p-4 sm:p-6" data-testid="access-card">
       <div>
         <h2 className="text-lg font-semibold">Who can sign in</h2>
         <p className="text-sm text-muted-foreground">
@@ -40,11 +40,11 @@ export function AccessCard({ people }: { people: Person[] }) {
       </div>
       <ul className="divide-y rounded-xl border">
         {people.map((p) => (
-          <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" data-testid="access-person">
+          <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3" data-testid="access-person">
             <div className="min-w-0">
-              <p className="truncate font-medium">
+              <p className="break-words font-medium">
                 {p.name ? `${p.name} · ` : ""}
-                {p.email} {p.you && <span className="text-xs text-muted-foreground">(you)</span>}
+                <span className="break-all">{p.email}</span> {p.you && <span className="text-xs text-muted-foreground">(you)</span>}
               </p>
               <p className="text-xs text-muted-foreground">
                 {p.lastSignIn
@@ -56,7 +56,7 @@ export function AccessCard({ people }: { people: Person[] }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-red-600"
+                className="h-10 shrink-0 text-red-600"
                 disabled={pending}
                 onClick={() => {
                   if (!window.confirm(`Take away ${p.email}'s access? They'll be signed out everywhere.`)) return;
@@ -73,13 +73,13 @@ export function AccessCard({ people }: { people: Person[] }) {
       <form onSubmit={invite} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <div className="space-y-1.5">
           <Label htmlFor="invite-email">Invite by email</Label>
-          <Input id="invite-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+          <Input id="invite-email" type="email" inputMode="email" autoComplete="off" className="h-11" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="invite-name">Name (optional)</Label>
-          <Input id="invite-name" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input id="invite-name" className="h-11" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <Button type="submit" disabled={sending || !email}>
+        <Button type="submit" className="h-11 w-full sm:w-auto" disabled={sending || !email}>
           {sending ? "Inviting…" : "Invite"}
         </Button>
       </form>
@@ -90,7 +90,7 @@ export function AccessCard({ people }: { people: Person[] }) {
             {link.emailed ? `Emailed to ${link.email}. ` : ""}You can also send them this link — it works once, for 24 hours:
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded bg-white px-2 py-1">{link.url}</code>
+            <code className="min-w-0 flex-1 truncate rounded bg-white px-2 py-2 text-xs">{link.url}</code>
             <CopyButton value={link.url} />
           </div>
         </div>

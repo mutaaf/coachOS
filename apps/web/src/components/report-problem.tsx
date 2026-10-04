@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { reportProblem } from "@/lib/actions/report";
 
 /**
@@ -45,7 +45,7 @@ export function ReportProblemDialog({ open, onOpenChange }: { open: boolean; onO
           <DialogTitle>Report a problem</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="report-text">What happened, and what did you expect?</Label>
             <Textarea
               id="report-text"
@@ -59,10 +59,12 @@ export function ReportProblemDialog({ open, onOpenChange }: { open: boolean; onO
             The page you&rsquo;re on is sent with it. Families&rsquo; names, phone numbers and emails are removed before
             it goes to the people fixing it.
           </p>
+        </div>
+        <DialogFooter className="sm:[&>*]:w-full">
           <Button className="h-11 w-full" disabled={!text.trim() || sending} onClick={send}>
             {sending ? "Sending…" : "Send"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
