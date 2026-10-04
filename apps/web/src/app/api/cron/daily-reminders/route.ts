@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { businessDaysAgo, businessToday, businessTomorrow } from "@/lib/dates";
+import { businessDaysAgo, businessToday, businessTomorrow, formatClockTime, formatMonthName } from "@/lib/dates";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { renderTemplate } from "shared";
 import { createMonthlyInvoices } from "@/lib/invoices";
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
             student_name: `${student.first_name}`,
             program_name: program?.name || "",
             school_name: school?.name || "",
-            time: session.start_time?.slice(0, 5) || "",
+            time: session.start_time ? formatClockTime(session.start_time) : "",
           });
 
           await supabase.from("message_queue").insert({
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
           parent_name: parent.first_name,
           student_name: names(invoices.map((i) => i.students?.first_name)),
           program_name: names(invoices.map((i) => i.programs?.name)),
-          month: names(invoices.map((i) => i.month)),
+          month: names(invoices.map((i) => (i.month ? formatMonthName(i.month) : ""))),
           amount: `$${(totalCents / 100).toFixed(2)}`,
           payment_method: parent.preferred_payment || "cash",
           pay_link: parent.pay_token ? payLink(parent.pay_token) : "",

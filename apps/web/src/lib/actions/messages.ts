@@ -3,7 +3,8 @@
 import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { renderTemplate } from "shared";
+import { templateVariables } from "shared";
+import { composeProblem, renderComposed } from "@/lib/compose-message";
 
 /**
  * Templates the app sends on its own, found by name. Renaming or deleting one
@@ -25,7 +26,7 @@ export async function createMessageTemplate(formData: FormData) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
   const body = formData.get("body") as string;
-  const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
+  const variables = templateVariables(body);
 
   const { error } = await supabase.from("message_templates").insert({
     name: formData.get("name") as string,
@@ -42,7 +43,7 @@ export async function updateMessageTemplate(id: string, formData: FormData) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
   const body = formData.get("body") as string;
-  const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
+  const variables = templateVariables(body);
 
   const { data: current } = await supabase.from("message_templates").select("name").eq("id", id).maybeSingle();
   const name = SYSTEM_TEMPLATES.has(current?.name ?? "") ? current!.name : (formData.get("name") as string);
@@ -101,22 +102,13 @@ export async function sendBulkMessages(
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
-  // Compose knows each recipient's name and nothing else, so {{parent_name}}
-  // is filled in and anything else is refused — a parent must never receive a
-  // raw "{{student_name}}".
-  const unknown = [...new Set([...message.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]))].filter(
-    (v) => v !== "parent_name"
-  );
-  if (unknown.length) {
-    return {
-      error: `A message to a group can only fill in {{parent_name}}. Remove ${unknown.map((v) => `{{${v}}}`).join(", ")} or write it out.`,
-    };
-  }
+  const problem = composeProblem(message);
+  if (problem) return { error: problem };
 
   const rows = recipients.map((r) => ({
     recipient_phone: r.phone,
     recipient_name: r.name,
-    message: renderTemplate(message, { parent_name: (r.name || "").trim().split(/\s+/)[0] || "there" }),
+    message: renderComposed(message, r.name),
     template_id: templateId || null,
     status: "pending",
     attempts: 0,
