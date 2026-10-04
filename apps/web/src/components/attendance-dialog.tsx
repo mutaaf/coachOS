@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useRef } from "react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { recordAttendance, cancelSession, completeSession } from "@/lib/actions/schedule";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { businessToday, formatBusinessTime, formatDateOnly, sessionDayPhrase } from "@/lib/dates";
 import { toast } from "sonner";
-import { Link2, Copy } from "lucide-react";
+import { Link2, Copy, ExternalLink } from "lucide-react";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
 
 type AttendanceStatus = "present" | "absent" | "late" | "excused";
@@ -48,6 +48,13 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
   // Shown once, right after issuing — the passcode is hashed and cannot be
   // read back, so this is the only chance to copy it.
   const [coachLink, setCoachLink] = useState<{ url: string; passcode: string; expiresAt: string } | null>(null);
+  const coachLinkRef = useRef<HTMLDivElement>(null);
+
+  // The link appears above the register, while the button that makes it sits
+  // at the bottom — bring it into view so it isn't missed on a phone.
+  useEffect(() => {
+    if (coachLink) coachLinkRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [coachLink]);
 
   useEffect(() => {
     if (open && session) {
@@ -177,8 +184,10 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
     if (ok) onOpenChange(false);
   }
 
-  const program = session?.programs;
-  const school = program?.schools;
+  // The schedule's queries reshape the join to `program.school`; reading only
+  // the raw `programs.schools` left the summary without a name or school.
+  const program = session?.program ?? session?.programs;
+  const school = program?.school ?? program?.schools;
   const presentCount = roster.filter((s) => {
     const status = statusOf(s.id);
     return status === "present" || status === "late";
@@ -187,129 +196,161 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>Practice details</DialogTitle>
         </DialogHeader>
 
-        {/* Session Info */}
-        <div data-testid="session-summary" className="rounded-xl bg-muted/50 p-4 space-y-1 text-sm">
-          <div className="font-medium">{program?.name}</div>
-          <div className="text-muted-foreground">{school?.name}</div>
-          <div className="text-muted-foreground">
-            {formatDateOnly(session.date, { weekday: "long", month: "long", day: "numeric" })}
-            {" "}at {session.start_time?.slice(0, 5)} — {session.end_time?.slice(0, 5)}
+        <div className="mt-4 space-y-4">
+          {/* Session Info */}
+          <div data-testid="session-summary" className="rounded-xl bg-muted/50 p-4 space-y-1 text-sm">
+            {program?.name && <div className="font-medium break-words">{program.name}</div>}
+            {school?.name && <div className="text-muted-foreground break-words">{school.name}</div>}
+            <div className="text-muted-foreground tabular-nums">
+              {formatDateOnly(session.date, { weekday: "long", month: "long", day: "numeric" })}
+              {" "}at {session.start_time?.slice(0, 5)} — {session.end_time?.slice(0, 5)}
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Badge variant={session.status === "cancelled" ? "destructive" : session.status === "completed" ? "success" : "secondary"}>
+                {session.status}
+              </Badge>
+              <span className="text-muted-foreground flex items-center gap-1 tabular-nums">
+                <Users className="h-3.5 w-3.5" /> {presentCount}/{roster.length}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
-            <Badge variant={session.status === "cancelled" ? "destructive" : session.status === "completed" ? "success" : "secondary"}>
-              {session.status}
-            </Badge>
-            <span className="text-muted-foreground flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" /> {presentCount}/{roster.length}
-            </span>
-          </div>
+
+          {(coaches.length > 0 || session.coach_id) && (
+            <div className="flex items-center gap-3">
+              <Label htmlFor="session_coach" className="shrink-0">Coach</Label>
+              <div className="min-w-0 flex-1">
+                <Select
+                  id="session_coach"
+                  options={coachOptions}
+                  value={session.coach_id ?? ""}
+                  onChange={(e) => handleCoachChange(e.target.value)}
+                  disabled={pending}
+                  className="h-11 text-base sm:h-10 sm:text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Attendance List — kept on a completed practice so it can be checked and corrected */}
+          {session.status !== "cancelled" && (
+            <>
+              {coachLink && (
+                <div ref={coachLinkRef} className="rounded-xl border border-green-200 bg-green-50 p-3 space-y-2">
+                  <p className="text-sm font-medium text-green-900">
+                    Send this to the coach
+                  </p>
+                  <p className="break-all font-mono text-xs text-green-900">{coachLink.url}</p>
+                  <p className="font-mono text-lg font-semibold tracking-[0.2em] text-green-900 tabular-nums">
+                    {coachLink.passcode}
+                  </p>
+                  <p className="text-xs text-green-800">
+                    Works until {formatBusinessTime(coachLink.expiresAt)}. The passcode isn&apos;t shown again — copy it now.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Button size="sm" variant="outline" onClick={copyCoachLink} className="h-11 w-full sm:h-9">
+                      <Copy className="h-3.5 w-3.5 mr-1" /> Copy link and passcode
+                    </Button>
+                    {/* Opens the coach's own register, e.g. when the Boss is
+                        taking it herself courtside. */}
+                    <a
+                      href={coachLink.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={buttonVariants({ variant: "outline", size: "sm", className: "h-11 w-full sm:h-9" })}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open register
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 sm:max-h-64 sm:overflow-y-auto">
+                {rosterLoading ? (
+                  <div className="space-y-2" aria-busy="true">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="h-12 rounded-xl border bg-muted/40 animate-pulse" />
+                    ))}
+                  </div>
+                ) : roster.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No students enrolled in this session.</p>
+                ) : (
+                  roster.map((student) => {
+                    const status = statusOf(student.id);
+                    const style = status ? statusStyles[status] : null;
+                    const Icon = style?.icon;
+                    return (
+                      <button
+                        key={student.id}
+                        data-testid="register-row"
+                        className="w-full min-h-[48px] flex items-center justify-between gap-3 p-3 rounded-xl border text-left hover:bg-muted/30 active:bg-muted/50 transition-colors"
+                        onClick={() => toggleStatus(student.id)}
+                      >
+                        <span className="min-w-0 truncate font-medium text-sm">{student.first_name} {student.last_name}</span>
+                        {style && Icon ? (
+                          <span className={`shrink-0 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
+                            <Icon className="h-3.5 w-3.5" /> {status}
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full border border-dashed text-muted-foreground">
+                            not marked
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Click a student to cycle through status</p>
+            </>
+          )}
         </div>
 
-        {(coaches.length > 0 || session.coach_id) && (
-          <div className="flex items-center gap-3">
-            <Label htmlFor="session_coach" className="shrink-0">Coach</Label>
-            <div className="flex-1">
-              <Select
-                id="session_coach"
-                options={coachOptions}
-                value={session.coach_id ?? ""}
-                onChange={(e) => handleCoachChange(e.target.value)}
-                disabled={pending}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Attendance List — kept on a completed practice so it can be checked and corrected */}
+        {/* Actions stay pinned to the bottom of the dialog on phones, so the
+            register can be long without pushing Save out of reach. */}
         {session.status !== "cancelled" && (
-          <>
-            {coachLink && (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-3 space-y-2">
-                <p className="text-sm font-medium text-green-900">
-                  Send this to the coach
-                </p>
-                <p className="break-all font-mono text-xs text-green-900">{coachLink.url}</p>
-                <p className="font-mono text-lg font-semibold tracking-[0.2em] text-green-900">
-                  {coachLink.passcode}
-                </p>
-                <p className="text-xs text-green-800">
-                  Works until {formatBusinessTime(coachLink.expiresAt)}. The passcode isn&apos;t shown again — copy it now.
-                </p>
-                <Button size="sm" variant="outline" onClick={copyCoachLink} className="w-full">
-                  <Copy className="h-3.5 w-3.5 mr-1" /> Copy link and passcode
-                </Button>
-              </div>
-            )}
-
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {rosterLoading ? (
-                <div className="space-y-2" aria-busy="true">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="h-12 rounded-xl border bg-muted/40 animate-pulse" />
-                  ))}
-                </div>
-              ) : roster.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No students enrolled in this session.</p>
-              ) : (
-                roster.map((student) => {
-                  const status = statusOf(student.id);
-                  const style = status ? statusStyles[status] : null;
-                  const Icon = style?.icon;
-                  return (
-                    <button
-                      key={student.id}
-                      data-testid="register-row"
-                      className="w-full flex items-center justify-between p-3 rounded-xl border hover:bg-muted/30 transition-colors"
-                      onClick={() => toggleStatus(student.id)}
-                    >
-                      <span className="font-medium text-sm">{student.first_name} {student.last_name}</span>
-                      {style && Icon ? (
-                        <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
-                          <Icon className="h-3.5 w-3.5" /> {status}
-                        </span>
-                      ) : (
-                        <span className="text-xs font-medium px-2.5 py-1 rounded-full border border-dashed text-muted-foreground">
-                          not marked
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground text-center">Click a student to cycle through status</p>
-
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 mt-4 space-y-2 border-t bg-background px-6 pb-6 pt-3 sm:static sm:mx-0 sm:mb-0 sm:border-t-0 sm:px-0 sm:pb-0 sm:pt-2">
             {completed ? (
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2">
                 <Button
                   size="sm"
                   onClick={handleSave}
                   disabled={pending || registerOnScreen().length === 0}
-                  className="ml-auto"
+                  className="h-11 w-full sm:ml-auto sm:h-9 sm:w-auto"
                 >
                   {pending ? "Saving..." : "Save changes"}
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="text-red-600" onClick={() => setShowCancel(!showCancel)}>
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <Button
+                  size="sm"
+                  onClick={handleComplete}
+                  disabled={pending || upcoming}
+                  className="col-span-2 h-11 sm:order-last sm:ml-auto sm:h-9"
+                >
+                  {pending ? "Saving..." : "Save & complete"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-11 text-red-600 sm:h-9"
+                  onClick={() => setShowCancel(!showCancel)}
+                >
                   Cancel practice
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="h-11 sm:h-9"
                   onClick={issueCoachLink}
                   disabled={pending}
                 >
                   <Link2 className="h-3.5 w-3.5 mr-1" />
                   Coach link
-                </Button>
-                <Button size="sm" onClick={handleComplete} disabled={pending || upcoming} className="ml-auto">
-                  {pending ? "Saving..." : "Save & complete"}
                 </Button>
               </div>
             )}
@@ -320,17 +361,17 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
             )}
 
             {!completed && showCancel && (
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                  className="h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-base sm:h-9 sm:text-sm"
                   placeholder="Reason (required) — e.g. gym closed"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                 />
-                <Button size="sm" variant="destructive" onClick={handleCancel}>Confirm Cancel</Button>
+                <Button size="sm" variant="destructive" className="h-11 sm:h-9" onClick={handleCancel}>Confirm Cancel</Button>
               </div>
             )}
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
