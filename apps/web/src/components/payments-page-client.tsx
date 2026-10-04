@@ -10,6 +10,8 @@ import { AssignPaymentDialog } from "@/components/assign-payment-dialog";
 import { GenerateInvoicesDialog } from "@/components/generate-invoices-dialog";
 import { InvoiceFormDialog } from "@/components/invoice-form-dialog";
 import { formatCurrency } from "@/lib/utils";
+import { familyHref } from "@/lib/family-link";
+import Link from "next/link";
 import { sendStripePaymentLink } from "@/lib/actions/stripe";
 import { waiveInvoice, deleteInvoice, deletePayment } from "@/lib/actions/payments";
 import { resetPayLink } from "@/lib/actions/autopay";
@@ -274,6 +276,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect, credi
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Program</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Month</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Balance</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Pay link</th>
                     <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
@@ -283,10 +286,17 @@ export function PaymentsPageClient({ summary, invoices, payments, collect, credi
                   {filtered.map((inv: any) => (
                     <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="p-4 font-medium">{inv.students?.first_name} {inv.students?.last_name}</td>
-                      <td className="p-4 hidden sm:table-cell text-sm">{inv.parents?.first_name} {inv.parents?.last_name}</td>
+                      <td className="p-4 hidden sm:table-cell text-sm">
+                        <Link href={familyHref(inv.parent_id)} className="hover:underline" title="See the whole family">
+                          {inv.parents?.first_name} {inv.parents?.last_name}
+                        </Link>
+                      </td>
                       <td className="p-4 hidden md:table-cell text-sm">{inv.programs?.name}</td>
                       <td className="p-4 text-sm">{inv.month}</td>
-                      <td className="p-4 font-medium">{formatCurrency(inv.amount)}</td>
+                      <td className="p-4 text-sm text-muted-foreground tabular-nums">{formatCurrency(inv.amount)}</td>
+                      <td className="p-4 font-medium tabular-nums" data-testid="invoice-balance">
+                        {inv.balance > 0 ? formatCurrency(inv.balance) : "—"}
+                      </td>
                       <td className="p-4">{statusBadge(inv.status)}</td>
                       <td className="p-4 hidden lg:table-cell">
                         <div className="flex items-center gap-2">

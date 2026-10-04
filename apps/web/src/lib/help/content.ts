@@ -207,6 +207,21 @@ export const TASKS: HelpTask[] = [
     ],
   },
   {
+    id: "family-owes",
+    title: "“What do we owe?” — one family",
+    when: "When a parent asks on WhatsApp",
+    keywords: "family owe owes balance how much garcia parent asks children siblings messages link left to pay",
+    href: "/students",
+    hrefLabel: "Open Students & Parents",
+    tourStep: "families",
+    steps: [
+      { text: "Go to **Students & Parents** and open **Parents**. **Balance** shows what each family still owes, for all their children together. Type the name or phone in the search box to find them fast." },
+      { text: "Tap the parent's name — or a child's name on **Students** — to open their family." },
+      { text: "**They owe** is the answer, with each unpaid invoice and what's left on it underneath.", tip: "A bank payment still on its way isn't counted as owed; it's shown on its own line. Credit they have on file is shown too." },
+      { text: "Tap [[Copy link]] and paste their payment page into your WhatsApp reply. The family page also shows both parents, each child's sessions, every invoice and the messages you've sent them." },
+    ],
+  },
+  {
     id: "behind",
     title: "See who's behind on payments",
     when: "Any time",

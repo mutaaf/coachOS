@@ -2773,6 +2773,34 @@
   "phone": true
  },
  {
+  "id": "PAY-26",
+  "area": "Payments",
+  "title": "A family's page answers “what do we owe?” in one place",
+  "risk": "The Boss tells a parent the wrong amount — the full fee when they paid part, or one child's invoice when two are owed — so the family is overcharged or chased for money already paid.",
+  "severity": "high",
+  "preconditions": [
+   "A test family with two children, both parents linked to both, each child on a session with this month's invoice.",
+   "One of the invoices has a part payment recorded (say $40 cash on a $90 invoice).",
+   "At least one message to the family has been sent or is waiting in the Outbox."
+  ],
+  "steps": [
+   "Open Payments and find the family's two invoices.",
+   "Open Students & Parents → Parents and find either parent.",
+   "Tap the parent's name.",
+   "Tap Copy link and paste it into a note.",
+   "Go back, open Students and tap one of the children's names."
+  ],
+  "expected": [
+   "On Payments, Amount shows the full fee and Balance shows what's left: $50.00 on the part-paid invoice, $90.00 on the other.",
+   "On Parents, both parents show the same Balance: $140.00.",
+   "The family page says They owe $140.00, lists both children with their school and session, both parents with their phone numbers, every invoice with its balance, and the messages sent to either parent.",
+   "The copied link opens the family's payment page.",
+   "The child's name opens the same family."
+  ],
+  "evidence": "Screenshots of the Balance columns on Payments and Parents, and the family page.",
+  "phone": true
+ },
+ {
   "id": "WEB-01",
   "area": "Website",
   "title": "A program added from CoachOS appears on risingstars.training with live places, and sign-ups land in CoachOS",
