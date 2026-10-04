@@ -67,18 +67,18 @@ function Steps({ steps, done, onToggle }: { steps: HelpStep[]; done: number[]; o
       {steps.map((s, i) => {
         const ticked = done.includes(i);
         return (
-          <li key={i} className="grid grid-cols-[2.25rem_1fr] gap-3">
+          <li key={i} className="grid grid-cols-[2.75rem_1fr] gap-3">
             <button
               type="button"
               onClick={() => onToggle(i)}
               aria-label={`Step ${i + 1}: mark as ${ticked ? "not done" : "done"}`}
-              className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-semibold tabular-nums ${
                 ticked ? "border-green-600 bg-green-600 text-white" : "border-border text-muted-foreground"
               }`}
             >
               {ticked ? <Check className="h-4 w-4" /> : i + 1}
             </button>
-            <div className={`space-y-2 pt-1.5 ${ticked ? "text-muted-foreground" : ""}`}>
+            <div className={`min-w-0 space-y-2 pt-2.5 ${ticked ? "text-muted-foreground" : ""}`}>
               <p>
                 <Rich text={s.text} />
               </p>
@@ -176,9 +176,9 @@ function HowTo() {
                 </span>
                 <span className="min-w-0">
                   <span className="block font-semibold leading-snug">{t.title}</span>
-                  <span className="block text-sm text-muted-foreground">{t.when}</span>
+                  <span className="mt-0.5 block text-sm text-muted-foreground">{t.when}</span>
                 </span>
-                <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                <ChevronRight className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
               </button>
               {isOpen && (
                 <div className="space-y-4 border-t px-4 pb-5 pt-4">
@@ -187,14 +187,14 @@ function HowTo() {
                       <button
                         type="button"
                         onClick={() => startTour(t.tourStep)}
-                        className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
+                        className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
                       >
                         <PlayCircle className="h-4 w-4" /> Show me
                       </button>
                     )}
                     <Link
                       href={t.href}
-                      className="inline-flex h-10 items-center gap-1.5 rounded-lg border bg-white px-3 text-sm font-semibold"
+                      className="inline-flex h-11 min-w-0 items-center gap-1.5 rounded-lg border bg-white px-4 text-sm font-semibold"
                     >
                       <ExternalLink className="h-4 w-4" /> {t.hrefLabel}
                     </Link>
@@ -238,12 +238,14 @@ function Practice({ testMode }: { testMode: boolean }) {
         <p className="mb-3 text-sm text-muted-foreground">Use any future expiry date, any 3-digit code and any ZIP.</p>
         <div className="divide-y">
           {TEST_CARDS.map((c) => (
-            <div key={c.copy} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <div className="min-w-0">
-                <p className="font-mono text-sm font-semibold">{c.number}</p>
+            <div key={c.copy} className="flex items-center justify-between gap-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-sm font-semibold tabular-nums">{c.number}</p>
                 <p className="text-sm text-muted-foreground">{c.what}</p>
               </div>
-              <CopyButton value={c.copy} />
+              <div className="shrink-0">
+                <CopyButton value={c.copy} />
+              </div>
             </div>
           ))}
         </div>
@@ -341,8 +343,11 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
     URL.revokeObjectURL(a.href);
   }
 
+  // Each filter row scrolls sideways on a phone instead of wrapping into ragged lines.
+  const chipRow =
+    "-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden";
   const chip = (on: boolean) =>
-    `h-9 rounded-full border px-3 text-sm ${on ? "border-foreground bg-foreground text-background" : "bg-white"}`;
+    `h-10 shrink-0 whitespace-nowrap rounded-full border px-3.5 text-sm ${on ? "border-foreground bg-foreground text-background" : "bg-white"}`;
 
   return (
     <div className="space-y-5">
@@ -352,7 +357,7 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
         PAY-06).
       </p>
 
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-5" data-testid="test-tally">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-5 [&>:first-child]:col-span-2 sm:[&>:first-child]:col-span-1" data-testid="test-tally">
         {[
           [`${run}/${CASES.length}`, "run", ""],
           [counts.pass, "✓ passed", "text-green-700"],
@@ -398,7 +403,7 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
       )}
 
       <div className="space-y-2">
-        <div className="flex flex-wrap gap-2">
+        <div className={chipRow}>
           <button className={chip(!area)} onClick={() => setArea("")}>All areas</button>
           {AREAS.map((a) => (
             <button key={a} className={chip(area === a)} onClick={() => setArea(a)}>
@@ -406,14 +411,18 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className={chipRow}>
           {[["", "Any severity"], ["critical", "Critical"], ["high", "High"], ["medium", "Medium"]].map(([v, l]) => (
             <button key={v} className={chip(sev === v)} onClick={() => setSev(v)}>{l}</button>
           ))}
+        </div>
+        <div className={chipRow}>
           {[["", "Any result"], ["open", "Not run"], ["pass", "✓ Pass"], ["fail", "✗ Fail"], ["blocked", "⊘ Blocked"]].map(([v, l]) => (
             <button key={`s${v}`} className={chip(stat === v)} onClick={() => setStat(v)}>{l}</button>
           ))}
-          <button className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border bg-white px-3 text-sm" onClick={exportCsv}>
+        </div>
+        <div className="flex sm:justify-end">
+          <button className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full border bg-white px-4 text-sm font-medium sm:h-10 sm:w-auto" onClick={exportCsv}>
             <Download className="h-4 w-4" /> Export CSV
           </button>
         </div>
@@ -471,7 +480,7 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expected — tick each one you saw</p>
                     <ul className="space-y-2">
                       {c.expected.map((e, i) => (
-                        <li key={i} className="grid grid-cols-[1.5rem_1fr] gap-2">
+                        <li key={i} className="grid grid-cols-[1.75rem_1fr] gap-2">
                           <input
                             type="checkbox"
                             id={`exp-${c.id}-${i}`}
@@ -481,9 +490,9 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
                               ev.target.checked ? next.add(i) : next.delete(i);
                               save(c.id, { ticks: [...next].sort((a, b) => a - b) });
                             }}
-                            className="mt-1 h-5 w-5 accent-green-600"
+                            className="mt-0.5 h-6 w-6 accent-green-600"
                           />
-                          <label htmlFor={`exp-${c.id}-${i}`} className={ticks.has(i) ? "text-muted-foreground" : ""}>{e}</label>
+                          <label htmlFor={`exp-${c.id}-${i}`} className={`-my-1 py-1 ${ticks.has(i) ? "text-muted-foreground" : ""}`}>{e}</label>
                         </li>
                       ))}
                     </ul>
@@ -511,7 +520,7 @@ function TestPlan({ initial }: { initial: TestResult[] }) {
                       defaultValue={r?.notes ?? ""}
                       onBlur={(e) => e.target.value !== (r?.notes ?? "") && save(c.id, { notes: e.target.value })}
                       placeholder={r?.status === "fail" ? "What happened instead? Times, amounts, what you clicked." : "Notes — what you saw, anything odd, why it was blocked."}
-                      className="min-h-[88px] w-full rounded-lg border bg-white p-3"
+                      className="min-h-[88px] w-full rounded-lg border bg-white p-3 text-base"
                     />
                     {r?.updated_at && (
                       <p className="font-mono text-xs text-muted-foreground">
@@ -640,6 +649,7 @@ export function HelpPageClient({
   releases?: Release[];
   reports?: Report[];
 }) {
+  const tabCls = "h-10 rounded-lg px-3.5";
   const tab = ["how", "practise", "tests", "reference", "new"].includes(initialTab ?? "") ? initialTab! : "how";
   return (
     <div className="mx-auto max-w-3xl">
@@ -650,13 +660,16 @@ export function HelpPageClient({
         </p>
       </div>
       <Tabs defaultValue={tab}>
-        <div className="mb-4 overflow-x-auto" data-tour="help-tabs">
-          <TabsList>
-            <TabsTrigger value="how">How do I…</TabsTrigger>
-            <TabsTrigger value="practise">Try it out</TabsTrigger>
-            <TabsTrigger value="tests">Test plan</TabsTrigger>
-            <TabsTrigger value="reference">What things mean</TabsTrigger>
-            <TabsTrigger value="new">What&rsquo;s new</TabsTrigger>
+        <div
+          className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+          data-tour="help-tabs"
+        >
+          <TabsList className="h-12 rounded-xl">
+            <TabsTrigger value="how" className={tabCls}>How do I…</TabsTrigger>
+            <TabsTrigger value="practise" className={tabCls}>Try it out</TabsTrigger>
+            <TabsTrigger value="tests" className={tabCls}>Test plan</TabsTrigger>
+            <TabsTrigger value="reference" className={tabCls}>What things mean</TabsTrigger>
+            <TabsTrigger value="new" className={tabCls}>What&rsquo;s new</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="how"><HowTo /></TabsContent>
