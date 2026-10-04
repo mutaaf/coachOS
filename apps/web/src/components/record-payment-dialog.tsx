@@ -109,7 +109,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onClose={() => onOpenChange(false)}>
+      <DialogContent className="p-5 sm:p-6" onClose={() => onOpenChange(false)}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Payment" : "Record Payment"}</DialogTitle>
         </DialogHeader>
@@ -123,6 +123,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
                   label: `${i.students?.first_name} ${i.students?.last_name} — ${i.programs?.name} (${i.month}) — ${formatCurrency(i.amount)}`,
                 }))}
                 placeholder="Select an invoice"
+                className="h-11"
                 value={selectedInvoice}
                 onChange={(e) => setSelectedInvoice(e.target.value)}
                 required
@@ -131,7 +132,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
           )}
 
           {!isEditing && detail && (
-            <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1">
+            <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1 tabular-nums">
               <div><span className="text-muted-foreground">Student:</span> {detail.students?.first_name} {detail.students?.last_name}</div>
               <div><span className="text-muted-foreground">Amount Due:</span> {formatCurrency(detail.amount)}</div>
               <div><span className="text-muted-foreground">Remaining:</span> {formatCurrency(remaining)}</div>
@@ -143,6 +144,8 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
             <Input
               id="amount"
               name="amount"
+              className="h-11 tabular-nums"
+              inputMode="decimal"
               type="number"
               step="0.01"
               min="0.01"
@@ -156,6 +159,7 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
             <Select
               id="method"
               name="method"
+              className="h-11"
               value={method}
               onChange={(e) => setMethod(e.target.value)}
               options={[
@@ -168,15 +172,15 @@ export function RecordPaymentDialog({ open, onOpenChange, invoiceId, payment }: 
           </div>
           <div className="space-y-2">
             <Label htmlFor="reference">Reference</Label>
-            <Input id="reference" name="reference" placeholder={placeholders[method]} defaultValue={isEditing ? payment.reference || "" : ""} />
+            <Input id="reference" name="reference" className="h-11" placeholder={placeholders[method]} defaultValue={isEditing ? payment.reference || "" : ""} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" name="notes" defaultValue={isEditing ? payment.notes || "" : ""} />
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={pending || (!isEditing && !detail)}>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button type="button" variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="h-11 w-full sm:h-10 sm:w-auto" disabled={pending || (!isEditing && !detail)}>
               {pending ? (isEditing ? "Saving..." : "Recording...") : (isEditing ? "Save Changes" : "Record Payment")}
             </Button>
           </div>

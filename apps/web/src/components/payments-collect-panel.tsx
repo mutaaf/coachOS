@@ -88,27 +88,28 @@ function NeedsLookRow({ receipt, assign }: { receipt: any; assign: AssignOptions
 
   return (
     <li className="py-3" data-testid="zelle-needs-look">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="font-medium">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-words font-medium">
           {unreadable ? receipt.subject || "An email we couldn't read" : receipt.sender_name}
-          {!unreadable && (
-            <span className="ml-2 font-semibold text-green-700">{formatCurrency(receipt.amount)}</span>
-          )}
         </p>
-        <p className="text-xs text-muted-foreground">{when(receipt.received_at)}</p>
+        <div className="shrink-0 text-right">
+          {!unreadable && (
+            <p className="whitespace-nowrap font-semibold tabular-nums text-green-700">{formatCurrency(receipt.amount)}</p>
+          )}
+          <p className="whitespace-nowrap text-xs text-muted-foreground">{when(receipt.received_at)}</p>
+        </div>
       </div>
-      {receipt.memo && <p className="text-sm text-muted-foreground">&ldquo;{receipt.memo}&rdquo;</p>}
-      {receipt.note && <p className="mt-0.5 text-sm text-amber-700">{receipt.note}</p>}
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      {receipt.memo && <p className="break-words text-sm text-muted-foreground">&ldquo;{receipt.memo}&rdquo;</p>}
+      {receipt.note && <p className="mt-0.5 break-words text-sm text-amber-700">{receipt.note}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {!unreadable && (
-          <Button size="sm" onClick={() => setOpen(true)}>
+          <Button className="h-10 flex-1 sm:flex-none" onClick={() => setOpen(true)}>
             Who paid this?
           </Button>
         )}
         <Button
-          size="sm"
-          variant="ghost"
-          className="text-muted-foreground"
+          variant="outline"
+          className="h-10 text-muted-foreground"
           disabled={pending}
           onClick={() =>
             run(() => ignoreZelleReceipt(receipt.id), { error: "That didn't dismiss" })
@@ -151,7 +152,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: Co
           <h2 className="font-semibold">Autopay</h2>
           {autopay.stripeEnabled && (
             <span
-              className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${
+              className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${
                 autopay.stripeMode === "live" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
               }`}
             >
@@ -169,8 +170,7 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: Co
             </p>
             {inviteCount > 0 && (
               <Button
-                size="sm"
-                className="mt-3"
+                className="mt-3 h-11 w-full sm:h-10 sm:w-auto"
                 disabled={pending}
                 onClick={async () => {
                   if (
@@ -206,25 +206,25 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: Co
       {/* Zelle inbox */}
       <section data-tour="zelle" className="rounded-2xl border bg-card p-4">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100">
               <Inbox className="h-4 w-4 text-violet-700" />
             </div>
             <h2 className="font-semibold">
               Zelle
               {zelle.connected && zelle.needsLook.length === 0 && (
-                <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                <span className="ml-2 whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
                   Connected
                 </span>
               )}
               {zelle.needsLook.length > 0 && (
-                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                <span className="ml-2 whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                   {zelle.needsLook.length} to check
                 </span>
               )}
             </h2>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setShowSetup(true)}>
+          <Button variant="ghost" className="h-10 shrink-0 px-3" onClick={() => setShowSetup(true)}>
             <Mail className="mr-1 h-4 w-4" /> {zelle.connected ? "Setup steps" : "Connect Gmail"}
           </Button>
         </div>
@@ -252,15 +252,15 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: Co
 
         {zelle.recent.length > 0 && (
           <details className="mt-3 border-t pt-3">
-            <summary className="cursor-pointer text-sm text-muted-foreground">
+            <summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">
               Recently recorded ({zelle.recent.length})
             </summary>
-            <ul className="mt-2 space-y-1.5">
+            <ul className="mt-1 space-y-1">
               {zelle.recent.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
                   <span className="min-w-0 truncate">
                     {when(r.received_at)} · {r.sender_name}{" "}
-                    <span className="font-medium text-green-700">{formatCurrency(r.amount)}</span>
+                    <span className="whitespace-nowrap font-medium tabular-nums text-green-700">{formatCurrency(r.amount)}</span>
                     {r.parents && r.sender_name !== `${r.parents.first_name} ${r.parents.last_name}` && (
                       <span className="text-muted-foreground">
                         {" "}
@@ -270,8 +270,9 @@ export function PaymentsCollectPanel({ autopay, inviteCount, zelle, assign }: Co
                     {r.note && <span className="block whitespace-normal text-xs text-amber-700">{r.note}</span>}
                   </span>
                   <Button
-                    size="sm"
+                    size="icon"
                     variant="ghost"
+                    aria-label="Undo"
                     className="shrink-0 text-muted-foreground"
                     disabled={pending}
                     onClick={async () => {
