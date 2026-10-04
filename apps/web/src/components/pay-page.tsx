@@ -29,22 +29,22 @@ function Line({ line, processing }: { line: PayPageLine; processing?: boolean })
   return (
     <li className="flex items-start justify-between gap-4 py-3">
       <div className="min-w-0">
-        <p className="font-medium text-slate-900">
+        <p className="break-words font-medium text-slate-900">
           {line.childName} · {monthName(line.month)}
         </p>
         <p className="text-sm text-slate-500">
           {line.programName}
           {" · "}
           {processing ? (
-            <span className="text-sky-700">Bank payment on its way</span>
+            <span className="whitespace-nowrap text-sky-700">Bank payment on its way</span>
           ) : line.overdue ? (
-            <span className="text-red-700">Was due {shortDate(line.dueDate)}</span>
+            <span className="whitespace-nowrap text-red-700">Was due {shortDate(line.dueDate)}</span>
           ) : (
-            <>Due {shortDate(line.dueDate)}</>
+            <span className="whitespace-nowrap">Due {shortDate(line.dueDate)}</span>
           )}
         </p>
       </div>
-      <p className="shrink-0 font-semibold tabular-nums text-slate-900">{money(line.balanceCents)}</p>
+      <p className="shrink-0 whitespace-nowrap font-semibold tabular-nums text-slate-900">{money(line.balanceCents)}</p>
     </li>
   );
 }
@@ -148,12 +148,12 @@ export function PayPage({
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-xl px-5 py-10 sm:py-14">
+      <div className="mx-auto max-w-xl px-4 pb-10 pt-8 sm:px-5 sm:py-14">
         <header className="mb-7">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
             {data.businessName}
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-3 break-words text-3xl font-bold tracking-tight text-slate-900">
             Hi {parent.firstName}
           </h1>
           {children && (
@@ -192,8 +192,8 @@ export function PayPage({
         <section className="rounded-xl border border-slate-200 bg-white px-5 py-4">
           {data.open.length === 0 && data.processing.length === 0 ? (
             <div className="flex items-center gap-3 py-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
-                <Check className="h-5 w-5 text-emerald-700" />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                <Check aria-hidden="true" className="h-5 w-5 text-emerald-700" />
               </span>
               <div>
                 <p className="font-semibold text-slate-900">You&apos;re all paid up</p>
@@ -203,11 +203,11 @@ export function PayPage({
           ) : (
             <>
               {data.open.length > 0 && (
-                <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-baseline justify-between gap-4 border-b border-slate-100 pb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                     To pay
                   </h2>
-                  <p className="text-2xl font-bold tabular-nums text-slate-900">
+                  <p className="whitespace-nowrap text-2xl font-bold tabular-nums text-slate-900">
                     {money(data.openCents)}
                   </p>
                 </div>
@@ -236,7 +236,7 @@ export function PayPage({
               <>
                 <div className="flex items-start gap-3">
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                    <Check className="h-5 w-5 text-emerald-700" />
+                    <Check aria-hidden="true" className="h-5 w-5 text-emerald-700" />
                   </span>
                   <div>
                     <h2 className="font-semibold text-slate-900">Autopay is on</h2>
@@ -258,18 +258,24 @@ export function PayPage({
                     </p>
                   </div>
                 )}
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                <div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap">
                   {confirmingOff ? (
                     <>
                       <Button
                         variant="destructive"
                         size="sm"
+                        className="h-11 w-full sm:w-auto"
                         disabled={busy !== null}
                         onClick={stop}
                       >
                         {busy === "off" ? "Turning off…" : "Yes, turn off autopay"}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setConfirmingOff(false)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-11 w-full sm:w-auto"
+                        onClick={() => setConfirmingOff(false)}
+                      >
                         Keep it on
                       </Button>
                     </>
@@ -278,6 +284,7 @@ export function PayPage({
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-11 w-full sm:w-auto"
                         disabled={busy !== null}
                         onClick={() => setUp(parent.autopayMethod ?? "us_bank_account")}
                       >
@@ -286,6 +293,7 @@ export function PayPage({
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-11 w-full sm:w-auto"
                         disabled={busy !== null}
                         onClick={() => setUp(parent.autopayMethod === "card" ? "us_bank_account" : "card")}
                       >
@@ -294,7 +302,7 @@ export function PayPage({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-slate-500"
+                        className="h-11 w-full text-slate-600 sm:w-auto"
                         onClick={() => setConfirmingOff(true)}
                       >
                         Turn off
@@ -306,7 +314,7 @@ export function PayPage({
             ) : parent.autopayStatus === "pending" ? (
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100">
-                  <Hourglass className="h-5 w-5 text-sky-700" />
+                  <Hourglass aria-hidden="true" className="h-5 w-5 text-sky-700" />
                 </span>
                 <div>
                   <h2 className="font-semibold text-slate-900">One last step</h2>
@@ -318,7 +326,7 @@ export function PayPage({
                   {parent.autopayVerifyUrl && (
                     <a
                       href={parent.autopayVerifyUrl}
-                      className="mt-3 inline-flex h-11 items-center rounded-lg bg-slate-900 px-4 text-sm font-medium text-white"
+                      className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-medium text-white sm:w-auto"
                     >
                       Confirm my bank account
                     </a>
@@ -338,12 +346,12 @@ export function PayPage({
                     onClick={() => setUp("us_bank_account")}
                     className="flex min-h-[64px] items-center gap-3 rounded-xl border-2 border-slate-900 bg-slate-900 px-4 py-3 text-left text-white transition hover:bg-slate-800 disabled:opacity-60"
                   >
-                    <Landmark className="h-5 w-5 shrink-0" />
+                    <Landmark aria-hidden="true" className="h-5 w-5 shrink-0" />
                     <span>
                       <span className="block font-semibold">
                         {busy === "us_bank_account" ? "Opening…" : "Bank account"}
                       </span>
-                      <span className="block text-xs text-slate-300">No fee</span>
+                      <span className="block text-sm text-slate-300">No fee</span>
                     </span>
                   </button>
                   <button
@@ -352,16 +360,16 @@ export function PayPage({
                     onClick={() => setUp("card")}
                     className="flex min-h-[64px] items-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-left text-slate-900 transition hover:border-slate-300 disabled:opacity-60"
                   >
-                    <CreditCard className="h-5 w-5 shrink-0" />
+                    <CreditCard aria-hidden="true" className="h-5 w-5 shrink-0" />
                     <span>
                       <span className="block font-semibold">
                         {busy === "card" ? "Opening…" : "Card"}
                       </span>
-                      <span className="block text-xs text-slate-500">{feeLabel}</span>
+                      <span className="block text-sm text-slate-500">{feeLabel}</span>
                     </span>
                   </button>
                 </div>
-                <p className="mt-4 text-xs leading-relaxed text-slate-500">
+                <p className="mt-4 text-sm leading-relaxed text-slate-500">
                   {data.openCents > 0 && (
                     <>
                       Your current balance of {money(data.openCents)} will be paid within a day.{" "}
@@ -370,8 +378,8 @@ export function PayPage({
                   After that, each month&apos;s fee is paid on its due date (the {dayOfMonthLabel(data.dueDay)}). Turn it off
                   here whenever you like.
                 </p>
-                <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-                  <Lock className="h-3.5 w-3.5" /> Bank and card details are handled by Stripe. We
+                <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-500">
+                  <Lock aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0" /> Bank and card details are handled by Stripe. We
                   never see them.
                 </p>
               </>
@@ -396,19 +404,20 @@ export function PayPage({
                   <button
                     type="button"
                     onClick={() => copyRecipient(target)}
-                    className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-left"
+                    aria-label={`Copy ${target}`}
+                    className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-left transition active:bg-slate-100"
                   >
                     <span className="min-w-0 break-all font-mono text-base font-semibold text-slate-900">
                       {target}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-500">
+                    <span aria-live="polite" className="flex shrink-0 items-center gap-1 text-sm font-medium text-slate-600">
                       {copied === target ? (
                         <>
-                          <Check className="h-4 w-4" /> Copied
+                          <Check aria-hidden="true" className="h-4 w-4 text-emerald-700" /> Copied
                         </>
                       ) : (
                         <>
-                          <Copy className="h-4 w-4" /> Copy
+                          <Copy aria-hidden="true" className="h-4 w-4" /> Copy
                         </>
                       )}
                     </span>
@@ -425,11 +434,11 @@ export function PayPage({
               <label htmlFor="zelle_name" className="text-sm font-medium text-slate-900">
                 Sending from an account in someone else&apos;s name?
               </label>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-sm text-slate-500">
                 Tell us whose, so we know it&apos;s from you.
               </p>
               {data.zelleNames.length > 0 && (
-                <p className="mt-2 text-xs text-slate-600">
+                <p className="mt-2 text-sm text-slate-600">
                   We&apos;ll recognise: {data.zelleNames.join(", ")}
                 </p>
               )}
@@ -443,13 +452,13 @@ export function PayPage({
                   }}
                   placeholder="Name on the account"
                   autoComplete="off"
-                  className="h-11"
+                  className="h-11 min-w-0 text-base sm:text-sm"
                 />
-                <Button type="submit" className="h-11" disabled={busy !== null || !zelleName.trim()}>
+                <Button type="submit" className="h-11 shrink-0 px-5" disabled={busy !== null || !zelleName.trim()}>
                   {busy === "zelle" ? "Saving…" : "Save"}
                 </Button>
               </div>
-              {zelleSaved && <p className="mt-2 text-xs text-emerald-700">Saved — thank you.</p>}
+              {zelleSaved && <p role="status" className="mt-2 text-sm text-emerald-700">Saved — thank you.</p>}
             </form>
           </section>
         )}
@@ -477,13 +486,13 @@ export function PayPage({
                   setEmailSaved(false);
                 }}
                 placeholder="you@example.com"
-                className="h-11"
+                className="h-11 min-w-0 text-base sm:text-sm"
               />
-              <Button type="submit" className="h-11" disabled={busy !== null || !email.trim()}>
+              <Button type="submit" className="h-11 shrink-0 px-5" disabled={busy !== null || !email.trim()}>
                 {busy === "email" ? "Saving…" : "Save"}
               </Button>
             </div>
-            {emailSaved && <p className="mt-2 text-xs text-emerald-700">Saved — receipts will go there.</p>}
+            {emailSaved && <p role="status" className="mt-2 text-sm text-emerald-700">Saved — receipts will go there.</p>}
           </form>
         </section>
 

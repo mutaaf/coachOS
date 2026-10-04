@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { BouncingBall, ConfettiBurst } from "@/components/celebration";
 
+const FIELD = "h-11 text-base sm:text-sm";
+
 type Result = {
   status: "confirmed" | "waitlisted";
   waitlistPosition: number | null;
@@ -73,16 +75,16 @@ export function RegistrationForm({
             waitlisted ? "border-amber-200" : "border-orange-200"
           }`}
         >
-          <div className={waitlisted ? "bg-amber-50 px-6 pb-6 pt-8" : "bg-gradient-to-b from-orange-100 to-white px-6 pb-6 pt-8"}>
+          <div className={waitlisted ? "bg-amber-50 px-5 pb-6 pt-8 sm:px-6" : "bg-gradient-to-b from-orange-100 to-white px-5 pb-6 pt-8 sm:px-6"}>
             {waitlisted ? (
               <span aria-hidden="true" className="text-5xl">🤞</span>
             ) : (
               <BouncingBall className="text-6xl" />
             )}
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            <h2 className="mt-3 break-words text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
               {waitlisted ? `${child} is on the list!` : `${child} is in! 🎉`}
             </h2>
-            <p className="mx-auto mt-2 max-w-md text-slate-700">
+            <p className="mx-auto mt-2 max-w-md text-base leading-relaxed text-slate-700">
               {waitlisted ? (
                 <>
                   {programName} is full right now, so we&apos;ve saved a place in line —{" "}
@@ -99,13 +101,13 @@ export function RegistrationForm({
             </p>
           </div>
 
-          <div className="space-y-4 px-6 pb-8 pt-2">
+          <div className="space-y-4 px-5 pb-8 pt-2 sm:px-6">
             {!waitlisted && result.whatsappGroupUrl && (
               <a
                 href={result.whatsappGroupUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 text-base font-bold text-white shadow-sm transition hover:brightness-95"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 sm:w-auto text-base font-bold text-white shadow-sm transition hover:brightness-95"
               >
                 💬 Join the team group chat
               </a>
@@ -113,7 +115,7 @@ export function RegistrationForm({
             <p className="text-sm text-slate-600">
               {result.email ? (
                 <>
-                  We&apos;ve emailed the details to <strong>{result.email}</strong>.
+                  We&apos;ve emailed the details to <strong className="block [overflow-wrap:anywhere]">{result.email}</strong>.
                 </>
               ) : (
                 <>We&apos;ll text you at {result.phone} with the details.</>
@@ -126,7 +128,7 @@ export function RegistrationForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       {seatsRemaining < 1 && (
         <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           This program is full. You can still sign up — you&apos;ll be added to the
@@ -147,19 +149,19 @@ export function RegistrationForm({
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="child_first_name">First name</Label>
-              <Input id="child_first_name" name="child_first_name" required autoComplete="off" />
+              <Input id="child_first_name" name="child_first_name" required autoComplete="off" className={FIELD} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="child_last_name">Last name</Label>
-              <Input id="child_last_name" name="child_last_name" required autoComplete="off" />
+              <Input id="child_last_name" name="child_last_name" required autoComplete="off" className={FIELD} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="child_grade">Grade</Label>
-              <Input id="child_grade" name="child_grade" placeholder="e.g. 3rd" />
+              <Input id="child_grade" name="child_grade" placeholder="e.g. 3rd" className={FIELD} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="child_date_of_birth">Date of birth</Label>
-              <Input id="child_date_of_birth" name="child_date_of_birth" type="date" />
+              <Input id="child_date_of_birth" name="child_date_of_birth" type="date" className={FIELD} />
             </div>
           </div>
         </div>
@@ -176,6 +178,7 @@ export function RegistrationForm({
                 name="parent_first_name"
                 required
                 autoComplete="given-name"
+                className={FIELD}
               />
             </div>
             <div className="space-y-1.5">
@@ -185,6 +188,7 @@ export function RegistrationForm({
                 name="parent_last_name"
                 required
                 autoComplete="family-name"
+                className={FIELD}
               />
             </div>
             <div className="space-y-1.5">
@@ -196,11 +200,12 @@ export function RegistrationForm({
                 required
                 autoComplete="tel"
                 placeholder="(214) 555-0123"
+                className={FIELD}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="parent_email">Email (optional)</Label>
-              <Input id="parent_email" name="parent_email" type="email" autoComplete="email" />
+              <Input id="parent_email" name="parent_email" type="email" autoComplete="email" className={FIELD} />
             </div>
           </div>
         </div>
@@ -209,25 +214,25 @@ export function RegistrationForm({
           <Label htmlFor="medical_notes">
             Anything we should know? (allergies, injuries, medical)
           </Label>
-          <Textarea id="medical_notes" name="medical_notes" rows={3} />
+          <Textarea id="medical_notes" name="medical_notes" rows={3} className="text-base sm:text-sm" />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="how_heard">How did you hear about us? (optional)</Label>
-          <Input id="how_heard" name="how_heard" placeholder="A friend, the school, Facebook…" />
+          <Input id="how_heard" name="how_heard" placeholder="A friend, the school, Facebook…" className={FIELD} />
         </div>
 
         {error && (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             {error}
           </p>
         )}
 
         <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm tabular-nums text-slate-600">
             ${monthlyFee.toFixed(0)}/month · no payment due right now
           </p>
-          <Button type="submit" size="lg" disabled={submitting}>
+          <Button type="submit" size="lg" disabled={submitting} className="h-12 w-full text-base sm:h-11 sm:w-auto">
             {submitting
               ? "Submitting…"
               : seatsRemaining < 1
