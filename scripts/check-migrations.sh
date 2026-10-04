@@ -2,7 +2,7 @@
 # Migrations are checked before they can reach production, where Ship runs
 # them before the new code is live and nothing can undo them.
 #
-#   BASE=<sha> [LABELS='["destructive-ok"]'] bash scripts/check-migrations.sh
+#   BASE=<sha> [LABELS='["destructive-ok"]'] [ORDER_CHECK=0] bash scripts/check-migrations.sh
 #
 # - Applied migrations are history: never edited, renamed or deleted.
 # - New ones are named YYYYMMDDHHMMSS_what_it_does.sql and sort after the
@@ -31,7 +31,10 @@ for f in $(echo "$changed" | awk '$1=="A"{print $2}'); do
     echo "::error file=$f::Name it YYYYMMDDHHMMSS_what_it_does.sql"
     status=1
   fi
-  if [[ ! "$name" > "$latest" ]]; then
+  # Order is checked on pull requests. Once merged, two PRs that each sorted
+  # last when they were checked can land in either order; Ship applies them
+  # with --include-all, so it passes ORDER_CHECK=0.
+  if [[ "${ORDER_CHECK:-1}" = 1 && ! "$name" > "$latest" ]]; then
     echo "::error file=$f::Must sort after $latest, the newest on main. Rename it with a later timestamp."
     status=1
   fi
