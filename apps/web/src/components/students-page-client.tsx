@@ -131,7 +131,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Grade</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Parents</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Schools & Programs</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Schools & Sessions</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
                     <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
                   </tr>

@@ -52,7 +52,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Coaches</h1>
             <p className="text-sm text-muted-foreground">
-              Who runs the sessions, and what they&apos;re owed.
+              Who runs the practices, and what they&apos;re owed.
             </p>
           </div>
         </div>
@@ -71,13 +71,13 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Covering sessions
+            Covering practices
           </p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{totals.covering}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Owed for sessions run
+            Owed for practices run
           </p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">
             {formatCurrency(totals.owed)}
@@ -85,7 +85,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
           {totals.unpriced > 0 && (
             <p className="mt-1 text-xs text-amber-700">
               {totals.unpriced} coach{totals.unpriced === 1 ? "" : "es"} without a
-              per-session rate isn&apos;t counted
+              per-practice rate isn&apos;t counted
             </p>
           )}
         </div>
@@ -97,7 +97,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
           <UserCheck className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-medium">No coaches yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Add the people who run your sessions, then assign them to a weekly slot on
+            Add the people who run your practices, then assign them to a weekly slot on
             the schedule.
           </p>
           <Button className="mt-4" size="sm" onClick={openNew}>

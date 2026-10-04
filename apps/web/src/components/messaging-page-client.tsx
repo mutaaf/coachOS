@@ -151,7 +151,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   variant={recipientMode === "program" ? "default" : "outline"}
                   onClick={() => chooseMode("program")}
                 >
-                  By Program
+                  By Session
                 </Button>
               </div>
               {recipientMode === "school" && (
@@ -164,7 +164,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
               )}
               {recipientMode === "program" && (
                 <Select
-                  placeholder="Select a program"
+                  placeholder="Select a session"
                   options={programs.map((p: any) => ({ value: p.id, label: `${p.school?.name ?? ""} — ${p.name}` }))}
                   value={selectedSchoolOrProgram}
                   onChange={(e) => chooseGroup("program", e.target.value)}

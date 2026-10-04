@@ -224,12 +224,12 @@ function Practice({ testMode }: { testMode: boolean }) {
         }`}
       >
         <p className="font-semibold">
-          {testMode ? "You're in test mode — practise freely." : "Card and bank payments are LIVE — real money moves."}
+          {testMode ? "You're in test mode — try anything." : "Card and bank payments are LIVE — real money moves."}
         </p>
         <p className="mt-1 text-sm">
           {testMode
-            ? "Card and bank payments here are practice runs with Stripe's test cards; nothing is charged. Zelle and cash are always real, so practise those with $1 or by recording a pretend payment."
-            : "Ask Mutaaf to switch back to test mode before practising card or bank payments."}
+            ? "Card and bank payments here are pretend, with Stripe's test cards; nothing is charged. Zelle and cash are always real, so try those with $1 or by recording a pretend payment."
+            : "Ask Mutaaf to switch back to test mode before trying card or bank payments."}
         </p>
       </div>
 
@@ -653,7 +653,7 @@ export function HelpPageClient({
         <div className="mb-4 overflow-x-auto" data-tour="help-tabs">
           <TabsList>
             <TabsTrigger value="how">How do I…</TabsTrigger>
-            <TabsTrigger value="practise">Practise</TabsTrigger>
+            <TabsTrigger value="practise">Try it out</TabsTrigger>
             <TabsTrigger value="tests">Test plan</TabsTrigger>
             <TabsTrigger value="reference">What things mean</TabsTrigger>
             <TabsTrigger value="new">What&rsquo;s new</TabsTrigger>

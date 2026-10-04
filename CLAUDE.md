@@ -227,6 +227,12 @@ something new bites — that is the point of it.**
 
 ## Working as an agent
 
+**Vocabulary.** On screen: a **Program** is made once (`ops.program_catalog`);
+a **Session** is a program at a school in a season (a row of `ops.programs`);
+a **Practice** is one date (a row of `ops.sessions`); a **Season** groups a
+term (`ops.seasons`). The table names predate the words — don't rename them.
+Parents still read "program" (join page, pay page, emails, the website).
+
 Agents open pull requests all day; each merges itself when Checks pass and
 ships straight to the owner. See [docs/RELEASING.md](./docs/RELEASING.md).
 

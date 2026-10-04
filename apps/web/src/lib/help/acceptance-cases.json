@@ -513,7 +513,7 @@
   "steps": [
    "In Settings → Payments, set Payment Due Day to 15 and Default Monthly Fee to 85. Save.",
    "Open the family’s payment page and read the small print under the Bank and Card buttons.",
-   "At the test school, press Add Program and look at the Monthly Fee. Close without saving. Press Import a roster, choose “+ New session” and look at the monthly fee.",
+   "At the test school, press Add session and look at the Monthly Fee. Close without saving. Press Import a roster, choose “+ New session” and look at the monthly fee.",
    "Ask Mutaaf to generate next month’s invoices for the test school, then look at their due date on Payments.",
    "Look through every Settings tab for Coach Name, Coach Phone, reminder times, Welcome Messages, Message Rate Limit or anything about session length.",
    "Put the original values back and save."
@@ -663,17 +663,17 @@
  {
   "id": "REG-03",
   "area": "Registration",
-  "title": "Signing up is celebrated, emailed once, and points to WhatsApp only when the program has a group",
+  "title": "Signing up is celebrated, emailed once, and points to WhatsApp only when the session has a group",
   "risk": "Families are told to wait for a WhatsApp message that never comes, or a group link reaches people without a place.",
   "severity": "high",
   "preconditions": [
-   "Two test programs with open places: one with a WhatsApp group invite link set (Edit program → WhatsApp group invite link), one without.",
+   "Two test sessions with open places: one with a WhatsApp group invite link set (Edit session → WhatsApp group invite link), one without.",
    "A test email address you can open."
   ],
   "steps": [
-   "On a phone, open the first program's sign-up link and register a test child with your email.",
+   "On a phone, open the first session's sign-up link and register a test child with your email.",
    "Look at the confirmation screen, then open the email.",
-   "Repeat on the second program (no group link).",
+   "Repeat on the second session (no group link).",
    "Fill the first program, then register one more child so they land on the waitlist."
   ],
   "expected": [
@@ -700,7 +700,7 @@
    "Open the email. Then try adding them again."
   ],
   "expected": [
-   "'Welcome to the team, <child>! ⭐' arrives with the first practice, the game-day checklist, a 'Set up payments' button to their payment page, and the group chat button if the program has one.",
+   "'Welcome to the team, <child>! ⭐' arrives with the first practice, the game-day checklist, a 'Set up payments' button to their payment page, and the group chat button if the session has one.",
    "Adding again sends nothing more."
   ],
   "evidence": "Screenshot of the welcome email.",
@@ -722,10 +722,10 @@
    "Open Payments again, then tap Restore on the cancelled child.",
    "Cancel them again the same way. Tap the waitlisted filter and read the order.",
    "Tap Give a seat on #2.",
-   "Tap Cancel on the question, then tap Give a seat to next in line on the program's seat card."
+   "Tap Cancel on the question, then tap Give a seat to next in line on the session's seat card."
   ],
   "expected": [
-   "Add to roster makes this month's bill for the program's fee, due a week from today.",
+   "Add to roster makes this month's bill for the session's fee, due a week from today.",
    "There is no Mark paid button. Paid shows only once a payment is recorded on Payments.",
    "Cancel asks first. Keep it changes nothing. After cancelling, the card shows Cancelled without Enrolled, and the unpaid bill is gone from Payments.",
    "Restore says the child has a seat, shows Enrolled again, and the bill is back.",
@@ -1673,26 +1673,26 @@
  {
   "id": "ZEL-16",
   "area": "Zelle",
-  "title": "A Zelle from a brand-new family creates the family, child, school and program together, and records the money",
-  "risk": "A payment from someone not yet set up sits unrecorded, or is forced onto the wrong family. A half-finished setup leaves a parent with no child, or a child with no program, who is then never billed.",
+  "title": "A Zelle from a brand-new family creates the family, child, school and session together, and records the money",
+  "risk": "A payment from someone not yet set up sits unrecorded, or is forced onto the wrong family. A half-finished setup leaves a parent with no child, or a child with no session, who is then never billed.",
   "severity": "critical",
   "preconditions": [
    "Test mode. A Zelle receipt from a sender not on file (ask Mutaaf to add one, or Zelle $1 from an account whose name isn't a parent's).",
-   "Pick a school name and program name that don't exist yet, e.g. 'Audit School' / 'Audit Program'."
+   "Pick a school name and session name that don't exist yet, e.g. 'Audit School' / 'Audit Session'."
   ],
   "steps": [
    "On Payments, in the Zelle box, tap 'Who paid this?' on the payment.",
    "Tap 'Someone new'. Note the name filled in from the Zelle sender.",
    "Enter a test phone number and tap 'Next: their child'. Enter a child first name.",
-   "Choose '+ A new school' and type the school name. Type the program name; note the monthly fee filled in.",
+   "Choose '+ A new school' and type the school name. Type the session name; note the monthly fee filled in.",
    "Tap 'Next: check it over' and read every line. Then tap 'Record'.",
    "Open Schools, then Students, and find what was added. Open Payments → Invoices."
   ],
   "expected": [
    "The parent's name is filled in from the sender, without a middle initial.",
    "The fee starts at the amount paid.",
-   "The summary lists the new family, new school, new program with its fee, the child being added, and whether the month is paid in full — before anything is saved.",
-   "After Record: the school, program, parent and child all exist and are linked; this month's invoice exists for the child at the program's fee and shows paid (or the remaining balance).",
+   "The summary lists the new family, new school, new session with its fee, the child being added, and whether the month is paid in full — before anything is saved.",
+   "After Record: the school, session, parent and child all exist and are linked; this month's invoice exists for the child at the session's fee and shows paid (or the remaining balance).",
    "The Zelle payment leaves the 'to check' list and appears under Recently recorded with the family's name.",
    "A second Zelle from the same sender records itself without asking."
   ],
@@ -1702,18 +1702,18 @@
  {
   "id": "ZEL-17",
   "area": "Zelle",
-  "title": "'Who paid this?' never makes a duplicate family, school or program, and saves nothing if a step is missing",
+  "title": "'Who paid this?' never makes a duplicate family, school or session, and saves nothing if a step is missing",
   "risk": "Duplicate families split a household's invoices and payments, so balances look wrong and parents are chased twice. A partial save leaves records that are never billed.",
   "severity": "high",
   "preconditions": [
-   "A test family on file with a known phone number and a child in a program."
+   "A test family on file with a known phone number and a child in a session."
   ],
   "steps": [
    "On Payments, tap 'Record Payment' (top right), enter an amount and choose Cash.",
    "Tap 'Someone new' and type the test family's phone number in a different format (e.g. with dots).",
    "Read the yellow message, then use the button offered.",
    "Close and start again: 'Record Payment' → 'Someone new', a new phone number, a child name, '+ A new school' with the name of an EXISTING school typed in capitals. Continue to the summary and record.",
-   "Start again with a new program but leave the monthly fee empty, and try to continue."
+   "Start again with a new session but leave the monthly fee empty, and try to continue."
   ],
   "expected": [
    "Typing an existing phone shows whose number it is and offers that family; 'Next' stays disabled until you use it.",
@@ -1887,13 +1887,13 @@
   "risk": "A parent gets a cut-off message, a broken payment link, or a message meant for another family, and money or trust is lost.",
   "severity": "critical",
   "preconditions": [
-   "Use a test family only: a test parent whose mobile number is a phone you hold (10-digit US number), linked to a test child enrolled in a test program.",
+   "Use a test family only: a test parent whose mobile number is a phone you hold (10-digit US number), linked to a test child enrolled in a test session.",
    "WhatsApp is installed on your phone and WhatsApp Web or WhatsApp Desktop is signed in on your computer.",
    "The Outbox has no real parent messages you might open by accident (check Messaging > Outbox first).",
    "For the Text check: an iPhone with Messages, logged in to the app in Safari (and an Android phone if available)."
   ],
   "steps": [
-   "Go to Messaging > Compose. Click By Program and choose the test program. Confirm only the test parent's name appears as a recipient chip.",
+   "Go to Messaging > Compose. Click By Session and choose the test session. Confirm only the test parent's name appears as a recipient chip.",
    "In the message box type exactly, on two lines: 'Test 1 — Tom & Jerry's fees: https://app.risingstars.training/pay/test?a=1&b=2' then on a new line 'Thanks & see you Tuesday! 50% off? #3 🏀'.",
    "Click 'Send to 1 recipient(s)'. Note the toast.",
    "Open the Outbox tab. Find the card for the test parent and tap the message text to expand it. Compare the name and phone shown on the card with the parent's record.",
@@ -1949,7 +1949,7 @@
   "severity": "high",
   "preconditions": [
    "IMPORTANT: Skip all skips EVERY waiting message in the Outbox, not just test ones. Run this only when the Outbox holds nothing but test messages, or agree it with the owner first.",
-   "At least three pending test messages (create them through Compose to the test program, sending twice if needed)."
+   "At least three pending test messages (create them through Compose to the test session, sending twice if needed)."
   ],
   "steps": [
    "On Outbox, click Skip on one test message.",
@@ -1976,11 +1976,11 @@
   "risk": "A family never gets payment or practice messages and nobody notices, or a badly typed number sends a child's details to a stranger.",
   "severity": "high",
   "preconditions": [
-   "Three test parents linked to children in the test program: one with no phone, one with a 9-digit phone (e.g. 214555010), and one with a phone typed with an extension (e.g. '214-555-0101 x12').",
+   "Three test parents linked to children in the test session: one with no phone, one with a 9-digit phone (e.g. 214555010), and one with a phone typed with an extension (e.g. '214-555-0101 x12').",
    "Make these edits in Students, and only on test parents."
   ],
   "steps": [
-   "Go to Messaging > Compose, click By Program, choose the test program and note how many recipients are shown and which names.",
+   "Go to Messaging > Compose, click By Session, choose the test session and note how many recipients are shown and which names.",
    "Type a short message and click Send.",
    "Open Outbox and find the cards for the three test parents.",
    "For each card, note which buttons are offered and what number is shown."
@@ -1997,7 +1997,7 @@
  {
   "id": "MSG-05",
   "area": "Messaging",
-  "title": "Compose one message to everyone in a program and check the recipient list and personalisation",
+  "title": "Compose one message to everyone in a session and check the recipient list and personalisation",
   "risk": "A message meant for one session goes to the wrong families, misses some, duplicates others, or arrives reading 'Hi {{parent_name}}'.",
   "severity": "high",
   "preconditions": [
@@ -2005,20 +2005,20 @@
    "Write down which parents should receive the message before starting."
   ],
   "steps": [
-   "Go to Messaging > Compose. Click By Program and select the test program (programs are listed as 'School — Program').",
+   "Go to Messaging > Compose. Click By Session and select the test session (sessions are listed as 'School — Session').",
    "Compare the recipient chips and the 'N recipient(s)' count with your expected list.",
    "From 'Use a template...' choose any template that contains {{parent_name}}, or type 'Hi {{parent_name}}, practice moves to 5pm.' using the variable buttons.",
    "Click 'Send to N recipient(s)'.",
    "Open Outbox and read each new card's text in full.",
    "Repeat using By School for the test school, and note whether each parent of a child at that school appears once.",
-   "With the test school's parents showing under By School, click By Program. Note the list, the recipient chips and the Send button before picking anything. Then click All Parents, then By School, and note them again."
+   "With the test school's parents showing under By School, click By Session. Note the list, the recipient chips and the Send button before picking anything. Then click All Parents, then By School, and note them again."
   ],
   "expected": [
-   "Recipients are exactly the parents of active children in the program: both parents of the two-parent child, the siblings' shared parent once, and nobody for the withdrawn child.",
+   "Recipients are exactly the parents of active children in the session: both parents of the two-parent child, the siblings' shared parent once, and nobody for the withdrawn child.",
    "The count on the button equals the number of cards created in the Outbox.",
    "Each message greets the parent by their own first name. Compose fills in {{parent_name}} only; a message with any other placeholder (e.g. {{student_name}}) is refused with 'A message to a group can only fill in {{parent_name}}…' and nothing goes to the Outbox. No card ever shows a raw {{…}}.",
-   "By School lists each parent once, even if they have children in several programs at that school.",
-   "Every switch between All Parents, By School and By Program clears the recipients: the list shows 'Select a school' or 'Select a program', no chips show, and Send is greyed out until you pick one. The chips never belong to a different school or program from the one shown."
+   "By School lists each parent once, even if they have children in several sessions at that school.",
+   "Every switch between All Parents, By School and By Session clears the recipients: the list shows 'Select a school' or 'Select a session', no chips show, and Send is greyed out until you pick one. The chips never belong to a different school or session from the one shown."
   ],
   "evidence": "Your expected recipient list, a screenshot of the recipient chips and count, and screenshots of every resulting Outbox card.",
   "phone": false
@@ -2036,7 +2036,7 @@
   "steps": [
    "Go to Messaging > Templates. Click Edit on the template used and change one word in Message Body only (do not change the Name). Click 'Update Template'.",
    "Open Outbox and read the pending message created before the edit.",
-   "Create a new message to the test program using the same template and read the new card.",
+   "Create a new message to the test session using the same template and read the new card.",
    "Put the template wording back and click 'Update Template'.",
    "Observation only, do not complete: click Delete on any template and note whether you are asked to confirm. If it deletes immediately, restore it with Add Template using the same Name, Category and Body, and record an exception."
   ],
@@ -2065,12 +2065,12 @@
    "Leave the Month as the current month and click 'Generate Invoices'. Read the toast before it disappears, or record the screen.",
    "Refresh and count this month's invoices again.",
    "Click Generate Invoices again for the same month and repeat the count.",
-   "Use the student filter to check that two or three individual children each have exactly one invoice for this month per program."
+   "Use the student filter to check that two or three individual children each have exactly one invoice for this month per session."
   ],
   "expected": [
    "Toast says 'All N invoice(s) already exist for this month' (or, if new children joined, how many were created and how many already existed).",
    "The invoice count does not change on the second run.",
-   "No child has two invoices for the same month and program."
+   "No child has two invoices for the same month and session."
   ],
   "evidence": "Screen recording of both runs including the toasts, and the before and after counts.",
   "phone": false
@@ -2082,7 +2082,7 @@
   "risk": "A family is double-billed, or a child trains for free because nobody noticed they were never invoiced.",
   "severity": "critical",
   "preconditions": [
-   "In the test program: Child A linked to two test parents, and Child B with NO parent linked. Both are enrolled and active.",
+   "In the test session: Child A linked to two test parents, and Child B with NO parent linked. Both are enrolled and active.",
    "Same caution as INV-01: generating bills every active enrolment not yet invoiced this month."
   ],
   "steps": [
@@ -2271,15 +2271,15 @@
  {
   "id": "INV-09",
   "area": "Invoicing & books",
-  "title": "Only programs that are running, and cost something, are invoiced",
-  "risk": "Scholarship families are charged $120, and families keep being invoiced (and charged by autopay) after a program has ended, been cancelled, or its school archived.",
+  "title": "Only sessions that are running, and cost something, are invoiced",
+  "risk": "Scholarship families are charged $120, and families keep being invoiced (and charged by autopay) after a session has ended, been cancelled, or its school archived.",
   "severity": "critical",
   "preconditions": [
    "A test school with four test programs, each with one test child whose parent is linked: “AUDIT FREE” with a monthly fee of 0, “AUDIT DONE” marked Completed, “AUDIT ENDED” with dates 2026-09-01 to 2026-12-15, and “AUDIT RUNNING” at $100 with no dates."
   ],
   "steps": [
-   "Open the school. Read the fee shown beside each program.",
-   "Add a program with a start date of 2026-12-01 and an end date of 2026-09-01 and press “Create Program”. Read the message.",
+   "Open the school. Read the fee shown beside each session.",
+   "Add a session with a start date of 2026-12-01 and an end date of 2026-09-01 and press “Create Session”. Read the message.",
    "Go to Payments → Generate invoices, choose February 2027 and generate.",
    "Choose November 2026 and generate again."
   ],
@@ -2289,7 +2289,7 @@
    "February 2027 creates one invoice only, for “AUDIT RUNNING”.",
    "November 2026 creates one more, for “AUDIT ENDED”. “AUDIT FREE” and “AUDIT DONE” never get an invoice."
   ],
-  "evidence": "Screenshot of the program list with the free program, the refusal message, and the Payments list after each run.",
+  "evidence": "Screenshot of the session list with the free session, the refusal message, and the Payments list after each run.",
   "phone": false
  },
  {
@@ -2299,10 +2299,10 @@
   "risk": "A new family's first invoice is overdue the day it is made, or an archived school's families go on being billed.",
   "severity": "high",
   "preconditions": [
-   "A test school with a $100 program, and the date is after the 1st of the month."
+   "A test school with a $100 session, and the date is after the 1st of the month."
   ],
   "steps": [
-   "Add a test child to the program today, with a parent linked.",
+   "Add a test child to the session today, with a parent linked.",
    "Go to Payments → Generate invoices for this month. Note the new invoice's due date and status.",
    "Open the school and press “Archive”. Read the box that opens, leave “End … place here too” switched on, and press “Archive school”.",
    "Generate invoices for next month."
@@ -2318,27 +2318,27 @@
  {
   "id": "SCH-01",
   "area": "Schedule & attendance",
-  "title": "Generate weekly sessions and confirm no week is missing or duplicated",
+  "title": "Generate weekly practices and confirm no week is missing or duplicated",
   "risk": "A practice is missing from the schedule (no reminders, no register) or doubled (double reminders, confusing records).",
   "severity": "high",
   "preconditions": [
-   "Under Schedule > Manage Templates, the test program has a weekly template (e.g. Tuesday 4:00 PM – 5:00 PM). Ideally, add a second test template on a weekday EARLIER in the week than today, and a third on today's weekday.",
-   "The test program has no end date within the next 4 weeks.",
-   "Generate Sessions creates the next 4 weeks for EVERY template, real ones included. This is normally harmless because existing sessions are skipped."
+   "Under Schedule > Manage Templates, the test session has a weekly template (e.g. Tuesday 4:00 PM – 5:00 PM). Ideally, add a second test template on a weekday EARLIER in the week than today, and a third on today's weekday.",
+   "The test session has no end date within the next 4 weeks.",
+   "Add practices creates the next 4 weeks for EVERY template, real ones included. This is normally harmless because existing practices are skipped."
   ],
   "steps": [
    "Click Manage Templates and note each test template's day and time.",
-   "Close it and click Generate Sessions. Note the toast.",
+   "Close it and click Add practices. Note the toast.",
    "Refresh the page (the grid may not update by itself). Use the arrows and the Today button to step through the next 4 weeks.",
-   "For each test template, list the dates on which a session appears.",
-   "Click Generate Sessions again, refresh and re-check."
+   "For each test template, list the dates on which a practice appears.",
+   "Click Add practices again, refresh and re-check."
   ],
   "expected": [
-   "Toast reads 'N session(s) generated'.",
-   "Each template has exactly one session in each of the next 4 weeks, on the correct weekday and time, starting today if today is that weekday. There are no gaps and no two sessions on the same date and time.",
-   "No sessions are created in the past or after the program's end date.",
-   "The second run reports '0 session(s) generated' and nothing is duplicated.",
-   "If the grid did not show the new sessions until a refresh, note it as a usability issue. If a run with no templates reports '0 session(s) generated' instead of an error, note that too."
+   "Toast reads 'N practice(s) added'.",
+   "Each template has exactly one practice in each of the next 4 weeks, on the correct weekday and time, starting today if today is that weekday. There are no gaps and no two practices on the same date and time.",
+   "No practices are created in the past or after the session's end date.",
+   "The second run reports '0 practice(s) added' and nothing is duplicated.",
+   "If the grid did not show the new practices until a refresh, note it as a usability issue. If a run with no templates reports '0 practice(s) added' instead of an error, note that too."
   ],
   "evidence": "Screenshots of Manage Templates, the toasts, and each of the 4 weeks in the grid.",
   "phone": false
@@ -2346,49 +2346,49 @@
  {
   "id": "SCH-02",
   "area": "Schedule & attendance",
-  "title": "Check sessions show on the right day in the week grid and Session Details, in the evening too",
+  "title": "Check practices show on the right day in the week grid and Practice details, in the evening too",
   "risk": "Coaches and the owner turn up on the wrong day, or attendance is taken against the wrong date.",
   "severity": "high",
   "preconditions": [
-   "Test sessions generated (SCH-01) on a known weekday, e.g. Tuesday.",
+   "Test practices generated (SCH-01) on a known weekday, e.g. Tuesday.",
    "Computer set to Central time. Part 2 must be done after 7pm Central (after 6pm Central from 1 November)."
   ],
   "steps": [
-   "Daytime: open Schedule. Note which day column the test Tuesday session appears under, and which column is highlighted as today.",
-   "Click the session. In Session Details, note the date line, program name and school name.",
+   "Daytime: open Schedule. Note which day column the test Tuesday practice appears under, and which column is highlighted as today.",
+   "Click the practice. In Practice details, note the date line, session name and school name.",
    "Evening (after 7pm Central): repeat both steps without changing anything else.",
    "Compare all four observations with the template's day in Manage Templates."
   ],
   "expected": [
-   "The session appears under Tue at all hours, and the today highlight is on today's real date.",
-   "Session Details shows the same date (e.g. 'Tuesday, October 6'), plus the program and school names.",
-   "Record a separate exception for each of these if it happens: in the evening, sessions appear one column off; at any time, Session Details shows the day before the grid's day; the program or school name is blank."
+   "The practice appears under Tue at all hours, and the today highlight is on today's real date.",
+   "Practice details shows the same date (e.g. 'Tuesday, October 6'), plus the session and school names.",
+   "Record a separate exception for each of these if it happens: in the evening, practices appear one column off; at any time, Practice details shows the day before the grid's day; the session or school name is blank."
   ],
-  "evidence": "Screenshots of the grid and Session Details, daytime and evening, with the computer clock visible.",
+  "evidence": "Screenshots of the grid and Practice details, daytime and evening, with the computer clock visible.",
   "phone": false
  },
  {
   "id": "SCH-03",
   "area": "Schedule & attendance",
-  "title": "Cancel a session and confirm it stays cancelled and cannot be used",
-  "risk": "Parents get a reminder for a cancelled practice, or a cancelled session quietly reappears or is used to record attendance.",
+  "title": "Cancel a practice and confirm it stays cancelled and cannot be used",
+  "risk": "Parents get a reminder for a cancelled practice, or a cancelled practice quietly reappears or is used to record attendance.",
   "severity": "medium",
   "preconditions": [
-   "A future test session in the grid, with status scheduled."
+   "A future test practice in the grid, with status scheduled."
   ],
   "steps": [
-   "Click the session, then Cancel Session. Leave the reason box ('Reason (optional)') empty and click Confirm Cancel. Note the message.",
+   "Click the practice, then Cancel practice. Leave the reason box ('Reason (optional)') empty and click Confirm Cancel. Note the message.",
    "Type a reason (e.g. 'Audit test – gym closed') and click Confirm Cancel.",
-   "Check the grid, then reopen the session.",
-   "Click Generate Sessions and refresh. Check the date again.",
-   "If the cancelled session is tomorrow: the next morning, check Messaging > Outbox for any practice reminder for it."
+   "Check the grid, then reopen the practice.",
+   "Click Add practices and refresh. Check the date again.",
+   "If the cancelled practice is tomorrow: the next morning, check Messaging > Outbox for any practice reminder for it."
   ],
   "expected": [
-   "With no reason, the cancellation is refused ('The session wasn't cancelled' with 'Cancellation reason is required.'). The box is labelled optional, so record this as a labelling mismatch.",
-   "With a reason: toast 'Session cancelled', and the session shows faded and struck through, with a Cancelled badge.",
+   "With no reason, the cancellation is refused ('The practice wasn't cancelled' with 'Cancellation reason is required.'). The box is labelled optional, so record this as a labelling mismatch.",
+   "With a reason: toast 'Practice cancelled', and the practice shows faded and struck through, with a Cancelled badge.",
    "When reopened, it shows status 'cancelled' and no Save & complete or Coach link buttons.",
    "Generating again does not recreate it.",
-   "No practice reminder is prepared for a cancelled session. Record that the app does not tell parents about the cancellation itself; the owner must message them."
+   "No practice reminder is prepared for a cancelled practice. Record that the app does not tell parents about the cancellation itself; the owner must message them."
   ],
   "evidence": "Screenshots of the error, the cancelled tile, the reopened dialog, and the Outbox the next morning.",
   "phone": false
@@ -2400,26 +2400,26 @@
   "risk": "The register is wrong or lost, so the business cannot show who attended (safeguarding and billing disputes).",
   "severity": "high",
   "preconditions": [
-   "A scheduled test session today for a test program with at least four active test children and one withdrawn test child.",
-   "A second scheduled test session at least a week ahead."
+   "A scheduled test practice today for a test session with at least four active test children and one withdrawn test child.",
+   "A second scheduled test practice at least a week ahead."
   ],
   "steps": [
-   "Click today's session. Check the list of children against the active enrolment.",
+   "Click today's practice. Check the list of children against the active enrolment.",
    "Click children to cycle their status: leave one present, and set one absent, one late and one excused.",
    "Check the 'x/y' counter, then click Save & complete.",
-   "Reopen the session. Check the badge, the counter and each child's status.",
-   "Change one child's status and click Save changes. Reopen the session.",
-   "Open the session a week or more ahead."
+   "Reopen the practice. Check the badge, the counter and each child's status.",
+   "Change one child's status and click Save changes. Reopen the practice.",
+   "Open the practice a week or more ahead."
   ],
   "expected": [
    "Only active children are listed. The withdrawn child is not. There is one Save & complete button, with no separate Save Attendance or Mark Complete.",
    "Clicking cycles present > absent > late > excused > present, and the counter counts present and late.",
    "Toast 'Attendance saved and practice complete'.",
    "The badge shows 'completed', the counter matches what you saved, and every child's status is as you set it.",
-   "Toast 'Attendance saved'. On reopening, the change is kept and the session is still completed.",
+   "Toast 'Attendance saved'. On reopening, the change is kept and the practice is still completed.",
    "Save & complete is greyed out, with 'This practice hasn't happened yet. Take the register and complete it on the day.'"
   ],
-  "evidence": "Screenshots before saving, after reopening the completed session, after the correction, and of the future session.",
+  "evidence": "Screenshots before saving, after reopening the completed practice, after the correction, and of the future practice.",
   "phone": false
  },
  {
@@ -2429,19 +2429,19 @@
   "risk": "Coaches cannot take the register at the gym, so attendance is not recorded.",
   "severity": "high",
   "preconditions": [
-   "A scheduled test session today or soon, with active test children. One test child has a medical note.",
+   "A scheduled test practice today or soon, with active test children. One test child has a medical note.",
    "A phone that is NOT logged in to the app (use a private browsing window)."
   ],
   "steps": [
-   "On the computer, open the session and click Coach link. Note the link, the 6-digit passcode and the validity text. Click 'Copy link and passcode' and send it to the phone by WhatsApp.",
-   "Close and reopen the session dialog. Note whether the passcode can be seen again.",
+   "On the computer, open the practice and click Coach link. Note the link, the 6-digit passcode and the validity text. Click 'Copy link and passcode' and send it to the phone by WhatsApp.",
+   "Close and reopen the practice dialog. Note whether the passcode can be seen again.",
    "On the phone, open the link. Check the screen before entering anything.",
    "Enter the passcode and tap Open register.",
    "Tap names to set one child Away and one Late, then tap Save register.",
-   "On the computer, reopen the session and check the statuses."
+   "On the computer, reopen the practice and check the statuses."
   ],
   "expected": [
-   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Works until [day, date, time]. The passcode isn't shown again — copy it now.' The time is 6 hours after the practice ends (or 12 hours from now, if that is later), so a link made the evening before still works at the practice. The copied text names the session's day ('today's session', 'tomorrow's session', or 'the session on' its date) and includes the link and the passcode.",
+   "A box 'Send this to the coach' shows a link ending /s/..., a 6-digit passcode, and 'Works until [day, date, time]. The passcode isn't shown again — copy it now.' The time is 6 hours after the practice ends (or 12 hours from now, if that is later), so a link made the evening before still works at the practice. The copied text names the practice's day ('today's practice', 'tomorrow's practice', or 'the practice on' its date) and includes the link and the passcode.",
    "After reopening, the passcode is not shown again.",
    "On the phone, before the passcode is entered, the page shows only 'Take the register' and a passcode box, with no child names. Open register stays disabled until 6 digits are entered.",
    "After unlocking, the page shows the program, school, date and time, 'N of M here', the active children, their medical notes, and Here/Away/Late/Excused buttons.",
@@ -2453,13 +2453,13 @@
  {
   "id": "SCH-06",
   "area": "Schedule & attendance",
-  "title": "Lock a coach link with wrong passcodes, and confirm replaced, expired and cancelled-session links are refused",
+  "title": "Lock a coach link with wrong passcodes, and confirm replaced, expired and cancelled-practice links are refused",
   "risk": "Anyone who has or guesses a link could see children's names and medical notes, and old links keep working after they should not.",
   "severity": "critical",
   "preconditions": [
-   "A fresh coach link and passcode for a test session (Coach link button), opened on a phone in a private window.",
+   "A fresh coach link and passcode for a test practice (Coach link button), opened on a phone in a private window.",
    "A timer.",
-   "For the replaced-link check: a second Coach link issued for the same session. There is no separate Revoke button; issuing a new link is the only way to switch off the old one.",
+   "For the replaced-link check: a second Coach link issued for the same practice. There is no separate Revoke button; issuing a new link is the only way to switch off the old one.",
    "For the expiry check: a link whose 'Works until' time has passed (note the time when you issue it)."
   ],
   "steps": [
@@ -2468,10 +2468,10 @@
    "Now enter the CORRECT passcode. Note the message and the time.",
    "Try the correct passcode again after 5 minutes, and again after 16 minutes.",
    "Optional: change one character of the link and enter the correct passcode.",
-   "Issue link A for a test session and confirm it unlocks. Then close and reopen the session and click Coach link again to issue link B. On the phone, open link A with passcode A, then link B with passcode B.",
+   "Issue link A for a test practice and confirm it unlocks. Then close and reopen the practice and click Coach link again to issue link B. On the phone, open link A with passcode A, then link B with passcode B.",
    "Try a link after its 'Works until' time, with its correct passcode.",
-   "Issue a link for another test session, cancel that session (with a reason), then open the link with its passcode.",
-   "Issue a link for a third test session (today or earlier), click Save & complete on it, then open the link with its passcode."
+   "Issue a link for another test practice, cancel that practice (with a reason), then open the link with its passcode.",
+   "Issue a link for a third test practice (today or earlier), click Save & complete on it, then open the link with its passcode."
   ],
   "expected": [
    "Each wrong attempt shows 'That link or passcode is not right.' and no child data.",
@@ -2480,8 +2480,8 @@
    "A tampered link gives the same 'not right' message, which reveals nothing about whether the link exists.",
    "Link A is refused with 'This link has been turned off. Ask for a new one.' Link B works.",
    "The link past its time is refused with 'This link has expired. Ask for a new one.'",
-   "The cancelled session's link is refused with 'This link has been turned off. Ask for a new one.' and shows no children; nothing can be saved. Record as an observation that, short of cancelling, the owner cannot switch off a link without issuing a new one.",
-   "The completed session's link is refused with 'This practice is finished, so its register is closed.'"
+   "The cancelled practice's link is refused with 'This link has been turned off. Ask for a new one.' and shows no children; nothing can be saved. Record as an observation that, short of cancelling, the owner cannot switch off a link without issuing a new one.",
+   "The completed practice's link is refused with 'This practice is finished, so its register is closed.'"
   ],
   "evidence": "Screen recording of all passcode attempts with a clock visible. Screenshots of the lock message, the later successful unlock with times, and each refusal message with the time the link was issued and the time it was tested.",
   "phone": true
@@ -2493,7 +2493,7 @@
   "risk": "A coach, or anyone a link is forwarded to, sees parents' phone numbers, addresses, fees or children from other sessions.",
   "severity": "critical",
   "preconditions": [
-   "A test session with test children whose records include parent names, phone numbers, emails, fees owed and medical notes.",
+   "A test practice with test children whose records include parent names, phone numbers, emails, fees owed and medical notes.",
    "A valid coach link and passcode, opened on a phone in a private window."
   ],
   "steps": [
@@ -2519,25 +2519,25 @@
   "risk": "A Tuesday practice shows as Monday, or after 7pm the week slides a day, so she tells parents and coaches the wrong day.",
   "severity": "high",
   "preconditions": [
-   "A test program with a start date of the 1st of a month, and test sessions today, tomorrow and on a Tuesday.",
+   "A test session with a start date of the 1st of a month, and test practices today, tomorrow and on a Tuesday.",
    "A test lead on Marketing with a follow-up date of today, and another of yesterday.",
    "Best done after 7pm Dallas time, when the mistake used to show."
   ],
   "steps": [
    "Open Schedule. Find today's column and tomorrow's column.",
-   "Click the Tuesday session and read the date at the top of the dialog. Click Coach link, then 'Copy link and passcode', and paste it somewhere to read it.",
-   "Open the test program's school and read the program's dates, then the Schedule tab's upcoming sessions.",
-   "Open the Dashboard and read the greeting and the labels next to upcoming sessions.",
+   "Click the Tuesday practice and read the date at the top of the dialog. Click Coach link, then 'Copy link and passcode', and paste it somewhere to read it.",
+   "Open the test session's school and read the session's dates, then the Schedule tab's upcoming practices.",
+   "Open the Dashboard and read the greeting and the labels next to upcoming practices.",
    "Open Marketing and read the two test leads' follow-up dates."
   ],
   "expected": [
-   "Today's column is highlighted and holds today's session; tomorrow's session is in the next column.",
-   "The dialog says Tuesday and the right date. The copied text says 'today's session', 'tomorrow's session', or 'the session on' the day, matching the session.",
-   "The program starts on the 1st, not the last day of the month before. Upcoming sessions show the right weekday.",
-   "The greeting matches the time of day in Dallas. Today's session says Today and tomorrow's says Tomorrow.",
+   "Today's column is highlighted and holds today's practice; tomorrow's practice is in the next column.",
+   "The dialog says Tuesday and the right date. The copied text says 'today's practice', 'tomorrow's practice', or 'the practice on' the day, matching the practice.",
+   "The session starts on the 1st, not the last day of the month before. Upcoming practices show the right weekday.",
+   "The greeting matches the time of day in Dallas. Today's practice says Today and tomorrow's says Tomorrow.",
    "Today's follow-up shows today's date in blue. Yesterday's shows yesterday's date in red."
   ],
-  "evidence": "Screenshots of the Schedule week, the session dialog, the school's program and sessions, the dashboard, and the two leads, with the time they were taken.",
+  "evidence": "Screenshots of the Schedule week, the practice dialog, the school's session and practices, the dashboard, and the two leads, with the time they were taken.",
   "phone": false
  },
  {
@@ -2547,14 +2547,14 @@
   "risk": "Changing 9:00 to 9:15 put two practices on every Saturday, and practices never carried the coach, so the calendar was wrong and coach pay came up short.",
   "severity": "high",
   "preconditions": [
-   "A test program with a weekly template (e.g. Saturday 9:00 – 10:00) with a test coach set, and its next 4 weeks generated.",
+   "A test session with a weekly template (e.g. Saturday 9:00 – 10:00) with a test coach set, and its next 4 weeks generated.",
    "A second active test coach."
   ],
   "steps": [
    "Click one of the generated practices and read the Coach box.",
    "Open Manage Templates and click the pencil next to the test template. Read the Coach box.",
    "Change the start time to 9:15 and the end time to 10:15, leave 'Also change the practices already on the calendar' ticked, and click Save Changes.",
-   "Click Generate Sessions, then step through the next 4 weeks.",
+   "Click Add practices, then step through the next 4 weeks.",
    "Click one upcoming test practice and pick the second test coach under Coach. Close it, reopen it, then open Coaches."
   ],
   "expected": [
@@ -2706,19 +2706,19 @@
   "id": "PAY-23",
   "area": "Payments",
   "title": "Editing a parent or coach keeps how they pay and are paid",
-  "risk": "Fixing a phone number quietly switches a Zelle family to cash, so their Zelle payments stop matching, or turns an hourly coach's rate into a per-session one.",
+  "risk": "Fixing a phone number quietly switches a Zelle family to cash, so their Zelle payments stop matching, or turns an hourly coach's rate into a per-practice one.",
   "severity": "high",
   "preconditions": [
    "A test parent whose preferred payment is Zelle, with a Zelle email or phone filled in.",
-   "A test coach paid hourly, and a second test coach paid per session."
+   "A test coach paid hourly, and a second test coach paid per practice."
   ],
   "steps": [
    "On Students & Parents, open Parents and tap the pencil on the Zelle parent. Look at Preferred Payment, change only the phone number, and tap Update. Open the same parent again.",
-   "On Coaches, tap the pencil on the per-session coach, then Cancel. Tap the pencil on the hourly coach and look at Paid and the rate. Change only the notes and tap Save Changes. Open the same coach again."
+   "On Coaches, tap the pencil on the per-practice coach, then Cancel. Tap the pencil on the hourly coach and look at Paid and the rate. Change only the notes and tap Save Changes. Open the same coach again."
   ],
   "expected": [
    "The parent opens on Zelle with their Zelle email or phone showing, both before and after the save, and the new phone number is kept.",
-   "The hourly coach opens on Hourly with 'Rate per hour' and their rate, both before and after the save — never on Per session."
+   "The hourly coach opens on Hourly with 'Rate per hour' and their rate, both before and after the save — never on Per practice."
   ],
   "evidence": "Screenshots of the parent and coach dialogs reopened after saving.",
   "phone": false

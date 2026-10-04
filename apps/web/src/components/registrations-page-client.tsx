@@ -186,7 +186,7 @@ export function RegistrationsPageClient({
         toast.success(
           result.status === "confirmed"
             ? `Restored — ${r.child_first_name} has a seat`
-            : `Restored — the program is full, so ${r.child_first_name} is back on the waitlist`
+            : `Restored — the session is full, so ${r.child_first_name} is back on the waitlist`
         );
         router.refresh();
       } finally {
@@ -220,7 +220,7 @@ export function RegistrationsPageClient({
         </h2>
         {availability.length === 0 ? (
           <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-            No active programs yet. Create one under Schools, set its capacity, and turn on
+            No active sessions yet. Put a program on at a school under Programs, set its capacity, and turn on
             registration to get a shareable link.
           </p>
         ) : (
@@ -310,7 +310,7 @@ export function RegistrationsPageClient({
             value={programFilter}
             onChange={(e) => setProgramFilter(e.target.value)}
             options={[
-              { value: "all", label: "All programs" },
+              { value: "all", label: "All sessions" },
               ...availability.map((p) => ({ value: p.program_id, label: p.name })),
             ]}
           />
@@ -462,7 +462,7 @@ export function RegistrationsPageClient({
                 onChange={(e) => setWithdraw(e.target.checked)}
               />
               <span>
-                Also take {cancelling.child_first_name} off the {cancelling.program?.name ?? "program"} roster. They
+                Also take {cancelling.child_first_name} off the {cancelling.program?.name ?? "session"} roster. They
                 won&apos;t be billed again, and a bill that isn&apos;t due yet with nothing paid on it is removed.
               </span>
             </label>

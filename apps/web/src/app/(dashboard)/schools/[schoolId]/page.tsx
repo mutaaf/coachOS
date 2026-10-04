@@ -1,3 +1,4 @@
+import { getProgramsPage } from "@/lib/queries/catalog";
 import { notFound } from "next/navigation";
 import {
   getSchoolWithPrograms,
@@ -40,6 +41,7 @@ export default async function SchoolDetailPage({
     allParents,
     websiteListings,
     defaultMonthlyFee,
+    catalogPage,
   ] = await Promise.all([
     getSchoolStudents(params.schoolId),
     getSchoolSessions(params.schoolId),
@@ -48,6 +50,7 @@ export default async function SchoolDetailPage({
     getParents(),
     getWebsiteListings(),
     getDefaultMonthlyFee(),
+    getProgramsPage(),
   ]);
 
   return (
@@ -62,6 +65,8 @@ export default async function SchoolDetailPage({
       allParents={allParents}
       websiteListings={websiteListings}
       defaultMonthlyFee={defaultMonthlyFee}
+      catalog={catalogPage.programs.filter((p) => p.status === "active")}
+      seasons={catalogPage.seasons}
     />
   );
 }

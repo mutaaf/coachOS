@@ -33,7 +33,7 @@ test("adding a program with registration open produces a working parent link", a
   await signIn(page);
   await page.goto(`/schools/${school!.id}`);
 
-  await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+  await page.getByRole("button", { name: /add session|add first session/i }).first().click();
 
   await page.locator("#name").fill("Basketball Fundamentals - Tuesdays");
   await page.locator("#monthly_fee").fill("150");
@@ -41,7 +41,7 @@ test("adding a program with registration open produces a working parent link", a
   await page.locator("#location").fill("Al-Noor Gym");
   await page.getByRole("switch", { name: /open registration/i }).click();
 
-  await page.getByRole("button", { name: "Create Program", exact: true }).click();
+  await page.getByRole("button", { name: "Create Session", exact: true }).click();
 
   // The program is registerable, and the slug was generated rather than typed.
   await expect
@@ -83,9 +83,9 @@ test("a program left closed has no working link yet", async ({ page }) => {
   await signIn(page);
   await page.goto(`/schools/${school!.id}`);
 
-  await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+  await page.getByRole("button", { name: /add session|add first session/i }).first().click();
   await page.locator("#name").fill("Not Open Yet");
-  await page.getByRole("button", { name: "Create Program", exact: true }).click();
+  await page.getByRole("button", { name: "Create Session", exact: true }).click();
 
   await expect
     .poll(async () => {
@@ -122,9 +122,9 @@ test("two programs with the same name at one school get distinct links", async (
 
   for (let i = 0; i < 2; i++) {
     await page.goto(`/schools/${school!.id}`);
-    await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+    await page.getByRole("button", { name: /add session|add first session/i }).first().click();
     await page.locator("#name").fill("Soccer Skills");
-    await page.getByRole("button", { name: "Create Program", exact: true }).click();
+    await page.getByRole("button", { name: "Create Session", exact: true }).click();
     await expect
       .poll(async () => {
         const { count } = await admin

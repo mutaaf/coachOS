@@ -140,9 +140,9 @@ describe("stored days and the business's clock", () => {
   });
 
   it("does not call tomorrow's practice today's in the coach's message", () => {
-    expect(sessionDayPhrase("2026-10-06", tuesdayMorning)).toBe("today's session");
-    expect(sessionDayPhrase("2026-10-07", tuesdayMorning)).toBe("tomorrow's session");
-    expect(sessionDayPhrase("2026-10-09", tuesdayMorning)).toBe("the session on Friday, October 9");
+    expect(sessionDayPhrase("2026-10-06", tuesdayMorning)).toBe("today's practice");
+    expect(sessionDayPhrase("2026-10-07", tuesdayMorning)).toBe("tomorrow's practice");
+    expect(sessionDayPhrase("2026-10-09", tuesdayMorning)).toBe("the practice on Friday, October 9");
   });
 
   it("puts a practice's time on Dallas's clock, either side of the clocks changing", () => {

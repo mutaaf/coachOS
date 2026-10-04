@@ -44,7 +44,7 @@ test("Help is in the menu, guides tick through, and Show me walks there", async 
 test("the practise tab says which mode Stripe is in and offers test cards", async ({ page }) => {
   await signIn(page);
   await page.goto("/help?tab=practise");
-  await expect(page.getByText(/test mode — practise freely/)).toBeVisible();
+  await expect(page.getByText(/test mode — try anything/)).toBeVisible();
   await expect(page.getByText("4242 4242 4242 4242", { exact: true }).first()).toBeVisible();
   await expect(page.getByTestId("practice").first()).toBeVisible();
 });

@@ -27,6 +27,7 @@ const STOPS: { title: RegExp; url: RegExp; spotlight: boolean }[] = [
   { title: /Welcome to CoachOS/, url: /\/dashboard/, spotlight: false },
   { title: /Your getting-started list/, url: /\/dashboard/, spotlight: true },
   { title: /Today at a glance/, url: /\/dashboard/, spotlight: true },
+  { title: /Programs, sessions and seasons/, url: /\/programs/, spotlight: true },
   { title: /Start here: import a roster/, url: /\/schools/, spotlight: true },
   { title: /Schools and sessions/, url: /\/schools/, spotlight: true },
   { title: /Students and parents/, url: /\/students/, spotlight: true },

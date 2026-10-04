@@ -52,7 +52,7 @@ test("By School → By Program sends only to the program picked", async ({ page 
   await expect(card.getByText("Lena Test")).toBeVisible();
   await expect(page.getByRole("button", { name: "Send to 2 recipient(s)" })).toBeEnabled();
 
-  await page.getByRole("button", { name: "By Program" }).click();
+  await page.getByRole("button", { name: "By Session" }).click();
   // Nothing picked yet: the placeholder shows, nobody is listed, and Send waits.
   await expect(card.locator("select")).toHaveValue("");
   await expect(card.getByText("Lena Test")).toHaveCount(0);

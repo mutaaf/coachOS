@@ -52,8 +52,8 @@ test("editing a weekly time keeps the coach, moves the practices, and never doub
 
   await signIn(page);
   await page.goto("/schedule");
-  await page.getByRole("button", { name: "Generate Sessions" }).click();
-  await expect(page.getByText(/session\(s\) generated/)).toBeVisible();
+  await page.getByRole("button", { name: "Add practices" }).click();
+  await expect(page.getByText(/practice\(s\) added/)).toBeVisible();
 
   const { data: generated } = await admin.from("sessions").select("coach_id").eq("program_id", programId);
   expect(generated!.length).toBeGreaterThan(0);
@@ -73,8 +73,8 @@ test("editing a weekly time keeps the coach, moves the practices, and never doub
   expect(template!.coach_id).toBe(ahmed);
 
   await page.goto("/schedule");
-  await page.getByRole("button", { name: "Generate Sessions" }).click();
-  await expect(page.getByText("0 session(s) generated")).toBeVisible();
+  await page.getByRole("button", { name: "Add practices" }).click();
+  await expect(page.getByText("0 practice(s) added")).toBeVisible();
 
   const { data: after } = await admin.from("sessions").select("date, start_time").eq("program_id", programId);
   expect(new Set(after!.map((s) => s.date)).size).toBe(after!.length);

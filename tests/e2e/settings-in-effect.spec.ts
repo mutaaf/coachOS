@@ -54,7 +54,7 @@ test("the default monthly fee is filled in for a new program", async ({ page }) 
 
   await signIn(page);
   await page.goto(`/schools/${school!.id}`);
-  await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+  await page.getByRole("button", { name: /add session|add first session/i }).first().click();
   await expect(page.locator("#monthly_fee")).toHaveValue("85");
 });
 

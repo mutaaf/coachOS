@@ -47,12 +47,12 @@ export async function createAttendanceLink(sessionId: string) {
     .maybeSingle();
 
   if (sessionError) return { error: sessionError.message };
-  if (!session) return { error: "That session no longer exists." };
+  if (!session) return { error: "That practice no longer exists." };
   if (session.status === "cancelled") {
-    return { error: "That session was cancelled, so there is no register to take." };
+    return { error: "That practice was cancelled, so there is no register to take." };
   }
   if (session.status !== "scheduled") {
-    return { error: "That session is finished, so its register is closed." };
+    return { error: "That practice is finished, so its register is closed." };
   }
 
   const token = generateToken();

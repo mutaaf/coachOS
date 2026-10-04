@@ -53,7 +53,7 @@ export function GenerateInvoicesDialog({ open, onOpenChange }: GenerateInvoicesD
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <p className="text-sm text-muted-foreground">
-            Creates an invoice for every child in a program that runs that month. Free programs, programs that are finished or cancelled, archived schools, and invoices that already exist are left out.
+            Creates an invoice for every child in a session that runs that month. Free sessions, sessions that are finished or cancelled, archived schools, and invoices that already exist are left out.
           </p>
           <div className="space-y-2">
             <Label htmlFor="month">Month</Label>

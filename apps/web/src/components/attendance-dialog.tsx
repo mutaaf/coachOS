@@ -120,8 +120,8 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
 
   async function handleCancel() {
     const ok = await run(() => cancelSession(session.id, cancelReason), {
-      success: "Session cancelled",
-      error: "The session wasn't cancelled",
+      success: "Practice cancelled",
+      error: "The practice wasn't cancelled",
     });
     if (ok) onOpenChange(false);
   }
@@ -188,7 +188,7 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Session Details</DialogTitle>
+          <DialogTitle>Practice details</DialogTitle>
         </DialogHeader>
 
         {/* Session Info */}
@@ -253,7 +253,7 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
                   ))}
                 </div>
               ) : roster.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No students enrolled in this program.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No students enrolled in this session.</p>
               ) : (
                 roster.map((student) => {
                   const status = statusOf(student.id);
@@ -297,7 +297,7 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
             ) : (
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" size="sm" className="text-red-600" onClick={() => setShowCancel(!showCancel)}>
-                  Cancel Session
+                  Cancel practice
                 </Button>
                 <Button
                   size="sm"

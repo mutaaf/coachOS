@@ -90,10 +90,10 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
     setGenerating(true);
     try {
       const result = await generateSessions(null, 4);
-      toast.success(`${result.data?.sessionsCreated || 0} session(s) generated`);
+      toast.success(`${result.data?.sessionsCreated || 0} practice(s) added`);
       setWeekOffset((w) => w); // trigger refetch
     } catch {
-      toast.error("Failed to generate sessions");
+      toast.error("Failed to add practices");
     } finally {
       setGenerating(false);
     }
@@ -159,7 +159,7 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
           </Button>
           <Button onClick={handleGenerate} disabled={generating} variant="outline">
             <RefreshCw className={`h-4 w-4 mr-2 ${generating ? "animate-spin" : ""}`} />
-            {generating ? "Generating..." : "Generate Sessions"}
+            {generating ? "Adding..." : "Add practices"}
           </Button>
         </div>
       </div>
@@ -178,7 +178,7 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
         </div>
         <Select
           options={[
-            { value: "", label: "All Programs" },
+            { value: "", label: "All sessions" },
             ...programs.map((p: any) => ({ value: p.id, label: `${p.school?.name} — ${p.name}` })),
           ]}
           value={filterProgram}

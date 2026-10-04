@@ -89,7 +89,7 @@ export async function deleteCoach(id: string) {
 
   if ((count ?? 0) > 0) {
     return {
-      error: `This coach is on ${count} session${count === 1 ? "" : "s"}. Mark them inactive instead, so the record of who ran them survives.`,
+      error: `This coach is on ${count} practice${count === 1 ? "" : "s"}. Mark them inactive instead, so the record of who ran them survives.`,
     };
   }
 

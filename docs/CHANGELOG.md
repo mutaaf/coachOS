@@ -5,6 +5,16 @@ All notable changes to CoachOS.
 ## [Unreleased]
 
 ### Added
+- **Programs, sessions and seasons.** A **Programs** page: make a program
+  once (name, description, ages, usual fee and places), then put it on at a
+  school in a season — a **session**, which can start with an empty roster.
+  **Seasons** (Fall 2026…) have dates and days with no practice. On screen,
+  what was a school's "program" is now a **session**, and a single date is a
+  **practice**; parents still see "program". The school page's Add session
+  picks the program and season. Existing programs became programs plus
+  sessions, and free-text seasons became seasons
+
+### Added
 - **Website** in the menu: the programs, testimonials and partnerships on
   risingstars.training, edited from CoachOS (no more legacy admin). Add a
   listing from a CoachOS program and its title, dates, place and price fill

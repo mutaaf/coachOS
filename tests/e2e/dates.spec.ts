@@ -96,7 +96,7 @@ test("the session dialog names the practice's own day, and the coach link says w
   await page.getByRole("button", { name: "Coach link" }).click();
   await page.getByRole("button", { name: "Copy link and passcode" }).click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toMatch(/^Register for tomorrow's session:/);
+  expect(copied).toMatch(/^Register for tomorrow's practice:/);
 });
 
 test("the school page shows program dates and sessions on their own days", async ({ page }) => {

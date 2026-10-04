@@ -24,10 +24,10 @@ test("a program with a $0 fee is saved and shown as free", async ({ page }) => {
   await signIn(page);
   await page.goto(`/schools/${schoolId}`);
 
-  await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+  await page.getByRole("button", { name: /add session|add first session/i }).first().click();
   await page.locator("#name").fill("Scholarship Squad");
   await page.locator("#monthly_fee").fill("0");
-  await page.getByRole("button", { name: "Create Program", exact: true }).click();
+  await page.getByRole("button", { name: "Create Session", exact: true }).click();
 
   await expect(page.getByText("Free – no invoices")).toBeVisible();
   const { data } = await admin.from("programs").select("monthly_fee").eq("name", "Scholarship Squad").single();
@@ -39,11 +39,11 @@ test("a program can't end before it starts", async ({ page }) => {
   await signIn(page);
   await page.goto(`/schools/${schoolId}`);
 
-  await page.getByRole("button", { name: /add program|create first program/i }).first().click();
+  await page.getByRole("button", { name: /add session|add first session/i }).first().click();
   await page.locator("#name").fill("Backwards");
   await page.locator("#start_date").fill("2026-12-01");
   await page.locator("#end_date").fill("2026-09-01");
-  await page.getByRole("button", { name: "Create Program", exact: true }).click();
+  await page.getByRole("button", { name: "Create Session", exact: true }).click();
 
   await expect(page.getByText("The end date is before the start date.")).toBeVisible();
   const { count } = await admin.from("programs").select("*", { count: "exact", head: true }).eq("name", "Backwards");
