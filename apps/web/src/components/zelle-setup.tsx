@@ -62,7 +62,7 @@ function LinkButton({ href, children }: { href: string; children: React.ReactNod
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white hover:bg-slate-800"
+      className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
     >
       {children}
     </a>
@@ -92,7 +92,7 @@ export function ZelleSetupSteps({
 
       <ol className="space-y-4">
         <li>
-          <p className="font-medium">1. Open Gmail as {inbox || "the Gmail your Zelle alerts reach"}</p>
+          <p className="break-words font-medium">1. Open Gmail as {inbox || "the Gmail your Zelle alerts reach"}</p>
           <p className="mt-0.5 text-muted-foreground">Signed in to that account — the script reads its inbox.</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {inbox && (
@@ -100,7 +100,7 @@ export function ZelleSetupSteps({
                 <Mail className="h-4 w-4" /> Open Gmail
               </LinkButton>
             )}
-            {inbox && <CopyButton value={inbox} label="Copy address" />}
+            {inbox && <CopyButton value={inbox} label="Copy address" className="h-11" />}
           </div>
         </li>
 
@@ -121,7 +121,7 @@ export function ZelleSetupSteps({
             <CopyButton value={script} label="Copy the script" size="md" className="bg-slate-900 text-white hover:bg-slate-800 [&_svg]:text-white" />
           </div>
           <details className="mt-2">
-            <summary className="cursor-pointer text-xs text-muted-foreground">Show the script</summary>
+            <summary className="flex min-h-11 cursor-pointer items-center text-xs text-muted-foreground">Show the script</summary>
             <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-slate-950 p-3 text-[11px] leading-relaxed text-slate-100">
               {script}
             </pre>
@@ -138,14 +138,14 @@ export function ZelleSetupSteps({
 
         {forwardFrom && (
           <li>
-            <p className="font-medium">5. From now on, forward Zelle alerts from {forwardFrom}</p>
-            <p className="mt-0.5 text-muted-foreground">
+            <p className="break-words font-medium">5. From now on, forward Zelle alerts from {forwardFrom}</p>
+            <p className="mt-0.5 break-words text-muted-foreground">
               Forward each one, unchanged, to {inbox || "the Gmail above"} — from your phone is fine. It&apos;s
               recorded within 15 minutes.
             </p>
             {inbox && (
               <div className="mt-2 flex flex-wrap gap-2">
-                <CopyButton value={inbox} label="Copy address to forward to" />
+                <CopyButton value={inbox} label="Copy address to forward to" className="h-11" />
               </div>
             )}
           </li>
@@ -153,19 +153,19 @@ export function ZelleSetupSteps({
       </ol>
 
       <details className="rounded-lg border px-3 py-2">
-        <summary className="cursor-pointer text-xs font-medium text-muted-foreground">For whoever sets this up</summary>
+        <summary className="flex min-h-11 cursor-pointer items-center text-xs font-medium text-muted-foreground">For whoever sets this up</summary>
         <div className="mt-3 space-y-3">
           <div>
             <p className="text-xs text-muted-foreground">Endpoint</p>
             <div className="mt-1 flex gap-2">
-              <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-2 text-xs">{endpoint}</code>
+              <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-3.5 text-xs leading-4">{endpoint}</code>
               <CopyButton value={endpoint} />
             </div>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Key (the Zelle Email Key setting; change it there to cut off an old script)</p>
             <div className="mt-1 flex gap-2">
-              <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-2 text-xs">{"•".repeat(16)}</code>
+              <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-3.5 text-xs leading-4">{"•".repeat(16)}</code>
               <CopyButton value={secret} />
             </div>
           </div>
