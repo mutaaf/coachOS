@@ -7,6 +7,20 @@ export function toCents(amount: number | string): number {
 }
 
 /**
+ * What is left to pay on an invoice: the fee less what has been paid against
+ * it. Paid and waived invoices owe nothing.
+ */
+export function invoiceBalanceCents(invoice: {
+  amount: number | string;
+  status: string;
+  payments?: { amount: number | string }[] | null;
+}): number {
+  if (invoice.status === "paid" || invoice.status === "waived") return 0;
+  const paid = (invoice.payments || []).reduce((s, p) => s + toCents(p.amount), 0);
+  return Math.max(0, toCents(invoice.amount) - paid);
+}
+
+/**
  * Set an invoice's status from what has actually been paid against it.
  *
  * Every path that adds or removes money — a payment recorded by hand, an

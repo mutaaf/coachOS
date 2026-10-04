@@ -95,6 +95,20 @@ function buildSteps(ctx: TourContext | null): Step[] {
     body: "Every child and the parents linked to them. Fix a phone number here — however it's typed, it's saved as one number, so WhatsApp opens the right chat — add a parent, or move a child between sessions. Siblings share one parent, so a family gets one link and one charge. Adding someone already on file asks \"Is this the same Mia?\" first, so nobody is added twice. A child who has left can be archived: off the list, with every payment kept.",
   },
   {
+    id: "families",
+    path: "/students",
+    target: '[data-tour="student-tabs"]',
+    title: "What does a family owe?",
+    body: (
+      <>
+        <strong>Parents</strong> shows each family&apos;s <strong>Balance</strong> — what they still owe, for every
+        child. Tap a parent&apos;s or child&apos;s name to open their family: the children and where they play, both
+        parents, each invoice and what&apos;s left on it, the messages you&apos;ve sent them, and their payment link to
+        copy.
+      </>
+    ),
+  },
+  {
     id: "registrations",
     path: "/registrations",
     target: "main h1",
@@ -165,7 +179,9 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         <strong>Pending</strong>: not due yet. <strong>Processing</strong>: a bank payment is on its way — nothing to
         do. <strong>Overdue</strong>: past due; a reminder goes out once, automatically. <strong>Paid</strong> and{" "}
-        <strong>Waived</strong> are done. The link icon on each row copies that family&apos;s payment page.
+        <strong>Waived</strong> are done. <strong>Balance</strong> is what&apos;s left to pay after any part
+        payments. The link icon on each row copies that family&apos;s payment page; tap the parent&apos;s name to see
+        the whole family.
       </>
     ),
   },

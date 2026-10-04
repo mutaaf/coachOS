@@ -1,6 +1,7 @@
 import { getStripeSettings, stripeReady } from "@/lib/stripe-client";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { businessMonth, businessToday } from "@/lib/dates";
+import { invoiceBalanceCents } from "@/lib/invoice-status";
 
 export async function getInvoices(filters?: {
   status?: string;
@@ -10,7 +11,7 @@ export async function getInvoices(filters?: {
   const supabase = createAdminSupabase();
   let query = supabase
     .from("invoices")
-    .select("*, parents(*), students(*), programs(*)")
+    .select("*, parents(*), students(*), programs(*), payments(amount)")
     .order("due_date", { ascending: false });
 
   if (filters?.status) query = query.eq("status", filters.status);
@@ -19,7 +20,8 @@ export async function getInvoices(filters?: {
 
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  // What is left to pay, beside the fee: a $90 invoice with $40 paid shows $50.
+  return (data || []).map((inv: any) => ({ ...inv, balance: invoiceBalanceCents(inv) / 100 }));
 }
 
 export async function getInvoice(id: string) {

@@ -30,6 +30,7 @@ const STOPS: { title: RegExp; url: RegExp; spotlight: boolean }[] = [
   { title: /Start here: import a roster/, url: /\/schools/, spotlight: true },
   { title: /Schools and sessions/, url: /\/schools/, spotlight: true },
   { title: /Students and parents/, url: /\/students/, spotlight: true },
+  { title: /What does a family owe\?/, url: /\/students/, spotlight: true },
   { title: /Registrations/, url: /\/registrations/, spotlight: true },
   { title: /Schedule and attendance/, url: /\/schedule/, spotlight: true },
   { title: /^Autopay$/, url: /\/payments/, spotlight: true },

@@ -18,7 +18,9 @@ import { useAction } from "@/lib/use-action";
 import { toast } from "sonner";
 import type { Student, Parent } from "@/types/database";
 import { matchesPhone, searchable } from "@/lib/identity";
-import { formatPhone } from "@/lib/utils";
+import { formatCurrency, formatPhone } from "@/lib/utils";
+import { familyHref } from "@/lib/family-link";
+import Link from "next/link";
 import type { StudentEnrollmentInfo, ParentWithStudents } from "@/lib/queries/students";
 
 type StudentWithParents = Student & {
@@ -30,9 +32,11 @@ interface StudentsPageClientProps {
   students: StudentWithParents[];
   parents: ParentWithStudents[];
   enrollablePrograms: EnrollableProgram[];
+  /** What each parent's family owes, and their credit, by parent id. */
+  balances: Record<string, { owedCents: number; creditCents: number }>;
 }
 
-export function StudentsPageClient({ students, parents, enrollablePrograms }: StudentsPageClientProps) {
+export function StudentsPageClient({ students, parents, enrollablePrograms, balances }: StudentsPageClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [showStudentForm, setShowStudentForm] = useState(false);
@@ -101,7 +105,7 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
       </div>
 
       <Tabs defaultValue="students">
-        <TabsList>
+        <TabsList data-tour="student-tabs">
           <TabsTrigger value="students">Students ({filteredStudents.length})</TabsTrigger>
           <TabsTrigger value="parents">Parents ({filteredParents.length})</TabsTrigger>
         </TabsList>
@@ -140,7 +144,15 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                   {filteredStudents.map((student) => (
                     <tr key={student.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="p-4">
-                        <div className="font-medium">{student.first_name} {student.last_name}</div>
+                        <div className="font-medium">
+                          {student.parents[0] ? (
+                            <Link href={familyHref(student.parents[0].id)} className="hover:underline">
+                              {student.first_name} {student.last_name}
+                            </Link>
+                          ) : (
+                            `${student.first_name} ${student.last_name}`
+                          )}
+                        </div>
                         {student.medical_notes && (
                           <div className="text-xs text-orange-600 mt-0.5">Medical notes on file</div>
                         )}
@@ -269,14 +281,21 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Phone</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Email</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Linked Students</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Payment</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Balance</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Payment</th>
                     <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredParents.map((parent) => (
+                  {filteredParents.map((parent) => {
+                    const balance = balances[parent.id];
+                    return (
                     <tr key={parent.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="p-4 font-medium">{parent.first_name} {parent.last_name}</td>
+                      <td className="p-4 font-medium">
+                        <Link href={familyHref(parent.id)} className="hover:underline">
+                          {parent.first_name} {parent.last_name}
+                        </Link>
+                      </td>
                       <td className="p-4 hidden sm:table-cell">
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Phone className="h-3.5 w-3.5" /> {formatPhone(parent.phone)}
@@ -302,7 +321,19 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                           )}
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 whitespace-nowrap" data-testid="parent-balance">
+                        {balance?.owedCents ? (
+                          <span className="font-medium tabular-nums text-red-600">
+                            {formatCurrency(balance.owedCents / 100)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">Paid up</span>
+                        )}
+                        {!!balance?.creditCents && (
+                          <div className="text-xs text-green-700">{formatCurrency(balance.creditCents / 100)} credit</div>
+                        )}
+                      </td>
+                      <td className="p-4 hidden sm:table-cell">
                         <Badge variant="outline">{parent.preferred_payment}</Badge>
                       </td>
                       <td className="p-4 text-right whitespace-nowrap whitespace-nowrap">
@@ -330,7 +361,8 @@ export function StudentsPageClient({ students, parents, enrollablePrograms }: St
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
