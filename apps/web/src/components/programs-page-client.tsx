@@ -53,21 +53,23 @@ export function ProgramsPageClient({
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">Programs</h1>
-          <p className="text-muted-foreground">What you offer, and where each one is on.</p>
+          <p className="text-sm text-muted-foreground sm:text-base">What you offer, and where each one is on.</p>
         </div>
-        <Button onClick={() => setEditing("new")} data-testid="new-program">
+        <Button onClick={() => setEditing("new")} data-testid="new-program" className="h-11 w-full sm:h-10 sm:w-auto">
           <Plus className="mr-1 h-4 w-4" /> New program
         </Button>
       </div>
 
       <Tabs defaultValue="programs">
-        <TabsList className="mb-4" data-tour="programs-tabs">
-          <TabsTrigger value="programs">Programs ({programs.filter((p) => p.status === "active").length})</TabsTrigger>
-          <TabsTrigger value="seasons">Seasons ({seasons.length})</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 mb-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="h-12 w-max sm:h-10" data-tour="programs-tabs">
+            <TabsTrigger value="programs" className="h-10 px-4 sm:h-8 sm:px-3">Programs ({programs.filter((p) => p.status === "active").length})</TabsTrigger>
+            <TabsTrigger value="seasons" className="h-10 px-4 sm:h-8 sm:px-3">Seasons ({seasons.length})</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="programs" className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -84,14 +86,14 @@ export function ProgramsPageClient({
                 ]}
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <label className="flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground">
               <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} className="h-4 w-4" />
               Show archived
             </label>
           </div>
 
           {shown.length === 0 && (
-            <div className="rounded-2xl border border-dashed p-8 text-center">
+            <div className="rounded-2xl border border-dashed p-6 text-center sm:p-8">
               <p className="font-medium">No programs yet</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Make one — like “Lil Dribblers (K–1)” — then put it on at your schools.
@@ -106,12 +108,12 @@ export function ProgramsPageClient({
                 <article key={p.id} data-testid="program" className={`min-w-0 rounded-2xl border bg-card ${p.status === "archived" ? "opacity-60" : ""}`}>
                   <div className="flex items-start justify-between gap-3 p-4 pb-3">
                     <div className="min-w-0">
-                      <h2 className="text-lg font-semibold leading-snug">{p.name}</h2>
+                      <h2 className="break-words text-lg font-semibold leading-snug">{p.name}</h2>
                       <p className="text-sm text-muted-foreground">
                         {[p.age_groups.join(", "), `${formatCurrency(p.default_monthly_fee)}/mo`, `${p.default_capacity} places`].filter(Boolean).join(" · ")}
                       </p>
                     </div>
-                    <Button size="sm" variant="ghost" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>
+                    <Button size="icon" variant="ghost" className="-mr-2 -mt-1.5 h-11 w-11 shrink-0" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </div>
@@ -121,16 +123,16 @@ export function ProgramsPageClient({
                         <Link
                           href={`/schools/${s.school_id}`}
                           data-testid="session"
-                          className="grid min-h-[56px] grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2.5 hover:bg-muted/50"
+                          className="grid min-h-[56px] grid-cols-[1fr_auto_auto] items-center gap-2 px-4 py-2.5 hover:bg-muted/50 sm:gap-3"
                         >
                           <span className="min-w-0">
                             <span className="block truncate font-medium">{s.school_name}</span>
-                            <span className="block truncate text-sm text-muted-foreground">
+                            <span className="block text-sm text-muted-foreground sm:truncate">
                               {[s.times.join(", ") || "No weekly time yet", s.season_name, when(s.start_date, s.end_date)].filter(Boolean).join(" · ")}
                             </span>
                           </span>
                           <span
-                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                            className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
                               s.enrolled === 0 ? "bg-muted text-muted-foreground" : s.enrolled >= s.capacity ? "bg-amber-100 text-amber-900" : "bg-emerald-50 text-emerald-800"
                             }`}
                           >
@@ -146,7 +148,7 @@ export function ProgramsPageClient({
                   </ul>
                   {p.status === "active" && (
                     <div className="border-t p-3">
-                      <Button variant="outline" className="w-full sm:w-auto" onClick={() => setOffering(p)}>
+                      <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => setOffering(p)}>
                         <Plus className="mr-1 h-4 w-4" /> Put it on at a school
                       </Button>
                     </div>
@@ -159,7 +161,7 @@ export function ProgramsPageClient({
 
         <TabsContent value="seasons" className="space-y-4">
           <div className="flex justify-end">
-            <Button onClick={() => setSeasonEditing("new")}>
+            <Button onClick={() => setSeasonEditing("new")} className="h-11 w-full sm:h-10 sm:w-auto">
               <Plus className="mr-1 h-4 w-4" /> New season
             </Button>
           </div>
@@ -168,13 +170,13 @@ export function ProgramsPageClient({
               <li key={s.id} className="rounded-2xl border bg-card p-4" data-testid="season">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-semibold">{s.name}</h3>
+                    <h3 className="break-words font-semibold">{s.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       {when(s.start_date, s.end_date) || "No dates yet"} · {s.sessionCount} {s.sessionCount === 1 ? "session" : "sessions"}
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${
                       s.status === "active" ? "bg-emerald-50 text-emerald-800" : s.status === "upcoming" ? "bg-sky-50 text-sky-800" : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -187,7 +189,7 @@ export function ProgramsPageClient({
                     No practice: {s.no_class_dates.map((d) => when(d, null).replace("from ", "")).join(", ")}
                   </p>
                 )}
-                <Button size="sm" variant="outline" className="mt-3" onClick={() => setSeasonEditing(s)}>
+                <Button variant="outline" className="mt-3 h-11 sm:h-9" onClick={() => setSeasonEditing(s)}>
                   <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
                 </Button>
               </li>
@@ -223,8 +225,8 @@ function ProgramDialog({ program, onClose }: { program: CatalogProgram | null; o
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-testid="program-dialog">
-        <DialogHeader>
+      <DialogContent data-testid="program-dialog" onClose={onClose}>
+        <DialogHeader className="mb-4 pr-8 text-left">
           <DialogTitle>{program ? "Edit program" : "New program"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
@@ -247,7 +249,7 @@ function ProgramDialog({ program, onClose }: { program: CatalogProgram | null; o
                     type="button"
                     aria-pressed={on}
                     onClick={() => setAges(on ? ages.filter((x) => x !== a) : [...ages, a])}
-                    className={`h-10 rounded-full border px-3 text-sm ${on ? "border-primary bg-primary text-primary-foreground" : "bg-white"}`}
+                    className={`h-11 rounded-full border px-4 text-sm sm:h-10 sm:px-3 ${on ? "border-primary bg-primary text-primary-foreground" : "bg-white"}`}
                   >
                     {a}
                   </button>
@@ -266,12 +268,12 @@ function ProgramDialog({ program, onClose }: { program: CatalogProgram | null; o
             </div>
           </div>
           <p className="text-xs text-muted-foreground">Each session starts with these, and can change them.</p>
-          <div className="flex flex-wrap justify-between gap-2 border-t pt-4">
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-between">
             {program ? (
               <Button
                 type="button"
                 variant="ghost"
-                className="text-muted-foreground"
+                className="h-11 text-muted-foreground sm:h-10"
                 onClick={async () => {
                   const ok = await run(() => setCatalogProgramArchived(program.id, program.status === "active"), {
                     success: program.status === "active" ? "Archived — its sessions keep running" : "Back in your programs",
@@ -283,13 +285,13 @@ function ProgramDialog({ program, onClose }: { program: CatalogProgram | null; o
                 {program.status === "active" ? "Archive" : "Bring back"}
               </Button>
             ) : (
-              <span />
+              <span className="hidden sm:block" />
             )}
-            <div className="flex gap-2">
-              <Button type="button" variant="ghost" onClick={onClose}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button type="button" variant="ghost" className="h-11 sm:h-10" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={pending}>
+              <Button type="submit" disabled={pending} className="h-11 sm:h-10">
                 {pending ? "Saving…" : program ? "Save" : "Make program"}
               </Button>
             </div>
@@ -342,9 +344,9 @@ function SessionDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-testid="session-dialog">
-        <DialogHeader>
-          <DialogTitle>Put {program.name} on at a school</DialogTitle>
+      <DialogContent data-testid="session-dialog" onClose={onClose}>
+        <DialogHeader className="mb-4 pr-8 text-left">
+          <DialogTitle className="leading-snug">Put {program.name} on at a school</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
@@ -395,8 +397,8 @@ function SessionDialog({
           </div>
           <fieldset className="space-y-2 rounded-xl bg-muted/50 p-3">
             <legend className="text-sm font-medium">Weekly practice (optional — add more later)</legend>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-2">
-              <div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_auto_auto]">
+              <div className="col-span-2 sm:col-span-1">
                 <Label htmlFor="session-day" className="sr-only">Day</Label>
                 <Select
                   id="session-day"
@@ -407,11 +409,11 @@ function SessionDialog({
               </div>
               <div>
                 <Label htmlFor="session-from" className="sr-only">Starts at</Label>
-                <Input id="session-from" name="start_time" type="time" defaultValue="15:30" className="w-[7.5rem]" />
+                <Input id="session-from" name="start_time" type="time" defaultValue="15:30" className="w-full sm:w-[7.5rem]" />
               </div>
               <div>
                 <Label htmlFor="session-to" className="sr-only">Ends at</Label>
-                <Input id="session-to" name="end_time" type="time" defaultValue="16:30" className="w-[7.5rem]" />
+                <Input id="session-to" name="end_time" type="time" defaultValue="16:30" className="w-full sm:w-[7.5rem]" />
               </div>
             </div>
             <div>
@@ -429,15 +431,15 @@ function SessionDialog({
               <Input id="session-capacity" name="capacity" inputMode="numeric" defaultValue={program.default_capacity} />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex min-h-[44px] items-center gap-2 text-sm">
             <input type="checkbox" name="registration_open" value="true" defaultChecked className="h-4 w-4" />
             Open for sign-ups now
           </label>
-          <div className="flex justify-end gap-2 border-t pt-4">
-            <Button type="button" variant="ghost" onClick={onClose}>
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
+            <Button type="button" variant="ghost" className="h-11 sm:h-10" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="h-11 sm:h-10">
               {pending ? "Adding…" : "Add session"}
             </Button>
           </div>
@@ -463,8 +465,8 @@ function SeasonDialog({ season, onClose }: { season: Season | null; onClose: () 
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-testid="season-dialog">
-        <DialogHeader>
+      <DialogContent data-testid="season-dialog" onClose={onClose}>
+        <DialogHeader className="mb-4 pr-8 text-left">
           <DialogTitle>{season ? `Edit ${season.name}` : "New season"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
@@ -500,7 +502,7 @@ function SeasonDialog({ season, onClose }: { season: Season | null; onClose: () 
             <div className="flex gap-2">
               <Label htmlFor="season-day-off" className="sr-only">Day off</Label>
               <Input id="season-day-off" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
-              <Button type="button" variant="outline" disabled={!day} onClick={() => { setDays([...new Set([...days, day])].sort()); setDay(""); }}>
+              <Button type="button" variant="outline" className="h-11 shrink-0 sm:h-10" disabled={!day} onClick={() => { setDays([...new Set([...days, day])].sort()); setDay(""); }}>
                 Add
               </Button>
             </div>
@@ -510,7 +512,7 @@ function SeasonDialog({ season, onClose }: { season: Season | null; onClose: () 
                   key={d}
                   type="button"
                   onClick={() => setDays(days.filter((x) => x !== d))}
-                  className="h-9 rounded-full border bg-white px-3 text-sm"
+                  className="h-11 rounded-full border bg-white px-3 text-sm sm:h-9"
                   aria-label={`Remove ${d}`}
                 >
                   {new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} ✕
@@ -518,11 +520,11 @@ function SeasonDialog({ season, onClose }: { season: Season | null; onClose: () 
               ))}
             </div>
           </fieldset>
-          <div className="flex justify-end gap-2 border-t pt-4">
-            <Button type="button" variant="ghost" onClick={onClose}>
+          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
+            <Button type="button" variant="ghost" className="h-11 sm:h-10" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="h-11 sm:h-10">
               {pending ? "Saving…" : "Save season"}
             </Button>
           </div>

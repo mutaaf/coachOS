@@ -209,7 +209,7 @@ export function RosterImportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" onClose={() => onOpenChange(false)}>
-        <DialogHeader>
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>Import a roster</DialogTitle>
           {step !== "where" && whereLabel && (
             <p className="text-sm text-muted-foreground">{whereLabel}</p>
@@ -281,6 +281,7 @@ export function RosterImportDialog({
 
             <div className="flex justify-end">
               <Button
+                className="h-11 w-full sm:h-10 sm:w-auto"
                 onClick={() => {
                   const problem = whereProblem();
                   if (problem) return setError(problem);
@@ -331,10 +332,11 @@ export function RosterImportDialog({
             {files.length > 0 && (
               <ul className="space-y-1.5">
                 {files.map((f, i) => (
-                  <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                    <span className="truncate">{f.name}</span>
+                  <li key={i} className="flex items-center justify-between gap-2 rounded-lg border py-1 pl-3 pr-1 text-sm">
+                    <span className="min-w-0 truncate">{f.name}</span>
                     <button
                       type="button"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted"
                       aria-label={`Remove ${f.name}`}
                       onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
                     >
@@ -357,10 +359,10 @@ export function RosterImportDialog({
             </div>
 
             <div className="flex justify-between gap-2">
-              <Button variant="ghost" onClick={() => setStep("where")} disabled={busy}>
+              <Button variant="ghost" className="h-11 sm:h-10" onClick={() => setStep("where")} disabled={busy}>
                 Back
               </Button>
-              <Button onClick={read} disabled={busy || (!files.length && !text.trim())}>
+              <Button className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={read} disabled={busy || (!files.length && !text.trim())}>
                 {busy ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reading…
@@ -414,7 +416,7 @@ export function RosterImportDialog({
                               <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" /> You withdrew this child from this
                               session. They won&apos;t be added back.
                             </p>
-                            <label className="flex items-center gap-2 text-foreground">
+                            <label className="flex min-h-[44px] items-center gap-2 text-sm text-foreground">
                               <input
                                 type="checkbox"
                                 className="h-4 w-4"
@@ -443,7 +445,7 @@ export function RosterImportDialog({
                       </div>
                       <button
                         type="button"
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-muted"
+                        className="-mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted"
                         aria-label={`Remove row ${i + 1}`}
                         onClick={() => {
                           const next = rows.filter((_, j) => j !== i);
@@ -454,10 +456,10 @@ export function RosterImportDialog({
                         <Trash2 className="h-4 w-4 text-muted-foreground" />
                       </button>
                     </div>
-                    <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1.5">
+                    <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-2">
                       {FIELDS.map((f) => (
                         <label key={f.key} className={`block ${f.wide ? "col-span-2" : ""}`}>
-                          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                             {f.label}
                           </span>
                           <Input
@@ -478,7 +480,7 @@ export function RosterImportDialog({
 
             <Button
               variant="outline"
-              size="sm"
+              className="h-11 w-full sm:h-9 sm:w-auto"
               onClick={() => {
                 const next = [...rows, emptyRow()];
                 setRows(next);
@@ -488,11 +490,11 @@ export function RosterImportDialog({
               <Plus className="mr-1 h-4 w-4" /> Add a child
             </Button>
 
-            <div className="sticky -bottom-6 -mx-6 -mb-6 flex justify-between gap-2 border-t bg-background px-6 py-4">
-              <Button variant="ghost" onClick={() => setStep("upload")} disabled={busy}>
+            <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex justify-between gap-2 border-t bg-background px-6 py-4">
+              <Button variant="ghost" className="h-11 sm:h-10" onClick={() => setStep("upload")} disabled={busy}>
                 Back
               </Button>
-              <Button onClick={save} disabled={busy || ready === 0}>
+              <Button className="h-11 flex-1 tabular-nums sm:h-10 sm:flex-none" onClick={save} disabled={busy || ready === 0}>
                 {busy ? "Importing…" : `Import ${ready} ${ready === 1 ? "child" : "children"}`}
               </Button>
             </div>
@@ -539,13 +541,14 @@ export function RosterImportDialog({
                 </ul>
               </div>
             )}
-            <div className="flex flex-wrap justify-between gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
+              <Button variant="outline" className="h-11 sm:h-10" onClick={() => onOpenChange(false)}>
                 Done
               </Button>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap">
                 <Button
                   variant="outline"
+                  className="h-11 sm:h-10"
                   onClick={() => {
                     setRows([]);
                     setChecks([]);
@@ -561,7 +564,7 @@ export function RosterImportDialog({
                 >
                   Import another session
                 </Button>
-                <Link href="/payments" className={buttonVariants()}>
+                <Link href="/payments" className={buttonVariants({ className: "h-11 sm:h-10" })}>
                   Send payment links
                 </Link>
               </div>
