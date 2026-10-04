@@ -515,7 +515,7 @@
    "Open the family’s payment page and read the small print under the Bank and Card buttons.",
    "At the test school, press Add session and look at the Monthly Fee. Close without saving. Press Import a roster, choose “+ New session” and look at the monthly fee.",
    "Ask Mutaaf to generate next month’s invoices for the test school, then look at their due date on Payments.",
-   "Look through every Settings tab for Coach Name, Coach Phone, reminder times, Welcome Messages, Message Rate Limit or anything about session length.",
+   "Look through every Settings tab for Coach Name, Coach Phone, reminder times, Message Rate Limit or anything about session length.",
    "Put the original values back and save."
   ],
   "expected": [
@@ -2044,7 +2044,7 @@
    "Toast 'Template updated'. The Templates card shows the new wording.",
    "The message already in the Outbox still has the OLD wording.",
    "The new message uses the NEW wording.",
-   "Deleting a template you added asks 'Delete the \"<name>\" template?'. The templates the app sends on its own (payment_reminder, practice_reminder_day_before, practice_reminder_morning, welcome_message, session_cancelled, payment_received, autopay_invite, autopay_failed) can be reworded but not deleted: trying shows 'This message is sent automatically, so it can be reworded but not deleted.' Changing their Name has no effect."
+   "Deleting a template you added asks 'Delete the \"<name>\" template?'. The templates the app sends on its own (payment_reminder, practice_reminder_day_before, welcome_message, session_cancelled, registration_received, waitlist_joined, waitlist_seat, autopay_invite, autopay_failed) can be reworded but not deleted: trying shows 'This message is sent automatically, so it can be reworded but not deleted.' Changing their Name has no effect."
   ],
   "evidence": "Screenshots of the template before and after, the old and new Outbox cards, and what happens when Delete is clicked.",
   "phone": false
@@ -2867,5 +2867,35 @@
   ],
   "evidence": "Screenshots of the refused number, the search, and each WhatsApp chat that opened.",
   "phone": true
+ },
+ {
+  "id": "MSG-08",
+  "area": "Messaging",
+  "title": "Families are told when a practice is cancelled, when they sign up, and when a spot opens",
+  "risk": "The Boss believes parents were told a practice was cancelled, or that a spot opened for them, when nobody was — children turn up to a locked gym, and a waiting family never hears they have a place.",
+  "severity": "high",
+  "preconditions": [
+   "Test session A with a practice later this week and one test child, whose test parent has a phone, on its roster.",
+   "Test session B with 1 seat and registration open, and nobody signed up yet.",
+   "Settings → Messaging: Welcome Messages is on."
+  ],
+  "steps": [
+   "On Schedule, tap session A's practice, then Cancel practice. Read the note under the reason box, type 'gym closed' and tap Confirm Cancel. Open Messaging → Outbox.",
+   "Open session B's /join link and register a test child with your own phone. Open the Outbox.",
+   "Register a second test child on the /join link. Open the Outbox.",
+   "On Registrations, cancel the first child, then tap Give a seat to next in line. Open the Outbox, and your email if you gave one.",
+   "Tap Add to roster on that child. Open the Outbox.",
+   "Open Settings → Messaging."
+  ],
+  "expected": [
+   "The note says each family gets a message in your Outbox. The toast says '1 family is waiting in your Outbox to be told', and the Outbox has a message to the parent saying the practice is cancelled, with 'gym closed'.",
+   "A message to you says the child is signed up for the program.",
+   "A message to the second family says the program is full and they are #1 on the waitlist.",
+   "A message says a spot opened and it's the child's. An email says the child is in.",
+   "A message starting 'Welcome to' the program is waiting.",
+   "There is no Day-Before or Morning Reminder Time and no Message Rate Limit. Practice Reminders says it runs once a day, around 1 pm."
+  ],
+  "evidence": "Screenshots of the cancel note and toast, each Outbox message, the email, and Settings → Messaging.",
+  "phone": false
  }
 ]

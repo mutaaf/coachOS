@@ -120,14 +120,14 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/registrations",
     target: "main h1",
     title: "Registrations",
-    body: "New sign-ups from a session's public link. Share the link in a WhatsApp group; parents register themselves, full sessions fill a waitlist, and you add each confirmed child to the roster with one tap — which also makes their first bill. A family already on file is used, not copied — their medical notes go onto the child you already have. When a place opens, it goes to the next in line; cancelling asks first, can take the child off the roster, and can be undone with Restore.",
+    body: "New sign-ups from a session's public link. Share the link in a WhatsApp group; parents register themselves, full sessions fill a waitlist, and you add each confirmed child to the roster with one tap — which also makes their first bill. A family already on file is used, not copied — their medical notes go onto the child you already have. Each sign-up, and each family given a place that opens, gets a message waiting in your Outbox. When a place opens, it goes to the next in line; cancelling asks first, can take the child off the roster, and can be undone with Restore.",
   },
   {
     id: "schedule",
     path: "/schedule",
     target: "main h1",
     title: "Schedule and attendance",
-    body: "Your practices by week. Take attendance here — Save & complete saves the register and marks the practice done — or send a coach a link and passcode so they can do it on their phone at the gym. A completed practice keeps its register, so you can check it and fix a mistake. The link works until a few hours after the practice ends, and cancelling the practice turns it off. Pick who ran each practice under Coach — that's what their pay counts. Changing a weekly time or coach in Manage Templates moves the practices already on the calendar too.",
+    body: "Your practices by week. Take attendance here — Save & complete saves the register and marks the practice done — or send a coach a link and passcode so they can do it on their phone at the gym. A completed practice keeps its register, so you can check it and fix a mistake. The link works until a few hours after the practice ends, and cancelling the practice turns it off and writes a message to every family on its roster — it waits in your Outbox to send. Pick who ran each practice under Coach — that's what their pay counts. Changing a weekly time or coach in Manage Templates moves the practices already on the calendar too.",
   },
   {
     id: "payments-autopay",

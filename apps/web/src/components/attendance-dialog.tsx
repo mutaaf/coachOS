@@ -127,7 +127,11 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
 
   async function handleCancel() {
     const ok = await run(() => cancelSession(session.id, cancelReason), {
-      success: "Practice cancelled",
+      success: (r) => {
+        const queued = r && "data" in r ? r.data?.queued ?? 0 : 0;
+        if (!queued) return "Practice cancelled";
+        return `Practice cancelled. ${queued} ${queued === 1 ? "family is" : "families are"} waiting in your Outbox to be told.`;
+      },
       error: "The practice wasn't cancelled",
     });
     if (ok) onOpenChange(false);
@@ -361,14 +365,19 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
             )}
 
             {!completed && showCancel && (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  className="h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-base sm:h-9 sm:text-sm"
-                  placeholder="Reason (required) — e.g. gym closed"
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                />
-                <Button size="sm" variant="destructive" className="h-11 sm:h-9" onClick={handleCancel}>Confirm Cancel</Button>
+              <div className="space-y-1">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    className="h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-base sm:h-9 sm:text-sm"
+                    placeholder="Reason (required) — e.g. gym closed"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                  />
+                  <Button size="sm" variant="destructive" className="h-11 sm:h-9" onClick={handleCancel}>Confirm Cancel</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Each family on this session&apos;s roster gets a message in your Outbox, with the reason, for you to send.
+                </p>
               </div>
             )}
           </div>

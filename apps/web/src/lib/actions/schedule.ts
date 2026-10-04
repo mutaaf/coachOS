@@ -6,6 +6,7 @@ import { addDays, businessToday, toISODate } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
 import { getScheduleTemplates } from "@/lib/queries/schedule";
 import { getSessions } from "@/lib/queries/schedule";
+import { queueSessionCancelled } from "@/lib/family-messages";
 
 // ---------- Server Action Wrappers ----------
 
@@ -323,8 +324,12 @@ export async function cancelSession(id: string, reason: string) {
     .eq("session_id", id)
     .is("revoked_at", null);
 
+  // Every family on the roster hears about it from the Outbox.
+  const queued = await queueSessionCancelled(supabase, id);
+
   revalidatePath("/schedule");
-  return { data };
+  revalidatePath("/messaging");
+  return { data: { ...data, queued } };
 }
 
 /**

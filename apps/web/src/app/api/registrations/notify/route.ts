@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { emailRegistration } from "@/lib/parent-emails";
+import { welcomeRegistration } from "@/lib/family-messages";
 import { sameName } from "@/lib/roster";
 
 /**
  * The website (risingstars.training) registers families straight into the
  * database from the parent's browser, so nothing on a server sees it happen.
  * After a registration succeeds, the site pings this to send the family's
- * "you're in" email.
+ * "you're in" email and put their message in the Outbox.
  *
  * It takes no secret — the site runs in the parent's browser and could not
  * keep one — so it is built to be harmless: it only emails registrations made
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       // Compared here, not as a database pattern: "%" must match nothing.
       if (!sameName(r.child_first_name, child)) continue;
       if (String(r.parent_phone).replace(/\D/g, "").slice(-10) !== digits) continue;
-      await emailRegistration(supabase, r.id);
+      await welcomeRegistration(supabase, r.id);
       if (r.status !== "waitlisted") whatsappGroupUrl = (r as any).programs?.whatsapp_group_url ?? null;
     }
   }
