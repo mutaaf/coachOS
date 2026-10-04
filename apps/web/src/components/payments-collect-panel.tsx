@@ -46,9 +46,9 @@ function ZelleSetupDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl" onClose={() => onOpenChange(false)}>
+      <DialogContent className="max-w-2xl p-5 sm:p-6" onClose={() => onOpenChange(false)}>
         <DialogHeader>
-          <DialogTitle>Record Zelle payments automatically</DialogTitle>
+          <DialogTitle className="pr-8 text-left leading-snug">Record Zelle payments automatically</DialogTitle>
         </DialogHeader>
         <div className="mt-4">
           <ZelleSetupSteps secret={secret} inbox={inbox} forwardFrom={forwardFrom} />
