@@ -115,7 +115,8 @@ export const TASKS: HelpTask[] = [
     steps: [
       { text: "Go to **Messaging** → **Compose**. Tap [[All Parents]], [[By School]] or [[By Session]]." },
       { text: "For a school or session, pick it from the list. The parents it will go to appear underneath — check the names.", tip: "Switching between All Parents, By School and By Session clears the list, so pick again after switching. Send stays grey until you do." },
-      { text: "Write the message, or pick one from **Use a template...**. Tap [[Send to 12 recipient(s)]] and send them from the **Outbox**." },
+      { text: "Write the message, or pick one from **Use a template...**. Tap [[{{parent_name}}]] to greet each parent by their first name, and check the preview underneath — it is exactly what the first parent will get.", tip: "A group message can only fill in the parent's name. If something else is in {{ }} braces, a red line says what to fix and Send stays grey." },
+      { text: "Tap [[Send to 12 recipient(s)]] and send them from the **Outbox**." },
     ],
   },
   {
