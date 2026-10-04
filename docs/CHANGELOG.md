@@ -4,6 +4,15 @@ All notable changes to CoachOS.
 
 ## [Unreleased]
 
+### Changed
+- **Every screen, polished for phones in portrait** (iPhone SE to Pro Max):
+  dialogs open as bottom sheets with a reachable close button and sticky
+  actions; form fields don't make iOS zoom; tap targets are at least 44px;
+  tables become cards; filter and tab rows scroll sideways inside themselves;
+  the menu scrolls to Sign Out and respects the notch and home bar; the
+  schedule reads as a day-by-day list; the Outbox is thumb-friendly; the
+  parent sign-up and payment pages feel finished. Tabs have proper tab roles
+
 ### Added
 - **Programs, sessions and seasons.** A **Programs** page: make a program
   once (name, description, ages, usual fee and places), then put it on at a

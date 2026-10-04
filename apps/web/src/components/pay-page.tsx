@@ -454,7 +454,7 @@ export function PayPage({
                   autoComplete="off"
                   className="h-11 min-w-0 text-base sm:text-sm"
                 />
-                <Button type="submit" className="h-11 shrink-0 px-5" disabled={busy !== null || !zelleName.trim()}>
+                <Button type="submit" className="h-11 shrink-0 px-5 sm:h-11" disabled={busy !== null || !zelleName.trim()}>
                   {busy === "zelle" ? "Saving…" : "Save"}
                 </Button>
               </div>
@@ -488,7 +488,7 @@ export function PayPage({
                 placeholder="you@example.com"
                 className="h-11 min-w-0 text-base sm:text-sm"
               />
-              <Button type="submit" className="h-11 shrink-0 px-5" disabled={busy !== null || !email.trim()}>
+              <Button type="submit" className="h-11 shrink-0 px-5 sm:h-11" disabled={busy !== null || !email.trim()}>
                 {busy === "email" ? "Saving…" : "Save"}
               </Button>
             </div>

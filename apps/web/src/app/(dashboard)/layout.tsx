@@ -214,7 +214,7 @@ export default function DashboardLayout({
         tabIndex={-1}
         // Off screen, its links shouldn't take focus. React 18 has no typed
         // inert prop, so it goes on as a plain attribute.
-        {...(sidebarOpen ? {} : ({ inert: "" } as object))}
+        {...(sidebarOpen ? {} : ({ inert: "", "aria-hidden": true } as object))}
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-[min(18rem,85vw)] transform bg-white pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] shadow-xl outline-none transition-transform duration-200 ease-out lg:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
