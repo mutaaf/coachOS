@@ -255,7 +255,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect, credi
               <Select
                 value={programFilter}
                 onChange={(e) => setProgramFilter(e.target.value)}
-                options={[{ value: "all", label: "All Programs" }, ...invoicePrograms]}
+                options={[{ value: "all", label: "All sessions" }, ...invoicePrograms]}
               />
             )}
           </div>
@@ -273,7 +273,7 @@ export function PaymentsPageClient({ summary, invoices, payments, collect, credi
                   <tr className="border-b bg-muted/50">
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Student</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Parent</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Program</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Session</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Month</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">Balance</th>

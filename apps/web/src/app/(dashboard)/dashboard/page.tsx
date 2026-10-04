@@ -214,9 +214,9 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-semibold">
-                  Upcoming Sessions
+                  Upcoming practices
                 </CardTitle>
-                <CardDescription>Your next scheduled sessions</CardDescription>
+                <CardDescription>Your next scheduled practices</CardDescription>
               </div>
               <Link href="/schedule">
                 <Button variant="ghost" size="sm" className="text-xs">
@@ -232,10 +232,10 @@ export default async function DashboardPage() {
                   <Calendar className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <p className="mt-3 text-sm font-medium">
-                  No upcoming sessions
+                  No upcoming practices
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Sessions will appear here once scheduled.
+                  Practices will appear here once scheduled.
                 </p>
               </div>
             ) : (
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
-                        {session.programs?.name ?? "Session"}
+                        {session.programs?.name ?? "Practice"}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {session.programs?.schools?.name ?? ""}

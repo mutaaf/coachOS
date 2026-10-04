@@ -64,7 +64,14 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/dashboard",
     target: '[data-tour="dashboard-stats"]',
     title: "Today at a glance",
-    body: "Active students, money in this month, how many payments are overdue and what they add up to, and the sessions coming up. Below are today's sessions and anything that needs you — tap See all to open every overdue payment.",
+    body: "Active students, money in this month, how many payments are overdue and what they add up to, and the practices coming up. Below are today's practices and anything that needs you — tap See all to open every overdue payment.",
+  },
+  {
+    id: "programs",
+    path: "/programs",
+    target: '[data-tour="programs-tabs"]',
+    title: "Programs, sessions and seasons",
+    body: "Make each program once — its name, ages and usual fee — then put it on at a school as a session. Practices are a session's dates, and a season groups everything running that term.",
   },
   {
     id: "schools-import",
@@ -85,7 +92,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schools",
     target: "main h1",
     title: "Schools and sessions",
-    body: "Each school holds its sessions. Open a school to change a session's monthly fee (0 makes it free, with no invoices), set its weekly schedule, import more children, or share its registration link. Archiving a school stops its invoices, and can end its children's places too.",
+    body: "Each school holds its sessions. Open a school to change a session's monthly fee (0 makes it free, with no invoices), set its weekly practice time, import more children, or share its registration link. Archiving a school stops its invoices, and can end its children's places too.",
   },
   {
     id: "students",
@@ -120,7 +127,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/schedule",
     target: "main h1",
     title: "Schedule and attendance",
-    body: "Your sessions by week. Take attendance here — Save & complete saves the register and marks the practice done — or send a coach a link and passcode so they can do it on their phone at the gym. A completed practice keeps its register, so you can check it and fix a mistake. The link works until a few hours after the practice ends, and cancelling the practice turns it off. Pick who ran each practice under Coach — that's what their pay counts. Changing a weekly time or coach in Manage Templates moves the practices already on the calendar too.",
+    body: "Your practices by week. Take attendance here — Save & complete saves the register and marks the practice done — or send a coach a link and passcode so they can do it on their phone at the gym. A completed practice keeps its register, so you can check it and fix a mistake. The link works until a few hours after the practice ends, and cancelling the practice turns it off. Pick who ran each practice under Coach — that's what their pay counts. Changing a weekly time or coach in Manage Templates moves the practices already on the calendar too.",
   },
   {
     id: "payments-autopay",
@@ -165,7 +172,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
       <>
         Cash, Venmo, or a Zelle from someone not set up yet? <strong>Record Payment</strong> (top right) (or{" "}
         <strong>Who paid this?</strong> on a Zelle) asks who paid — and if they&apos;re new, adds the family, child,
-        school and program as you go, then records the money. It shows you everything before saving. Paid ahead, or
+        school and session as you go, then records the money. It shows you everything before saving. Paid ahead, or
         more than they owe? The extra is kept as their <strong>credit</strong> and pays their next invoice by itself.
       </>
     ),

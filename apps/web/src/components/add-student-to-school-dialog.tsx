@@ -132,7 +132,7 @@ export function AddStudentToSchoolDialog({
     const programId = formData.get("program_id") as string;
 
     if (!programId) {
-      toast.error("Please select a program");
+      toast.error("Please select a session");
       return;
     }
     createAndEnroll(formData);
@@ -186,7 +186,7 @@ export function AddStudentToSchoolDialog({
           <DialogTitle>Add Student to {schoolName}</DialogTitle>
           <DialogDescription>
             Select an existing student or create a new one, then enroll them in a
-            program.
+            session.
           </DialogDescription>
         </DialogHeader>
 
@@ -232,15 +232,15 @@ export function AddStudentToSchoolDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Program</Label>
+              <Label>Session</Label>
               {programOptions.length === 0 ? (
                 <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
-                  No active programs at this school. Create a program first from the Overview tab.
+                  No active sessions at this school. Add a session first from the Overview tab.
                 </p>
               ) : (
                 <Select
                   options={programOptions}
-                  placeholder="Select a program"
+                  placeholder="Select a session"
                   value={selectedProgramId}
                   onChange={(e) => setSelectedProgramId(e.target.value)}
                   required
@@ -331,17 +331,17 @@ export function AddStudentToSchoolDialog({
 
             <div className="space-y-2">
               <Label>
-                Program <span className="text-destructive">*</span>
+                Session <span className="text-destructive">*</span>
               </Label>
               {programOptions.length === 0 ? (
                 <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
-                  No active programs at this school. Create a program first from the Overview tab.
+                  No active sessions at this school. Add a session first from the Overview tab.
                 </p>
               ) : (
                 <Select
                   name="program_id"
                   options={programOptions}
-                  placeholder="Select a program"
+                  placeholder="Select a session"
                   required
                   disabled={isPending}
                 />

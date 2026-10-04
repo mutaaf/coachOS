@@ -21,6 +21,7 @@ import {
   CreditCard,
   MessageSquare,
   Target,
+  Trophy,
   Globe,
   Settings,
   LogOut,
@@ -33,6 +34,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Programs", href: "/programs", icon: Trophy },
   { name: "Schools", href: "/schools", icon: School },
   { name: "Students", href: "/students", icon: Users },
   { name: "Registrations", href: "/registrations", icon: ClipboardList },

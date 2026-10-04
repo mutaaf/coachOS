@@ -121,18 +121,18 @@ export function ScheduleTemplateFormDialog({
           <DialogDescription>
             {isEditing
               ? "Update the schedule template details below."
-              : "Add a recurring schedule for a program. Select multiple days to create one template per day."}
+              : "Add a weekly practice time for a session. Select multiple days to create one template per day."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="program_id">Program</Label>
+            <Label htmlFor="program_id">Session</Label>
             <Select
               id="program_id"
               name="program_id"
               options={programOptions}
-              placeholder="Select a program"
+              placeholder="Select a session"
               defaultValue={template?.program_id ?? ""}
               required
               disabled={isSubmitting}
@@ -210,7 +210,7 @@ export function ScheduleTemplateFormDialog({
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
-                Who normally runs this slot. Each session can be changed
+                Who normally runs this slot. Each practice can be changed
                 individually when someone covers.
               </p>
             </div>

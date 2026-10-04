@@ -85,10 +85,10 @@ export function EnrollStudentDialog({
           <DialogTitle>Enroll {studentName}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <p className="text-sm text-muted-foreground">Select a program to enroll this student in.</p>
+          <p className="text-sm text-muted-foreground">Select a session to enroll this student in.</p>
           <Select
             groups={programGroups}
-            placeholder="Select a program"
+            placeholder="Select a session"
             value={selectedProgram}
             onChange={(e) => setSelectedProgram(e.target.value)}
             required

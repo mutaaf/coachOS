@@ -18,7 +18,7 @@ const statusOptions = [
 ];
 
 const payTypeOptions = [
-  { value: "per_session", label: "Per session" },
+  { value: "per_session", label: "Per practice" },
   { value: "hourly", label: "Hourly" },
 ];
 
@@ -129,7 +129,7 @@ export function CoachFormDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pay_rate">
-                  {payType === "hourly" ? "Rate per hour" : "Rate per session"}
+                  {payType === "hourly" ? "Rate per hour" : "Rate per practice"}
                 </Label>
                 <Input
                   id="pay_rate"
@@ -146,7 +146,7 @@ export function CoachFormDialog({
             {payType === "hourly" && (
               <p className="text-xs text-muted-foreground">
                 Nothing records hours yet, so what an hourly coach is owed has to be
-                worked out by hand. Per-session totals itself.
+                worked out by hand. Per-practice totals itself.
               </p>
             )}
           </div>

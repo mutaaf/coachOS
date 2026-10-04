@@ -89,10 +89,10 @@ test("cancelling a practice turns off the link she sent the coach", async ({ pag
 
   await signIn(page);
   await openSession(page, "Rained Out", today);
-  await page.getByRole("button", { name: "Cancel Session" }).click();
+  await page.getByRole("button", { name: "Cancel practice" }).click();
   await page.getByPlaceholder(/reason/i).fill("Gym closed");
   await page.getByRole("button", { name: "Confirm Cancel" }).click();
-  await expect(page.getByText("Session cancelled")).toBeVisible();
+  await expect(page.getByText("Practice cancelled")).toBeVisible();
 
   await unlock(page, link);
   await expect(page.getByText(/turned off|cancelled/i).first()).toBeVisible();

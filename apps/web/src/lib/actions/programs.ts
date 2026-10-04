@@ -71,7 +71,7 @@ function readMonthlyFee(formData: FormData): { fee: number } | { error: string }
   const raw = String(formData.get("monthly_fee") ?? "").trim().replace(/^\$/, "");
   const fee = Number(raw);
   if (raw === "" || !Number.isFinite(fee) || fee < 0) {
-    return { error: "What does this program cost per month? Enter 0 if it's free." };
+    return { error: "What does this session cost per month? Enter 0 if it's free." };
   }
   return { fee: Math.round(fee * 100) / 100 };
 }
@@ -97,13 +97,21 @@ function readRegistrationFields(formData: FormData) {
   };
 }
 
+/** A season's name, kept in programs.season for what still reads the text. */
+async function seasonName(supabase: ReturnType<typeof createAdminSupabase>, seasonId: string) {
+  const { data } = await supabase.from("seasons").select("name").eq("id", seasonId).maybeSingle();
+  return (data?.name as string) ?? null;
+}
+
 export async function createProgram(formData: FormData) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
 
   const schoolId = formData.get("school_id") as string;
   const name = formData.get("name") as string;
-  const season = formData.get("season") as string | null;
+  const catalogId = ((formData.get("catalog_id") as string) || "").trim() || null;
+  const seasonId = ((formData.get("season_id") as string) || "").trim() || null;
+  const season = seasonId ? await seasonName(supabase, seasonId) : (formData.get("season") as string | null);
   const startDate = formData.get("start_date") as string | null;
   const endDate = formData.get("end_date") as string | null;
   const fee = readMonthlyFee(formData);
@@ -115,7 +123,7 @@ export async function createProgram(formData: FormData) {
   }
 
   if (!schoolId || !name) {
-    return { error: "School and program name are required." };
+    return { error: "School and name are required." };
   }
   if ("error" in fee) return { error: fee.error };
   if (!datesInOrder(startDate || null, endDate || null)) return { error: DATES_OUT_OF_ORDER };
@@ -127,6 +135,8 @@ export async function createProgram(formData: FormData) {
       school_id: schoolId,
       name,
       season: season || null,
+      catalog_id: catalogId,
+      season_id: seasonId,
       start_date: startDate || null,
       end_date: endDate || null,
       monthly_fee: monthlyFee,
@@ -161,7 +171,9 @@ export async function updateProgram(id: string, formData: FormData) {
 
   const schoolId = formData.get("school_id") as string;
   const name = formData.get("name") as string;
-  const season = formData.get("season") as string | null;
+  const catalogId = ((formData.get("catalog_id") as string) || "").trim() || null;
+  const seasonId = ((formData.get("season_id") as string) || "").trim() || null;
+  const season = seasonId ? await seasonName(supabase, seasonId) : (formData.get("season") as string | null);
   const startDate = formData.get("start_date") as string | null;
   const endDate = formData.get("end_date") as string | null;
   const fee = readMonthlyFee(formData);
@@ -173,7 +185,7 @@ export async function updateProgram(id: string, formData: FormData) {
   }
 
   if (!schoolId || !name) {
-    return { error: "School and program name are required." };
+    return { error: "School and name are required." };
   }
   if ("error" in fee) return { error: fee.error };
   if (!datesInOrder(startDate || null, endDate || null)) return { error: DATES_OUT_OF_ORDER };
@@ -192,6 +204,8 @@ export async function updateProgram(id: string, formData: FormData) {
       school_id: schoolId,
       name,
       season: season || null,
+      catalog_id: catalogId,
+      season_id: seasonId,
       start_date: startDate || null,
       end_date: endDate || null,
       monthly_fee: monthlyFee,
@@ -266,7 +280,7 @@ export async function duplicateProgram(
     .single();
 
   if (fetchError || !source) {
-    return { error: "Source program not found." };
+    return { error: "The session to copy wasn't found." };
   }
 
   // Insert copy with target school and upcoming status
@@ -276,6 +290,8 @@ export async function duplicateProgram(
       school_id: targetSchoolId,
       name: source.name,
       season: source.season,
+      catalog_id: source.catalog_id ?? null,
+      season_id: source.season_id ?? null,
       start_date: source.start_date,
       end_date: source.end_date,
       monthly_fee: source.monthly_fee,
@@ -286,7 +302,7 @@ export async function duplicateProgram(
     .single();
 
   if (insertError || !newProgram) {
-    return { error: insertError?.message || "Failed to duplicate program." };
+    return { error: insertError?.message || "Failed to duplicate session." };
   }
 
   // Copy schedule templates

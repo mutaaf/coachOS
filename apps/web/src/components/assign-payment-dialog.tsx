@@ -439,7 +439,7 @@ export function AssignPaymentDialog({
                 go("where");
               }}
             >
-              Next: school and program
+              Next: school and session
             </Button>
           </div>
         )}
@@ -470,15 +470,15 @@ export function AssignPaymentDialog({
             )}
             {schoolId && (
               <div>
-                <Label htmlFor="assign-program">Program</Label>
+                <Label htmlFor="assign-program">Session</Label>
                 <Select
                   id="assign-program"
                   value={programId}
                   onChange={(e) => chooseProgram(e.target.value)}
                   options={[
-                    ...(schoolId === NEW ? [] : [{ value: "", label: "Pick a program" }]),
+                    ...(schoolId === NEW ? [] : [{ value: "", label: "Pick a session" }]),
                     ...(school?.programs ?? []).map((p) => ({ value: p.id, label: `${p.name} · ${formatCurrency(p.monthly_fee)}/mo` })),
-                    { value: NEW, label: "+ A new program" },
+                    { value: NEW, label: "+ A new session" },
                   ]}
                 />
               </div>
@@ -486,7 +486,7 @@ export function AssignPaymentDialog({
             {programId === NEW && (
               <div className="grid grid-cols-[1fr_8rem] gap-3">
                 <div>
-                  <Label htmlFor="new-program">New program&rsquo;s name</Label>
+                  <Label htmlFor="new-program">New session&rsquo;s name</Label>
                   <Input id="new-program" placeholder="Fall Basketball" value={program.name} onChange={(e) => setProgram({ ...program, name: e.target.value })} />
                 </div>
                 <div>
@@ -518,7 +518,7 @@ export function AssignPaymentDialog({
               {placing && newSchool && <Line>New school: <strong>{schoolLabel}</strong></Line>}
               {placing && newProgram && (
                 <Line>
-                  New program at {schoolLabel}: <strong>{programLabel}</strong>, {formatCurrency(fee)} a month
+                  New session at {schoolLabel}: <strong>{programLabel}</strong>, {formatCurrency(fee)} a month
                 </Line>
               )}
               {placing && (
@@ -549,7 +549,7 @@ export function AssignPaymentDialog({
                   go("child");
                 }}
               >
-                It&rsquo;s for a different child or program
+                It&rsquo;s for a different child or session
               </button>
             )}
             <Button type="button" className="h-12 w-full text-base" disabled={pending} onClick={submit}>

@@ -198,11 +198,11 @@ export function dayLabel(iso: string, now: Date = new Date()): string {
 }
 
 /**
- * A session's day as a message names it: "today's session", "tomorrow's
- * session", or "the session on Tuesday, October 6".
+ * A practice's day as a message names it: "today's practice", "tomorrow's
+ * practice", or "the practice on Tuesday, October 6".
  */
 export function sessionDayPhrase(iso: string, now: Date = new Date()): string {
-  if (iso === businessToday(now)) return "today's session";
-  if (iso === businessTomorrow(now)) return "tomorrow's session";
-  return `the session on ${formatDateOnly(iso, { weekday: "long", month: "long", day: "numeric" })}`;
+  if (iso === businessToday(now)) return "today's practice";
+  if (iso === businessTomorrow(now)) return "tomorrow's practice";
+  return `the practice on ${formatDateOnly(iso, { weekday: "long", month: "long", day: "numeric" })}`;
 }

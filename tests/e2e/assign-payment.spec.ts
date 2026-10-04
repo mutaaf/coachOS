@@ -42,11 +42,11 @@ test("a Zelle from a brand-new family: new school, program, parent and child, in
 
   await d.getByLabel("Child first name").fill("Mia");
   await expect(d.getByLabel("Last name")).toHaveValue("Garcia");
-  await d.getByRole("button", { name: "Next: school and program" }).click();
+  await d.getByRole("button", { name: "Next: school and session" }).click();
 
   await d.getByLabel("School").selectOption({ label: "+ A new school" });
   await d.getByLabel("New school’s name").fill("Lakehill Elementary");
-  await d.getByLabel("New program’s name").fill("Fall Soccer");
+  await d.getByLabel("New session’s name").fill("Fall Soccer");
   // The fee starts at what was paid.
   await expect(d.getByLabel("Monthly fee")).toHaveValue("120.00");
   await d.getByRole("button", { name: "Next: check it over" }).click();
@@ -109,7 +109,7 @@ test("typing a number that's already on file offers that family instead of a dup
 
   // Ana owes nothing yet, so: which child, and the program Leo is already in.
   await expect(d.getByRole("radio", { name: /Leo Lopez/ })).toBeChecked();
-  await d.getByRole("button", { name: "Next: school and program" }).click();
+  await d.getByRole("button", { name: "Next: school and session" }).click();
   await d.getByRole("button", { name: "Next: check it over" }).click();
   await expect(d.getByTestId("assign-review")).toContainText("Leo in Test Program");
   await d.getByRole("button", { name: "Record $80.00" }).click();

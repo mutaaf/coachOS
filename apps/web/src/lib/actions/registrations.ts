@@ -376,7 +376,7 @@ export async function promoteFromWaitlist(registrationId: string, opts: { outOfT
 
   const seat = await seatFree(supabase, reg.program_id);
   if ("error" in seat) return seat;
-  if (!seat.free) return { error: "That program is still full. Free a seat first." };
+  if (!seat.free) return { error: "That session is still full. Free a seat first." };
 
   const taken = await takeSeat(supabase, registrationId);
   if (taken) return taken;
@@ -393,11 +393,11 @@ export async function promoteNextInLine(programId: string) {
   const supabase = createAdminSupabase();
 
   const first = await nextInLine(supabase, programId);
-  if (!first) return { error: "Nobody is waiting for this program." };
+  if (!first) return { error: "Nobody is waiting for this session." };
 
   const seat = await seatFree(supabase, programId);
   if ("error" in seat) return seat;
-  if (!seat.free) return { error: "That program is still full. Free a seat first." };
+  if (!seat.free) return { error: "That session is still full. Free a seat first." };
 
   const taken = await takeSeat(supabase, first.id);
   if (taken) return taken;

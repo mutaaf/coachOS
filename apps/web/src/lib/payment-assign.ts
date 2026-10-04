@@ -130,7 +130,7 @@ export async function assignPayment(
     }
     if (!("id" in student) && !s(student.first_name)) return { error: "Enter the child's first name." };
     if ("monthly_fee" in pl.program && !(Number(pl.program.monthly_fee) > 0)) {
-      return { error: "Enter the new program's monthly fee." };
+      return { error: "Enter the new session's monthly fee." };
     }
 
     const { data, error } = await supabase.rpc("place_family", {
@@ -146,7 +146,7 @@ export async function assignPayment(
     parentId = (data as any).parent_id;
     created = (data as any).created ?? [];
   } else if (!parentId) {
-    return { error: "Say which child this is for, and their program." };
+    return { error: "Say which child this is for, and their session." };
   }
 
   // The payment ------------------------------------------------------------

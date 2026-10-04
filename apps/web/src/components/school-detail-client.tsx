@@ -64,6 +64,8 @@ interface SchoolDetailClientProps {
   allParents: Parent[];
   websiteListings: WebsiteListing[];
   defaultMonthlyFee: string;
+  catalog?: { id: string; name: string; description: string; default_monthly_fee: number; default_capacity: number }[];
+  seasons?: { id: string; name: string; status: string }[];
 }
 
 function getStatusBadgeVariant(
@@ -148,6 +150,8 @@ export function SchoolDetailClient({
   allParents,
   websiteListings,
   defaultMonthlyFee,
+  catalog = [],
+  seasons = [],
 }: SchoolDetailClientProps) {
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -410,11 +414,11 @@ export function SchoolDetailClient({
           {/* Programs List */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Programs</h2>
+              <h2 className="text-lg font-semibold">Sessions</h2>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">
                   {programs.length}{" "}
-                  {programs.length === 1 ? "program" : "programs"}
+                  {programs.length === 1 ? "session" : "sessions"}
                 </span>
                 <Button size="sm" variant="outline" onClick={() => setRosterProgramId(null)}>
                   <Upload className="h-4 w-4 mr-1" />
@@ -422,7 +426,7 @@ export function SchoolDetailClient({
                 </Button>
                 <Button size="sm" onClick={handleAddProgram}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Program
+                  Add session
                 </Button>
               </div>
             </div>
@@ -431,11 +435,11 @@ export function SchoolDetailClient({
               <div className="rounded-2xl border border-dashed bg-white p-8 text-center">
                 <GraduationCap className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  No programs created yet for this school
+                  No sessions at this school yet
                 </p>
                 <Button size="sm" variant="outline" onClick={handleAddProgram}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Create First Program
+                  Add first session
                 </Button>
               </div>
             ) : (
@@ -497,7 +501,7 @@ export function SchoolDetailClient({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDuplicateProgram(program)}
-                        title="Duplicate program"
+                        title="Duplicate session"
                       >
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
@@ -551,7 +555,7 @@ export function SchoolDetailClient({
                       Parent
                     </th>
                     <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
-                      Program
+                      Session
                     </th>
                     <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
                       Status
@@ -656,7 +660,7 @@ export function SchoolDetailClient({
               <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-1">No schedule yet</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
-                Add schedule templates to your programs to see the weekly
+                Add a weekly practice time to your sessions to see the weekly
                 schedule here.
               </p>
               <Button
@@ -751,7 +755,7 @@ export function SchoolDetailClient({
               {upcomingSessions.length > 0 && (
                 <div>
                   <h2 className="text-lg font-semibold mb-4">
-                    Upcoming Sessions
+                    Upcoming practices
                   </h2>
                   <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
                     <table className="w-full">
@@ -761,7 +765,7 @@ export function SchoolDetailClient({
                             Date
                           </th>
                           <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
-                            Program
+                            Session
                           </th>
                           <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3 hidden sm:table-cell">
                             Time
@@ -822,7 +826,7 @@ export function SchoolDetailClient({
               <CreditCard className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-1">No invoices yet</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Invoices for this school&apos;s programs will appear here.
+                Invoices for this school&apos;s sessions will appear here.
               </p>
             </div>
           ) : (
@@ -879,7 +883,7 @@ export function SchoolDetailClient({
                         Student
                       </th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
-                        Program
+                        Session
                       </th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
                         Month
@@ -989,6 +993,8 @@ export function SchoolDetailClient({
         defaultValues={duplicatingProgram}
         websiteListings={websiteListings}
         defaultMonthlyFee={defaultMonthlyFee}
+        catalog={catalog}
+        seasons={seasons}
       />
 
       <AddStudentToSchoolDialog

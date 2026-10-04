@@ -54,7 +54,7 @@ export function InvoiceFormDialog({ open, onOpenChange, invoice }: InvoiceFormDi
           <div className="rounded-xl bg-muted/50 p-3 text-sm space-y-1">
             <div><span className="text-muted-foreground">Student:</span> {invoice.students?.first_name} {invoice.students?.last_name}</div>
             <div><span className="text-muted-foreground">Parent:</span> {invoice.parents?.first_name} {invoice.parents?.last_name}</div>
-            <div><span className="text-muted-foreground">Program:</span> {invoice.programs?.name}</div>
+            <div><span className="text-muted-foreground">Session:</span> {invoice.programs?.name}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

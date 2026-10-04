@@ -33,7 +33,7 @@ export async function createScheduleTemplate(formData: FormData) {
   const coach_id = ((formData.get("coach_id") as string) || "").trim() || null;
 
   if (!program_id || isNaN(day_of_week) || !start_time || !end_time) {
-    return { error: "Program, day of week, start time, and end time are required." };
+    return { error: "Session, day of week, start time, and end time are required." };
   }
 
   if (day_of_week < 0 || day_of_week > 6) {
@@ -77,7 +77,7 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
   const update_future = ["on", "true"].includes(formData.get("update_future") as string);
 
   if (!program_id || isNaN(day_of_week) || !start_time || !end_time) {
-    return { error: "Program, day of week, start time, and end time are required." };
+    return { error: "Session, day of week, start time, and end time are required." };
   }
 
   const { data: before } = await supabase
@@ -311,7 +311,7 @@ export async function cancelSession(id: string, reason: string) {
 
   if (error) {
     console.error("Error cancelling session:", error);
-    return { error: "Failed to cancel session. Please try again." };
+    return { error: "Failed to cancel practice. Please try again." };
   }
 
   // A coach holding the link should not be able to take a register for a
@@ -369,7 +369,7 @@ export async function completeSession(id: string, records: AttendanceRecord[] = 
 
   if (error) {
     console.error("Error completing session:", error);
-    return { error: "Failed to mark session as complete. Please try again." };
+    return { error: "Failed to mark practice as complete. Please try again." };
   }
 
   revalidatePath("/schedule");
@@ -389,7 +389,7 @@ export async function createMakeupSession(formData: FormData) {
   const notes = formData.get("notes") as string | null;
 
   if (!program_id || !date || !start_time || !end_time) {
-    return { error: "Program, date, start time, and end time are required." };
+    return { error: "Session, date, start time, and end time are required." };
   }
 
   const { data, error } = await supabase
@@ -408,7 +408,7 @@ export async function createMakeupSession(formData: FormData) {
 
   if (error) {
     console.error("Error creating makeup session:", error);
-    return { error: "Failed to create makeup session. Please try again." };
+    return { error: "Failed to create makeup practice. Please try again." };
   }
 
   revalidatePath("/schedule");
@@ -424,7 +424,7 @@ export async function recordAttendance(sessionId: string, records: AttendanceRec
   const supabase = createAdminSupabase();
 
   if (!sessionId || !records || records.length === 0) {
-    return { error: "Session ID and attendance records are required." };
+    return { error: "Practice and attendance records are required." };
   }
 
   const result = await saveRegister(supabase, sessionId, records);

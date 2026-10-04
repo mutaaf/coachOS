@@ -62,7 +62,7 @@ export function SchoolsPageClient({ schools, importOptions, defaultMonthlyFee }:
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Schools</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your partner schools and programs
+            Manage your partner schools and sessions
           </p>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -149,7 +149,7 @@ export function SchoolsPageClient({ schools, importOptions, defaultMonthlyFee }:
                     <GraduationCap className="h-3.5 w-3.5" />
                     <span>
                       {school.program_count}{" "}
-                      {school.program_count === 1 ? "program" : "programs"}
+                      {school.program_count === 1 ? "session" : "sessions"}
                     </span>
                   </div>
                 </div>
