@@ -475,8 +475,24 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
     let cardAt: { top: number; left: number } | null = null;
 
     if (narrow) {
-      const cardTop = vh - edge - card.height;
-      box.bottom = Math.min(box.bottom, cardTop - gap);
+      // Docked along the bottom, clear of the home bar — unless the element
+      // sits so low that the card would cover it (the last thing on a page
+      // that can't scroll any further); then the card docks at the top and
+      // the spotlight starts below it.
+      const insets = getComputedStyle(document.documentElement);
+      const sab = parseFloat(insets.getPropertyValue("--safe-bottom")) || 0;
+      const sat = parseFloat(insets.getPropertyValue("--safe-top")) || 0;
+      const bottomDock = vh - edge - sab - card.height;
+      const enough = Math.min(rect.height + pad * 2, 64);
+      if (box.top + enough <= bottomDock - gap) {
+        cardAt = { top: bottomDock, left: edge };
+        box.bottom = Math.min(box.bottom, bottomDock - gap);
+      } else {
+        const topDock = edge + sat;
+        cardAt = { top: topDock, left: edge };
+        box.top = Math.max(box.top, topDock + card.height + gap);
+        box.bottom = Math.max(box.bottom, box.top + 24);
+      }
     } else if (box.bottom + gap + card.height <= vh - edge) {
       cardAt = { top: box.bottom + gap, left: clamp(box.left, edge, vw - card.width - edge) };
     } else if (box.top - gap - card.height >= edge) {
@@ -524,11 +540,20 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
       <div
         ref={cardRef}
         className={
-          narrow || !rect
-            ? `fixed inset-x-3 ${rect ? "bottom-3" : "bottom-3 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"} rounded-2xl bg-white p-5 shadow-2xl`
-            : "fixed w-[380px] rounded-2xl bg-white p-5 shadow-2xl"
+          // On a short phone the card is capped and its text scrolls, so the
+          // element it explains always keeps some of the screen.
+          "flex max-h-[min(65dvh,32rem)] flex-col rounded-2xl bg-white p-4 shadow-2xl sm:p-5 " +
+          (narrow || !rect
+            ? `fixed inset-x-3 ${rect ? "bottom-[calc(0.75rem+env(safe-area-inset-bottom))]" : "bottom-[calc(0.75rem+env(safe-area-inset-bottom))] sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"}`
+            : "fixed w-[380px]")
         }
-        style={!narrow && rect && layout?.card ? layout.card : undefined}
+        style={
+          rect && layout?.card
+            ? narrow
+              ? { top: layout.card.top, bottom: "auto" }
+              : layout.card
+            : undefined
+        }
       >
         <div className="flex items-start justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
@@ -538,29 +563,31 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
             type="button"
             onClick={finish}
             aria-label="Close the tour"
-            className="-m-1 rounded p-1 text-slate-400 hover:text-slate-600"
+            className="-m-2.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         <h2 id="tour-title" className="mt-1 text-lg font-semibold text-slate-900">
           {step.title}
         </h2>
-        <div className="mt-2 text-sm leading-relaxed text-slate-600">{step.body}</div>
+        <div className="-mr-2 mt-2 min-h-0 overflow-y-auto overscroll-contain pr-2 text-sm leading-relaxed text-slate-600">
+          {step.body}
+        </div>
 
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <button type="button" onClick={finish} className="text-sm text-slate-500 hover:text-slate-700">
+        <div className="mt-4 flex shrink-0 items-center justify-between gap-2">
+          <button type="button" onClick={finish} className="-ml-2 h-10 rounded-lg px-2 text-sm text-slate-500 hover:text-slate-700">
             {last ? "" : "Skip tour"}
           </button>
           <div className="flex gap-2">
             {index! > 0 && (
-              <Button variant="outline" size="sm" className="h-10" onClick={() => setIndex(index! - 1)}>
+              <Button variant="outline" size="sm" className="h-11 sm:h-10" onClick={() => setIndex(index! - 1)}>
                 Back
               </Button>
             )}
             <Button
               size="sm"
-              className="h-10"
+              className="h-11 min-w-[5rem] sm:h-10"
               disabled={waiting}
               onClick={() => (last ? finish() : setIndex(index! + 1))}
             >
@@ -570,7 +597,7 @@ export function GuidedTour({ autoStart, ctx }: { autoStart: boolean; ctx: TourCo
         </div>
 
         {/* Progress */}
-        <div className="mt-4 flex gap-1" aria-hidden>
+        <div className="mt-4 flex shrink-0 gap-1" aria-hidden>
           {STEPS.map((s, i) => (
             <span key={s.id} className={`h-1 flex-1 rounded-full ${i <= index! ? "bg-orange-500" : "bg-slate-200"}`} />
           ))}

@@ -61,10 +61,10 @@ function Welcome() {
   if (state === "bad")
     return (
       <div className="text-center" data-testid="welcome-bad">
-        <h1 className="text-2xl font-bold">That link has expired or been used</h1>
+        <h1 className="text-2xl font-bold text-balance">That link has expired or been used</h1>
         <p className="mt-2 text-slate-600">
           Links work once, for 24 hours. Ask whoever invited you to send a new one, or{" "}
-          <Link href="/login?forgot=1" className="font-semibold text-orange-600 underline">
+          <Link href="/login?forgot=1" className="inline-block py-2 font-semibold text-orange-600 underline">
             get a new password link
           </Link>
           .
@@ -97,11 +97,14 @@ function Welcome() {
 
 export default function WelcomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-orange-50 px-5">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-sm">
-        <Suspense fallback={null}>
-          <Welcome />
-        </Suspense>
+    // Fixed over the sign-in layout's grey, so the orange fills the screen.
+    <main className="fixed inset-0 overflow-y-auto bg-orange-50">
+      <div className="flex min-h-full items-center justify-center px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm sm:p-7">
+          <Suspense fallback={null}>
+            <Welcome />
+          </Suspense>
+        </div>
       </div>
     </main>
   );
