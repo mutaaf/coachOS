@@ -11,8 +11,9 @@ export function attributionSummary(a: Attribution | null | undefined): string | 
   if (!a) return null;
   const touch = pick(a.last_touch) ?? pick(a.first_touch);
   if (!touch) return null;
-  const source = touch.utm_source || (touch.gclid ? "google" : touch.fbclid ? "facebook" : referrerHost(touch.referrer));
-  const medium = touch.utm_medium || (touch.gclid || touch.fbclid ? "paid" : touch.referrer ? "referral" : null);
+  const referrer = referrerHost(touch.referrer);
+  const source = touch.utm_source || (touch.gclid ? "google" : touch.fbclid ? "facebook" : referrer);
+  const medium = touch.utm_medium || (touch.gclid || touch.fbclid ? "paid" : referrer ? "referral" : null);
   const head = [source, medium].filter(Boolean).join(" / ");
   return [head, touch.utm_campaign].filter(Boolean).join(" · ") || null;
 }

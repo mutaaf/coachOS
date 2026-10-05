@@ -385,6 +385,10 @@ export type Registration = {
   payment_status: "unpaid" | "paid" | "refunded" | "waived";
   stripe_checkout_session_id: string | null;
   notes: string | null;
+  /** Where the family came from, when they registered on the website. */
+  attribution?: Attribution | null;
+  /** What the parent agreed to on the website's form (submit_registration_v2). */
+  consents?: { terms: boolean; medical: boolean; photo: boolean; policy_version: string | null; accepted_at: string } | null;
   created_at: string;
   updated_at: string;
 };
