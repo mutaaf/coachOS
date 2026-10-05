@@ -34,6 +34,7 @@ import {
   type ProgramForListing,
 } from "@/lib/website";
 import type { Partnership, Testimonial } from "@/lib/queries/website";
+import { SitePhotos, type PhotoLibraryProps } from "@/components/site-photos";
 import { AlertTriangle, EyeOff, ExternalLink, ImagePlus, Link2, Lock, Pencil, Plus, Star, Trash2 } from "lucide-react";
 
 /**
@@ -45,8 +46,11 @@ export function WebsitePageClient(props: {
   testimonials: Testimonial[];
   partnerships: Partnership[];
   programs: ProgramForListing[];
+  library: PhotoLibraryProps;
+  tab?: string;
   today: string;
 }) {
+  const tabs = ["programs", "photos", "testimonials", "partnerships"];
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -65,16 +69,20 @@ export function WebsitePageClient(props: {
           Open the website <ExternalLink className="h-4 w-4" />
         </a>
       </div>
-      <Tabs defaultValue="programs">
+      <Tabs defaultValue={props.tab && tabs.includes(props.tab) ? props.tab : "programs"}>
         <div className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
           <TabsList className="h-12 w-max justify-start" data-tour="website-tabs">
             <TabsTrigger value="programs" className="h-10 tabular-nums">Programs ({props.listings.length})</TabsTrigger>
+            <TabsTrigger value="photos" className="h-10 tabular-nums">Photos ({props.library.photos.length})</TabsTrigger>
             <TabsTrigger value="testimonials" className="h-10 tabular-nums">Testimonials ({props.testimonials.length})</TabsTrigger>
             <TabsTrigger value="partnerships" className="h-10 tabular-nums">Partnerships ({props.partnerships.length})</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="programs">
           <Listings listings={props.listings} programs={props.programs} today={props.today} />
+        </TabsContent>
+        <TabsContent value="photos">
+          <SitePhotos {...props.library} />
         </TabsContent>
         <TabsContent value="testimonials">
           <Testimonials items={props.testimonials} />
