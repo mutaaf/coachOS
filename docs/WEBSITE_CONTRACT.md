@@ -1,4 +1,4 @@
-# Website ⇄ CoachOS contract (v1.2)
+# Website ⇄ CoachOS contract (v1.3)
 
 risingstars.training reads and writes this database with the anon key. CoachOS is the
 source of truth for anything operational; the website owns copy, pictures and SEO. These
@@ -76,6 +76,33 @@ original. The column list is unchanged.
 - Marketing email carries `List-Unsubscribe` / `List-Unsubscribe-Post` pointing at
   `{COACHOS_URL}/api/unsubscribe?t=<token>`.
 
+### v1.3 — promotional texts, quiet hours, youth camps (2026-10-05)
+
+Owner facts: Rising Stars is an SBA small business, holds no DSHS youth camp license, and is
+**not registered** as a Texas telephone solicitor (Bus. & Com. Code ch. 302 / SB 140).
+
+- **New consent key `sms_promotional`** in `submit_registration_v2`'s `p_consents` and
+  `submit_inquiry`'s `p_details.consents` (boolean). `sms` now means program/operational texts
+  only (updates, schedule changes, cancellations, reminders); `sms_promotional` is prior express
+  written consent to marketing texts (new programs, offers) from Rising Stars Youth Academy.
+- CoachOS stores it with the other consents (verbatim, server `accepted_at`), copies it to the
+  parent when a registration is placed (`ops.parents.sms_promotional_consent_at` /
+  `…_opt_out_at`, history in `ops.consent_log` with `kind = 'sms_promotional'`), and records an
+  inquiry's "yes" on the family already on file with that phone. Dropped when no phone was given.
+- **A promotional text goes only to a parent whose latest `sms_promotional` answer is true.**
+  `sms: true` alone never permits a promotion, and parents who only ever gave `sms` are not
+  eligible (no backfill). A "no" to `sms` (or a STOP) is a no to promotions too.
+- The contact form's single SMS box ("this inquiry and programs I may be interested in") sends
+  `sms: true, sms_promotional: true` together. The registration form asks separately.
+- Promotional texts keep Texas quiet hours (§301.051): Mon–Sat 9:00–21:00, Sun 12:00–21:00,
+  America/Chicago. CoachOS refuses to queue or mark sent a promotion outside them; operational
+  texts are unaffected.
+- **Youth camps.** A session whose weekly times (within its dates) or dated practices cover
+  4 or more consecutive days does not appear in `site_offerings`' sources unless a DSHS youth camp
+  license number is on file for it: the database refuses to publish its listing, open it for
+  sign-ups or add such a time while it's live (`ops.programs.youth_camp_license_number`, not
+  exposed to the website). No change to `site_offerings`' columns.
+
 Attribution is cleaned to `first_touch`/`last_touch` (`utm_*`, `gclid`, `fbclid`, `referrer`,
 `landing_path`, `ts`) plus `ga_client_id`/`ga_session_id`, and stored on
 `ops.registrations.attribution`, `ops.inquiries.attribution` and `ops.leads.attribution`.
@@ -111,3 +138,9 @@ v1.2 (site photos, New program): apply `20261006000400`–`20261006000600` (addi
 replaces `site_offerings` with the same columns), then deploy CoachOS. The website can read
 `public.site_media` from then on, falling back to its built-in pictures while it is empty or
 missing (`PGRST205`/`42P01`).
+
+v1.3 (promotional texts, quiet hours, youth-camp guard): apply `20261007000100`–`20261007000200`
+(additive: new columns, functions and triggers; `submit_inquiry`, `record_consent` and
+`create_program_sessions` replaced with the same signatures), then deploy CoachOS. The website can
+send `sms_promotional` before or after — an unknown key was already stored verbatim, and until the
+migration runs nobody is eligible for promotions anyway under the new rule.
