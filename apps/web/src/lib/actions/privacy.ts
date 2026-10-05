@@ -200,15 +200,14 @@ export async function applyPrivacyOptOut(requestId: string) {
   // Promotional texts stop (their consent is withdrawn), but practice and
   // payment texts about their own child still go — that's not marketing. A
   // STOP is recorded separately, on the family page.
-  const { error: smsError } = await supabase.from("parents").update({ sms_consent_at: null }).eq("id", req.parent_id);
-  if (smsError) return { error: smsError.message };
-  await supabase.from("consent_log").insert({
-    parent_id: req.parent_id,
-    kind: "sms",
-    granted: false,
-    source: "privacy_request",
-    recorded_by: user?.id ?? null,
+  const { error: smsError } = await supabase.rpc("record_consent", {
+    p_kind: "sms_promotional",
+    p_granted: false,
+    p_source: "privacy_request",
+    p_parent_id: req.parent_id,
+    p_recorded_by: user?.id ?? null,
   });
+  if (smsError) return { error: smsError.message };
   await audit(supabase, { action: "privacy.opt_out", entity: "inquiry", entityId: requestId, detail: { parent_id: req.parent_id } });
   revalidatePath("/compliance");
   revalidatePath(familyHref(req.parent_id));

@@ -13,7 +13,7 @@ import { familyHref } from "@/lib/family-link";
  * already waiting in the Outbox.
  */
 
-type Kind = "sms" | "marketing_email" | "photo";
+type Kind = "sms" | "sms_promotional" | "marketing_email" | "photo";
 
 async function record(kind: Kind, granted: boolean, ids: { parentId?: string; studentId?: string }) {
   const user = await currentUser();
@@ -28,10 +28,28 @@ async function record(kind: Kind, granted: boolean, ids: { parentId?: string; st
   return error ? { error: error.message } : { success: true as const };
 }
 
-/** The parent agreed to, or asked to stop, program texts (STOP, QUIT, CANCEL… or in person). */
+/**
+ * The parent agreed to, or asked to stop, program texts (STOP, QUIT, CANCEL…
+ * or in person). A STOP stops every text: the database withdraws promotional
+ * consent with it (ops.record_consent).
+ */
 export async function recordSmsChoice(parentId: string, granted: boolean) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const result = await record("sms", granted, { parentId });
+  revalidatePath(familyHref(parentId));
+  revalidatePath("/messaging");
+  return result;
+}
+
+/**
+ * The parent agreed to, or withdrew from, promotional texts (offers, new
+ * programs). Separate from program texts: Rising Stars isn't registered as a
+ * Texas telephone solicitor, so a promotion goes only to a parent with this
+ * consent on file. A STOP (recordSmsChoice false) withdraws it as well.
+ */
+export async function recordSmsPromotionalChoice(parentId: string, granted: boolean) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
+  const result = await record("sms_promotional", granted, { parentId });
   revalidatePath(familyHref(parentId));
   revalidatePath("/messaging");
   return result;

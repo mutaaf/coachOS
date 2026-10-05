@@ -4,7 +4,7 @@ import { CameraOff, Camera, Check, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAction } from "@/lib/use-action";
-import { recordMarketingEmailChoice, recordSmsChoice, setPhotoRelease } from "@/lib/actions/consents";
+import { recordMarketingEmailChoice, recordSmsChoice, recordSmsPromotionalChoice, setPhotoRelease } from "@/lib/actions/consents";
 import { formatBusinessTime } from "@/lib/dates";
 import type { FamilyChild } from "@/lib/queries/families";
 import type { Parent } from "@/types/database";
@@ -12,7 +12,7 @@ import type { Parent } from "@/types/database";
 type Choice = "yes" | "no" | "none";
 
 function choice(consentAt?: string | null, optOutAt?: string | null): Choice {
-  if (optOutAt) return "no";
+  if (optOutAt && (!consentAt || optOutAt >= consentAt)) return "no";
   if (consentAt) return "yes";
   return "none";
 }
@@ -41,7 +41,9 @@ function Mark({ value, yes, no, none }: { value: Choice | boolean | null | undef
  * What this family agreed to, and the buttons to record a change she hears
  * about directly (a STOP texted to her phone, a parent asking her not to post
  * photos). Texts that are only about the child's program go to every enrolled
- * family; promotions only to "OK to texts". Newsletters only to "Newsletter: yes".
+ * family who hasn't said STOP; promotional texts only to "Promotional texts:
+ * agreed" — program-text consent doesn't cover them. Newsletters only to
+ * "Newsletter: yes".
  */
 export function FamilyConsents({
   parentId,
@@ -64,6 +66,9 @@ export function FamilyConsents({
       <ul className="space-y-3">
         {guardians.map((g) => {
           const sms = choice(g.sms_consent_at, g.sms_opt_out_at);
+          // A STOP covers promotions too, whatever was agreed before it.
+          const promo: Choice =
+            sms === "no" ? "no" : choice(g.sms_promotional_consent_at, g.sms_promotional_opt_out_at);
           const news = choice(g.marketing_email_consent_at, g.marketing_email_opt_out_at);
           return (
             <li key={g.id} className="rounded-xl border p-3 text-sm">
@@ -73,6 +78,10 @@ export function FamilyConsents({
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
                 <span data-testid="consent-sms">
                   Texts: <Mark value={sms} yes="OK to texts" no="Said STOP" none="No consent on file" />
+                </span>
+                <span data-testid="consent-sms-promotional">
+                  Promotional texts:{" "}
+                  <Mark value={promo} yes="Agreed" no="No promotions" none="Hasn't agreed — no promotions" />
                 </span>
                 <span data-testid="consent-marketing">
                   Newsletter: <Mark value={news} yes="Yes" no="Unsubscribed" none="Not opted in" />
@@ -86,10 +95,23 @@ export function FamilyConsents({
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" className="h-11 sm:h-9" disabled={pending}
-                    onClick={() => run(() => recordSmsChoice(g.id, false), { success: "Texts stopped for this parent", error: "Not saved" })}>
+                    onClick={() => run(() => recordSmsChoice(g.id, false), { success: "All texts stopped for this parent, promotions included", error: "Not saved" })}>
                     They said STOP
                   </Button>
                 )}
+                {sms !== "no" &&
+                  (promo === "yes" ? (
+                    <Button size="sm" variant="outline" className="h-11 sm:h-9" disabled={pending}
+                      onClick={() => run(() => recordSmsPromotionalChoice(g.id, false), { success: "No more promotional texts for this parent", error: "Not saved" })}>
+                      No more promotions
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" className="h-11 sm:h-9" disabled={pending}
+                      title="Only when they agreed in writing (a signed form, or a text or email saying yes to offers and new programs)."
+                      onClick={() => run(() => recordSmsPromotionalChoice(g.id, true), { success: "Promotional texts agreed", error: "Not saved" })}>
+                      They agreed in writing to promotional texts
+                    </Button>
+                  ))}
                 {news !== "no" && g.email && (
                   <Button size="sm" variant="outline" className="h-11 sm:h-9" disabled={pending}
                     onClick={() => run(() => recordMarketingEmailChoice(g.id, false), { success: "Unsubscribed", error: "Not saved" })}>
@@ -120,6 +142,7 @@ export function FamilyConsents({
                     <span>Medical care: <Mark value={c.consents.medical ?? null} yes="Agreed" no="Not agreed" none="Not asked" /></span>
                     <span>Photos: <Mark value={c.consents.photo ?? null} yes="Agreed" no="Not agreed" none="Not asked" /></span>
                     <span>Texts: <Mark value={c.consents.sms ?? null} yes="Agreed" no="Not agreed" none="Not asked" /></span>
+                    <span>Promotional texts: <Mark value={c.consents.sms_promotional ?? null} yes="Agreed" no="Not agreed" none="Not asked" /></span>
                     <span>Newsletter: <Mark value={c.consents.marketing_email ?? null} yes="Agreed" no="Not agreed" none="Not asked" /></span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">

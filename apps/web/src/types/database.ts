@@ -28,6 +28,9 @@ export type Program = {
   public_description: string | null;
   whatsapp_group_url: string | null;
   location: string | null;
+  /** DSHS youth camp license, required to publish a session meeting 4+ days in a row. */
+  youth_camp_license_number?: string | null;
+  youth_camp_license_confirmed_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -75,6 +78,9 @@ export type Parent = {
   /** Express written consent to program texts, and a later STOP (which wins). */
   sms_consent_at?: string | null;
   sms_opt_out_at?: string | null;
+  /** Prior express written consent to promotional texts, and its withdrawal (which wins). Program-text consent doesn't cover promotions. */
+  sms_promotional_consent_at?: string | null;
+  sms_promotional_opt_out_at?: string | null;
   /** Opt-in to newsletters and promotions, and a later unsubscribe (which wins). */
   marketing_email_consent_at?: string | null;
   marketing_email_opt_out_at?: string | null;
@@ -449,6 +455,8 @@ export type RegistrationConsents = {
   medical?: boolean;
   photo?: boolean;
   sms?: boolean;
+  /** v1.3: prior express written consent to promotional texts. */
+  sms_promotional?: boolean;
   marketing_email?: boolean;
   policy_version?: string | null;
   documents?: Record<string, string>;

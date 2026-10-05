@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { admin, anonPublic, seedProgram, truncateAll } from "../helpers/db";
 import { sendBulkMessages } from "@/lib/actions/messages";
@@ -10,12 +10,14 @@ import { GET as unsubscribePage, POST as unsubscribe } from "@/app/api/unsubscri
 
 /**
  * Texts go only to parents who haven't said no (STOP, or not ticking "texts"
- * on the website); promotions only to those who said yes. Marketing email
+ * on the website); promotions only to those who said yes to promotional texts
+ * (sms_promotional, contract v1.3 — see promotional-texts.test.ts). Marketing email
  * needs an opt-in, an unsubscribe that works in one click, the suppression
  * list, and a postal address. Receipts and reminders are unaffected.
  */
 
 afterEach(async () => {
+  vi.useRealTimers();
   await truncateAll();
   await admin.from("config").update({ value: "" }).eq("key", "business_mailing_address");
 });
@@ -47,11 +49,11 @@ describe("texts respect what the parent said", () => {
     expect((await queue(p)).status).toBe("pending");
     const promo = await queue(p, "promotional");
     expect(promo.status).toBe("skipped");
-    expect(promo.error).toMatch(/promotion needs/);
+    expect(promo.error).toMatch(/hasn't agreed to promotional texts/);
   });
 
   it("a parent who agreed gets promotions; after STOP they get nothing, and what was waiting is cleared", async () => {
-    const p = await parent({ sms_consent_at: new Date().toISOString() });
+    const p = await parent({ sms_consent_at: new Date().toISOString(), sms_promotional_consent_at: new Date().toISOString() });
     expect((await queue(p, "promotional")).status).toBe("pending");
     const waiting = await queue(p);
     expect(waiting.status).toBe("pending");
@@ -81,15 +83,19 @@ describe("texts respect what the parent said", () => {
   it("a contact-form texts opt-in counts; leaving it unticked means no texts to that number", async () => {
     const yes = phone();
     const no = phone();
+    // v1.3: the contact form's one box covers both, so it sends both.
     for (const [p, sms] of [[yes, true], [no, false]] as const) {
-      await anonPublic.rpc("submit_inquiry", { p_kind: "general", p_contact: { phone: p }, p_details: { consents: { sms } }, p_attribution: null });
+      await anonPublic.rpc("submit_inquiry", { p_kind: "general", p_contact: { phone: p }, p_details: { consents: { sms, sms_promotional: sms } }, p_attribution: null });
     }
     expect((await queue({ phone: yes }, "promotional")).status).toBe("pending");
     expect((await queue({ phone: no })).status).toBe("skipped");
   });
 
   it("Compose reports how many it held back", async () => {
-    const ok = await parent({ sms_consent_at: new Date().toISOString() });
+    // A Tuesday afternoon in Dallas: inside Texas quiet hours.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-06T15:00:00-05:00"));
+    const ok = await parent({ sms_consent_at: new Date().toISOString(), sms_promotional_consent_at: new Date().toISOString() });
     const none = await parent();
     const result = await sendBulkMessages(
       [ok, none].map((p) => ({ phone: p.phone, name: "Pat" })),

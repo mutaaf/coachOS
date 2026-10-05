@@ -38,7 +38,12 @@ test("a scheduled coach who isn't cleared is flagged", async ({ page }) => {
 });
 
 test("the family page shows consents and who can't be photographed", async ({ page }) => {
-  const { data: parent } = await admin.from("parents").insert({ first_name: "Hina", last_name: "Khan", phone: "+12145550112" }).select("id").single();
+  const now = new Date().toISOString();
+  const { data: parent } = await admin
+    .from("parents")
+    .insert({ first_name: "Hina", last_name: "Khan", phone: "+12145550112", sms_consent_at: now, sms_promotional_consent_at: now })
+    .select("id")
+    .single();
   const { data: child } = await admin.from("students").insert({ first_name: "Zara", last_name: "Khan" }).select("id").single();
   await admin.from("student_parents").insert({ student_id: child!.id, parent_id: parent!.id });
 
@@ -46,8 +51,17 @@ test("the family page shows consents and who can't be photographed", async ({ pa
   await page.goto(`/students/family/${parent!.id}`);
   await expect(page.getByTestId("family-consents")).toBeVisible();
   await expect(page.getByTestId("no-photo-release")).toBeVisible();
+  await expect(page.getByTestId("consent-sms-promotional")).toHaveText(/Promotional texts:\s*Agreed/);
   await page.getByRole("button", { name: "They said STOP" }).click();
   await expect(page.getByTestId("consent-sms")).toHaveText(/Said STOP/);
+  // A STOP covers promotions too.
+  await expect(page.getByTestId("consent-sms-promotional")).toHaveText(/No promotions/);
+});
+
+test("Compose explains who a promotion leaves out", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/messaging?tab=compose");
+  await expect(page.getByTestId("compose-promotional-help")).toContainText("hasn't agreed to promotional texts");
 });
 
 test("a privacy request shows its legal deadline", async ({ page }) => {

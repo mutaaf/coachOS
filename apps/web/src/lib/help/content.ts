@@ -485,13 +485,13 @@ export const TASKS: HelpTask[] = [
     id: "stop-texts",
     title: "A parent says STOP, or doesn't want photos posted",
     when: "As soon as they tell you",
-    keywords: "stop texts unsubscribe opt out photos pictures social media consent newsletter",
+    keywords: "stop texts unsubscribe opt out photos pictures social media consent newsletter promotional promotion quiet hours",
     href: "/students",
     hrefLabel: "Open Students & Parents",
     steps: [
-      { text: "Open the family and find **Consents**. Tap [[They said STOP]] — nothing else will be texted to them, and anything waiting in the Outbox is cleared." },
+      { text: "Open the family and find **Consents**. Tap [[They said STOP]] — nothing else will be texted to them (promotions included), and anything waiting in the Outbox is cleared." },
       { text: "Children marked **Don't post photos** must not appear in anything you publish. Tap [[Parent signed a photo release]] only when you have it in writing." },
-      { text: "In **Compose**, tick **This is a promotion** for news and offers: only parents who agreed to texts get it." },
+      { text: "In **Compose**, tick **This is a promotion** for news, offers and new programs: only parents who agreed to **promotional** texts get it — agreeing to program texts isn't enough. Promotions can only be sent Monday–Saturday 9 a.m.–9 p.m. and Sunday noon–9 p.m." },
     ],
   },
 ];

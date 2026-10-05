@@ -16,6 +16,7 @@ import { MessageSquare, Send, Users, Plus, Pencil, Trash2, Eye } from "lucide-re
 import type { MessageTemplate } from "@/types/database";
 import { OutboxPanel } from "@/components/outbox-panel";
 import { initialSelection, recipientReducer, sendableRecipients, type RecipientMode } from "@/lib/recipient-selection";
+import { PROMO_HOURS_TEXT } from "@/lib/quiet-hours";
 
 const VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
 
@@ -33,7 +34,8 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  // A promotion (news, offers, a new program) goes only to parents who agreed to texts.
+  // A promotion (news, offers, a new program) goes only to parents who agreed
+  // to promotional texts — agreeing to program texts isn't enough.
   const [promotional, setPromotional] = useState(false);
   const [selection, dispatch] = useReducer(recipientReducer, initialSelection);
   const { mode: recipientMode, selectedId: selectedSchoolOrProgram } = selection;
@@ -76,7 +78,9 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
       const { count, skipped = 0 } = result as { count: number; skipped?: number };
       toast.success(`${count - skipped} message(s) ready in the Outbox`, {
         description: skipped
-          ? `${skipped} not queued: those parents said STOP${promotional ? " or haven't agreed to promotional texts" : ""}.`
+          ? promotional
+            ? `${skipped} not queued: those parents haven't agreed to promotional texts (agreeing to program texts doesn't count), or said STOP.`
+            : `${skipped} not queued: those parents said STOP.`
           : undefined,
       });
       setMessage("");
@@ -230,9 +234,11 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 />
                 <span>
                   This is a promotion (news, offers, a new program)
-                  <span className="block text-xs text-muted-foreground">
-                    Only parents who agreed to texts will get it. Practice and payment messages don&apos;t need this.
-                    Parents who said STOP never get either.
+                  <span className="block text-xs text-muted-foreground" data-testid="compose-promotional-help">
+                    Only parents who agreed to <strong>promotional</strong> texts get it — agreeing to program texts
+                    isn&apos;t enough, so anyone who hasn&apos;t agreed to promotional texts is left out (Texas law,
+                    as we aren&apos;t registered as a telephone solicitor). Promotions can only be sent {PROMO_HOURS_TEXT}.
+                    Practice and payment messages don&apos;t need this. Parents who said STOP never get either.
                   </span>
                 </span>
               </label>

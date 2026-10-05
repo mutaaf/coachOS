@@ -4,6 +4,7 @@ import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { renderTemplate } from "shared";
+import { quietHoursMessage } from "@/lib/quiet-hours";
 
 /**
  * Templates the app sends on its own, found by name. Renaming or deleting one
@@ -97,10 +98,13 @@ export async function sendMessage(formData: FormData) {
  * Queue one message per recipient in the Outbox.
  *
  * `purpose` decides who may get it (enforced in the database,
- * 20261006000130_messaging_consent.sql): "operational" — about the child's
- * program — goes to every parent who hasn't said STOP; "promotional" only to
- * parents with SMS consent on file. Those who can't get it are filed as
- * skipped with the reason, and counted in `skipped`.
+ * 20261006000130_messaging_consent.sql and 20261007000100_promotional_texts.sql):
+ * "operational" — about the child's program — goes to every parent who hasn't
+ * said STOP; "promotional" only to parents who agreed to promotional texts
+ * (sms_promotional — agreeing to program texts isn't enough). Those who can't
+ * get it are filed as skipped with the reason, and counted in `skipped`.
+ *
+ * A promotion is refused outright outside Texas quiet hours (§301.051).
  */
 export async function sendBulkMessages(
   recipients: { phone: string; name: string }[],
@@ -110,6 +114,11 @@ export async function sendBulkMessages(
 ) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
+
+  if (purpose === "promotional") {
+    const quiet = quietHoursMessage();
+    if (quiet) return { error: quiet };
+  }
 
   // Compose knows each recipient's name and nothing else, so {{parent_name}}
   // is filled in and anything else is refused — a parent must never receive a
