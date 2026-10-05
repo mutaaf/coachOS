@@ -1,6 +1,7 @@
 "use server";
 
-import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
+import { signedIn, NOT_SIGNED_IN, requireSignedIn, currentUser } from "@/lib/auth-guard";
+import { validLicenseNumber } from "@/lib/youth-camp";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { addDays, businessToday, toISODate } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
@@ -21,6 +22,37 @@ export async function fetchSessionsForWeek(startDate: string, endDate: string) {
 
 // ---------- Schedule Template Actions ----------
 
+/**
+ * A weekly time that makes a session meet 4+ days in a row makes it a youth
+ * camp (Tex. Health & Safety Code ch. 141). The database refuses that for a
+ * session on the website unless a DSHS youth camp license is on file
+ * (20261007000200_youth_camp_guard.sql). When the admin ticked "We hold a
+ * current DSHS youth camp license", its number is saved on the session first.
+ */
+async function saveConfirmedLicense(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  programId: string,
+  formData: FormData
+): Promise<{ error?: string }> {
+  if (!["on", "true"].includes(String(formData.get("youth_camp_license_confirmed") ?? ""))) return {};
+  const number = String(formData.get("youth_camp_license_number") ?? "").trim();
+  if (!validLicenseNumber(number)) return { error: "Enter the DSHS youth camp license number." };
+  const { error } = await supabase
+    .from("programs")
+    .update({
+      youth_camp_license_number: number,
+      youth_camp_license_confirmed_at: new Date().toISOString(),
+      youth_camp_license_confirmed_by: (await currentUser())?.id ?? null,
+    })
+    .eq("id", programId);
+  return error ? { error: error.message } : {};
+}
+
+/** The database's own words when it refuses (P0001), else a generic message. */
+function templateError(error: { code?: string; message: string }, fallback: string) {
+  return error.code === "P0001" ? error.message : fallback;
+}
+
 export async function createScheduleTemplate(formData: FormData) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
@@ -40,6 +72,9 @@ export async function createScheduleTemplate(formData: FormData) {
     return { error: "Day of week must be between 0 (Sunday) and 6 (Saturday)." };
   }
 
+  const license = await saveConfirmedLicense(supabase, program_id, formData);
+  if (license.error) return { error: license.error };
+
   const { data, error } = await supabase
     .from("schedule_templates")
     .insert({
@@ -55,7 +90,7 @@ export async function createScheduleTemplate(formData: FormData) {
 
   if (error) {
     console.error("Error creating schedule template:", error);
-    return { error: "Failed to create schedule template. Please try again." };
+    return { error: templateError(error, "Failed to create schedule template. Please try again.") };
   }
 
   revalidatePath("/schedule");
@@ -80,6 +115,9 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
     return { error: "Session, day of week, start time, and end time are required." };
   }
 
+  const license = await saveConfirmedLicense(supabase, program_id, formData);
+  if (license.error) return { error: license.error };
+
   const { data: before } = await supabase
     .from("schedule_templates")
     .select("day_of_week, coach_id")
@@ -102,7 +140,7 @@ export async function updateScheduleTemplate(id: string, formData: FormData) {
 
   if (error) {
     console.error("Error updating schedule template:", error);
-    return { error: "Failed to update schedule template. Please try again." };
+    return { error: templateError(error, "Failed to update schedule template. Please try again.") };
   }
 
   if (update_future && before) {

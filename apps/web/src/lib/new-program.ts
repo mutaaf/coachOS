@@ -8,6 +8,8 @@
  * the server action.
  */
 
+import { validLicenseNumber, youthCampCheck, YOUTH_CAMP_BLOCKED, type YouthCampCheck } from "@/lib/youth-camp";
+
 export type Slot = { dow: number; start: string; end: string };
 
 export interface CatalogOption {
@@ -115,6 +117,12 @@ export interface Draft {
   schools: SchoolPick[];
   registrationOpen: boolean;
   website: { show: boolean; title: string; description: string; mediaId: string | null; featured: boolean };
+  /**
+   * For a schedule meeting 4+ days in a row (a youth camp under Texas law):
+   * the admin's confirmation of a current DSHS youth camp license, and its
+   * number. Optional so a draft saved by an older page still reads.
+   */
+  youthCamp?: { confirmed: boolean; number: string };
 }
 
 export const SPORTS = ["basketball", "soccer", "flag football", "volleyball", "tennis", "multi-sport"];
@@ -217,6 +225,7 @@ export function emptyDraft(ctx: FlowContext): Draft {
     schools: [],
     registrationOpen: true,
     website: { show: true, title: "", description: "", mediaId: null, featured: false },
+    youthCamp: { confirmed: false, number: "" },
   };
 }
 
@@ -384,6 +393,31 @@ export function resolvedSessions(d: Draft, ctx: Pick<FlowContext, "catalog">) {
 }
 
 /* ------------------------------------------------------------------------- */
+/* Youth camps (Tex. Health & Safety Code ch. 141)                             */
+/* ------------------------------------------------------------------------- */
+
+/** The sessions whose weekly times, within their dates, meet 4+ days in a row. */
+export function campSessions(d: Draft, ctx: Pick<FlowContext, "catalog" | "seasons">): { name: string; check: YouthCampCheck }[] {
+  const { start, end } = effectiveDates(d, ctx);
+  const out: { name: string; check: YouthCampCheck }[] = [];
+  const shared = youthCampCheck({ days: d.slots.map((s) => s.dow), start, end });
+  for (const s of resolvedSessions(d, ctx)) {
+    const check = s.ownSlots ? youthCampCheck({ days: s.slots.map((x) => x.dow), start, end }) : shared;
+    if (check.looksLikeCamp) out.push({ name: s.name, check });
+  }
+  // Before any school is picked, the shared schedule alone.
+  if (d.schools.length === 0 && shared.looksLikeCamp) out.push({ name: "", check: shared });
+  return out;
+}
+
+/** On the website: a card, or (with no card) open for sign-ups — as site_offerings decides. */
+export const goesOnWebsite = (d: Draft) => d.website.show || d.registrationOpen;
+
+export function licenseConfirmed(d: Draft): boolean {
+  return !!d.youthCamp?.confirmed && validLicenseNumber(d.youthCamp.number);
+}
+
+/* ------------------------------------------------------------------------- */
 /* Checks                                                                     */
 /* ------------------------------------------------------------------------- */
 
@@ -451,6 +485,13 @@ export function stepProblems(d: Draft, ctx: FlowContext, step: Step): string[] {
       if (s.coachId && !ctx.coaches.some((c) => c.id === s.coachId)) out.push(`The coach picked for ${s.name} is no longer there.`);
     }
   }
+  if (step === "website" && goesOnWebsite(d) && !licenseConfirmed(d) && campSessions(d, ctx).length > 0) {
+    out.push(
+      d.youthCamp?.confirmed
+        ? "Enter the DSHS youth camp license number."
+        : `${YOUTH_CAMP_BLOCKED} Or turn off "Show on the website" and "Open for sign-ups now".`
+    );
+  }
   if (step === "website" && d.website.show && d.website.mediaId) {
     const id = d.website.mediaId;
     if (!ctx.photos.some((p) => p.id === id)) out.push("That photo is no longer in the library. Pick another.");
@@ -506,6 +547,8 @@ export interface Payload {
     slots: Slot[] | null;
   }[];
   website: { show: boolean; title: string | null; description: string | null; media_id: string | null; featured: boolean };
+  /** Sent only when confirmed and needed; stored on every session. */
+  youth_camp_license?: { number: string; confirmed_by?: string | null };
 }
 
 const orNull = (n: number | null) => (n === null || Number.isNaN(n) ? null : n);
@@ -551,6 +594,7 @@ export function toPayload(d: Draft): Payload {
       media_id: d.website.show ? d.website.mediaId : null,
       featured: d.website.featured,
     },
+    ...(licenseConfirmed(d) ? { youth_camp_license: { number: d.youthCamp!.number.trim() } } : {}),
   };
 }
 

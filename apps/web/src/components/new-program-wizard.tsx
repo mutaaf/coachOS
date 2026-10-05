@@ -16,6 +16,9 @@ import type { CoachClearance } from "@/lib/coach-clearance";
 import {
   addSchool,
   AGE_GROUPS,
+  campSessions,
+  goesOnWebsite,
+  licenseConfirmed,
   cardPreview,
   DAY_NAMES,
   DEFAULT_SLOT,
@@ -40,6 +43,7 @@ import {
   type Step,
 } from "@/lib/new-program";
 import { focalPosition } from "@/lib/site-media";
+import { youthCampWarning } from "@/lib/youth-camp";
 import { formatCurrency } from "@/lib/utils";
 import { AlertTriangle, ArrowLeft, Check, ExternalLink, Globe, ImageOff, MapPin, Plus, Search, X } from "lucide-react";
 
@@ -545,7 +549,29 @@ function WhereStep({ draft, setDraft, ctx, clearances }: StepProps) {
       </fieldset>
 
       {draft.schools.length > 0 && <PerSchool draft={draft} setDraft={setDraft} ctx={ctx} clearances={clearances} defaults={{ fee: facts.fee, capacity: facts.capacity }} />}
+
+      <YouthCampWarning draft={draft} ctx={ctx} />
     </section>
+  );
+}
+
+/**
+ * Four or more days in a row is a youth camp under Texas law, which needs a
+ * DSHS license Rising Stars doesn't hold. Shown as soon as the schedule says so.
+ */
+function YouthCampWarning({ draft, ctx }: { draft: Draft; ctx: FlowContext }) {
+  const camps = campSessions(draft, ctx);
+  if (camps.length === 0) return null;
+  const where = camps.map((c) => c.name).filter(Boolean);
+  return (
+    <div role="alert" data-testid="youth-camp-warning" className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-sm text-amber-950">
+      <p className="flex items-center gap-2 font-semibold">
+        <AlertTriangle className="h-5 w-5 shrink-0" /> This looks like a youth camp
+      </p>
+      <p className="mt-1">{youthCampWarning(camps[0].check.stretch)}</p>
+      {where.length > 0 && <p className="mt-1 text-amber-900">Sessions: {where.join(", ")}.</p>}
+      <p className="mt-1 text-amber-900">Fewer days a week (3 or fewer in a row) keeps it a regular program.</p>
+    </div>
   );
 }
 
@@ -663,6 +689,9 @@ function WebsiteStep({ draft, setDraft, ctx, card }: StepProps & { card: CardPre
   const setWeb = (patch: Partial<Draft["website"]>) => setDraft((d) => ({ ...d, website: { ...d.website, ...patch } }));
   const notes = warnings(draft, ctx);
   const n = draft.schools.length;
+  const camps = campSessions(draft, ctx);
+  const camp = draft.youthCamp ?? { confirmed: false, number: "" };
+  const setCamp = (patch: Partial<typeof camp>) => setDraft((d) => ({ ...d, youthCamp: { ...(d.youthCamp ?? { confirmed: false, number: "" }), ...patch } }));
 
   return (
     <section className="space-y-5" aria-labelledby="step-website">
@@ -684,6 +713,31 @@ function WebsiteStep({ draft, setDraft, ctx, card }: StepProps & { card: CardPre
           <Switch id="np-web" checked={w.show} onCheckedChange={(c) => setWeb({ show: c })} />
         </div>
       </div>
+
+      {camps.length > 0 && (
+        <div data-testid="youth-camp-license" className={`space-y-3 rounded-xl border-2 p-4 text-sm ${goesOnWebsite(draft) && !licenseConfirmed(draft) ? "border-amber-400 bg-amber-50 text-amber-950" : "bg-card"}`}>
+          <p className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="h-5 w-5 shrink-0" /> Youth camp license needed to publish
+          </p>
+          <p>{youthCampWarning(camps[0].check.stretch)}</p>
+          <label className="flex min-h-11 items-start gap-2">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-5 w-5 shrink-0"
+              checked={camp.confirmed}
+              onChange={(e) => setCamp({ confirmed: e.target.checked })}
+              data-testid="youth-camp-confirm"
+            />
+            <span>We hold a current DSHS youth camp license</span>
+          </label>
+          {camp.confirmed && (
+            <div className="space-y-1.5">
+              <Label htmlFor="np-camp-license">License number</Label>
+              <Input id="np-camp-license" value={camp.number} onChange={(e) => setCamp({ number: e.target.value })} placeholder="As printed on the DSHS license" />
+            </div>
+          )}
+        </div>
+      )}
 
       {w.show && (
         <div className="space-y-4">

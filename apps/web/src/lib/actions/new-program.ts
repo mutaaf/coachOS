@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
+import { signedIn, NOT_SIGNED_IN, currentUser } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { stepProblems, toPayload, STEPS, type Draft, type FlowContext } from "@/lib/new-program";
 
@@ -49,7 +49,11 @@ export async function createProgramEverywhere(draft: Draft) {
     if (wrong.length) return { error: wrong[0] };
   }
 
-  const { data, error } = await db.rpc("create_program_sessions", { p: toPayload(draft) });
+  const payload = toPayload(draft);
+  // Who confirmed the youth camp license, kept on each session.
+  if (payload.youth_camp_license) payload.youth_camp_license.confirmed_by = (await currentUser())?.id ?? null;
+
+  const { data, error } = await db.rpc("create_program_sessions", { p: payload });
   if (error) {
     // The function's own messages are written for her; anything else isn't.
     if (error.code === "P0001") return { error: error.message };

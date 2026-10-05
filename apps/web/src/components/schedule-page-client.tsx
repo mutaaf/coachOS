@@ -418,7 +418,14 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
         coaches={coaches}
         open={templateFormOpen}
         onOpenChange={handleTemplateFormClose}
-        programs={programs.map((p: any) => ({ id: p.id, name: `${p.school?.name} — ${p.name}` }))}
+        programs={programs.map((p: any) => ({
+          id: p.id,
+          name: `${p.school?.name} — ${p.name}`,
+          start_date: p.start_date,
+          end_date: p.end_date,
+          youth_camp_license_number: p.youth_camp_license_number,
+        }))}
+        templates={templates}
         template={editingTemplate}
       />
     </div>
