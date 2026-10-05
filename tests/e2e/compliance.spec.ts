@@ -31,7 +31,9 @@ test("a scheduled coach who isn't cleared is flagged", async ({ page }) => {
   await signIn(page);
   await page.goto("/coaches");
   await expect(page.getByTestId("coaches-not-cleared")).toBeVisible();
-  await expect(page.getByTestId("coach-clearance").first()).toHaveText(/Not cleared/);
+  // Other specs leave cleared coaches behind, so don't rely on list order.
+  await expect(page.getByText("Uncleared Coach").first()).toBeVisible();
+  await expect(page.getByTestId("coach-clearance").filter({ hasText: /Not cleared/ }).first()).toBeVisible();
   await expect(page.getByText(/Scheduled to coach but not cleared/)).toBeVisible();
 });
 

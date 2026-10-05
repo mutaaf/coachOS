@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { CopyButton } from "@/components/ui/copy-button";
 import { useAction } from "@/lib/use-action";
 import { createProgramEverywhere, type Created } from "@/lib/actions/new-program";
+import { CoachClearanceBadge } from "@/components/coach-clearance-badge";
+import type { CoachClearance } from "@/lib/coach-clearance";
 import {
   addSchool,
   AGE_GROUPS,
@@ -54,10 +56,13 @@ export function NewProgramWizard({
   ctx,
   programId,
   fromSeasonId,
+  clearances = {},
 }: {
   ctx: FlowContext;
   programId: string | null;
   fromSeasonId: string | null;
+  /** Safeguarding status per coach id, so an uncleared coach is flagged as they're picked. */
+  clearances?: Record<string, CoachClearance>;
 }) {
   const known = programId && ctx.catalog.some((c) => c.id === programId) ? programId : null;
   const mode: "new" | "add" | "duplicate" = known ? (fromSeasonId ? "duplicate" : "add") : "new";
@@ -161,7 +166,7 @@ export function NewProgramWizard({
           data-testid="new-program-form"
         >
           {step === "program" && <ProgramStep draft={draft} setDraft={setDraft} ctx={ctx} />}
-          {step === "where" && <WhereStep draft={draft} setDraft={setDraft} ctx={ctx} />}
+          {step === "where" && <WhereStep draft={draft} setDraft={setDraft} ctx={ctx} clearances={clearances} />}
           {step === "website" && <WebsiteStep draft={draft} setDraft={setDraft} ctx={ctx} card={card} />}
 
           {shown.length > 0 && (
@@ -206,7 +211,12 @@ function saveLabel(d: Draft) {
   return `Save — ${n} ${n === 1 ? "school" : "schools"}`;
 }
 
-type StepProps = { draft: Draft; setDraft: React.Dispatch<React.SetStateAction<Draft>>; ctx: FlowContext };
+type StepProps = {
+  draft: Draft;
+  setDraft: React.Dispatch<React.SetStateAction<Draft>>;
+  ctx: FlowContext;
+  clearances?: Record<string, CoachClearance>;
+};
 
 /* ------------------------------------------------------------------------- */
 /* 1. The program                                                            */
@@ -351,7 +361,7 @@ function ProgramStep({ draft, setDraft, ctx }: StepProps) {
 /* 2. Schools, season and weekly times                                       */
 /* ------------------------------------------------------------------------- */
 
-function WhereStep({ draft, setDraft, ctx }: StepProps) {
+function WhereStep({ draft, setDraft, ctx, clearances }: StepProps) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -534,7 +544,7 @@ function WhereStep({ draft, setDraft, ctx }: StepProps) {
         </div>
       </fieldset>
 
-      {draft.schools.length > 0 && <PerSchool draft={draft} setDraft={setDraft} ctx={ctx} defaults={{ fee: facts.fee, capacity: facts.capacity }} />}
+      {draft.schools.length > 0 && <PerSchool draft={draft} setDraft={setDraft} ctx={ctx} clearances={clearances} defaults={{ fee: facts.fee, capacity: facts.capacity }} />}
     </section>
   );
 }
@@ -580,7 +590,7 @@ function SlotsEditor({ id, slots, onChange }: { id: string; slots: Slot[]; onCha
   );
 }
 
-function PerSchool({ draft, setDraft, ctx, defaults }: StepProps & { defaults: { fee: number; capacity: number } }) {
+function PerSchool({ draft, setDraft, ctx, clearances = {}, defaults }: StepProps & { defaults: { fee: number; capacity: number } }) {
   const sessions = resolvedSessions(draft, ctx);
   return (
     <fieldset className="space-y-3">
@@ -612,18 +622,14 @@ function PerSchool({ draft, setDraft, ctx, defaults }: StepProps & { defaults: {
                         id={`coach-${s.key}`}
                         value={s.coachId}
                         onChange={(e) => setDraft((d) => updateSchool(d, s.key, { coachId: e.target.value }))}
-                        options={[{ value: "", label: ctx.coaches.length ? "No coach yet" : "No coaches yet" }, ...ctx.coaches.map((c) => ({ value: c.id, label: c.name }))]}
+                        options={[{ value: "", label: ctx.coaches.length ? "No coach yet" : "No coaches yet" }, ...ctx.coaches.map((c) => ({ value: c.id, label: clearances[c.id]?.status === "not_cleared" ? `${c.name} (not cleared)` : c.name }))]}
                       />
                     </div>
-                    {/*
-                      TODO(compliance): show <CoachClearanceBadge coachId={s.coachId} /> here (from
-                      getCoachClearance, being added on feat/compliance). Leave this slot in place;
-                      it keeps the coach picker's layout ready for the badge.
-                    */}
-                    <span data-slot="coach-clearance" data-coach-id={s.coachId || undefined} className="empty:hidden" />
+                    {s.coachId ? <CoachClearanceBadge clearance={clearances[s.coachId]} /> : null}
                   </div>
                 </div>
               </div>
+              {s.coachId ? <CoachClearanceBadge clearance={clearances[s.coachId]} warning className="mt-2" /> : null}
               <div className="mt-2">
                 {s.slots === null ? (
                   <button type="button" className="text-sm font-medium text-primary underline-offset-4 hover:underline" onClick={() => setDraft((d) => updateSchool(d, s.key, { slots: [...d.slots] }))}>
