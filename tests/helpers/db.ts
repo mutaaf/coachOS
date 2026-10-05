@@ -43,6 +43,7 @@ function readLocalStatus() {
     url: status.API_URL as string,
     anonKey: status.ANON_KEY as string,
     serviceKey: status.SERVICE_ROLE_KEY as string,
+    dbUrl: status.DB_URL as string,
   };
 }
 
@@ -56,7 +57,27 @@ if (!/^https?:\/\/(127\.0\.0\.1|localhost)/.test(local.url)) {
   );
 }
 
+if (local.dbUrl && !/@(127\.0\.0\.1|localhost):/.test(local.dbUrl)) {
+  throw new Error("Refusing to run tests against a non-local database.");
+}
+
 export const LOCAL = local;
+
+/**
+ * Run a read-only catalog query as the database owner and return its rows.
+ *
+ * For what the REST API can't tell a test: which columns a view really has,
+ * and who may execute a function. Goes through psql against the local stack
+ * only (guarded above).
+ */
+export function sql<T = Record<string, unknown>>(query: string): T[] {
+  const out = execSync(`psql "${local.dbUrl}" -X -q -A -t -v ON_ERROR_STOP=1`, {
+    input: `SELECT coalesce(json_agg(t), '[]'::json) FROM (${query}) t;`,
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  return JSON.parse(out.trim() || "[]") as T[];
+}
 
 /** Service-role client, scoped to the operational schema. */
 export const admin: SupabaseClient = createClient(local.url, local.serviceKey, {
