@@ -438,6 +438,59 @@ export const TASKS: HelpTask[] = [
       { text: "Change what you need and tap [[Save]] — it takes effect everywhere at once. Each address has a Copy button.", tip: "Leave the Stripe card to Mutaaf — it switches between test and live payments.", careful: true },
     ],
   },
+  {
+    id: "privacy-request",
+    title: "A parent asks to see or delete their data",
+    when: "Within 45 days of the request — the law's deadline",
+    keywords: "privacy request delete data erase export see copy personal information law deadline 45 days appeal",
+    href: "/compliance",
+    hrefLabel: "Open Compliance",
+    steps: [
+      { text: "Requests from the website's privacy form appear on **Compliance → Privacy requests**, with the days left. Requests by phone or email count too — ask them to use the form, or note it yourself." },
+      { text: "Check it's really them first: call the number on file. Tap [[Start checking it's them]] and say how you checked.", careful: true },
+      { text: "To send their data, tap [[Download their data]] and email the file to them. To delete, withdraw the children from their sessions, then tap [[Erase family]] and type ERASE.", tip: "Amounts and dates of what they paid stay, for your tax records. Names, phone, email, birthdays, medical notes and messages go." },
+      { text: "If you can't do it, tap [[Decline…]] and say why. If they appeal you have 60 days to decide.", careful: true },
+    ],
+  },
+  {
+    id: "incident",
+    title: "A child gets hurt, or you're worried about a child",
+    when: "The same day",
+    keywords: "incident injury hurt accident concussion head knock report abuse neglect worried dfps hotline",
+    href: "/compliance?tab=incidents",
+    hrefLabel: "Open Incidents",
+    steps: [
+      { text: "If you suspect abuse or neglect, call the Texas Abuse Hotline **1-800-252-5400** (or 911 in an emergency) yourself, right away. The law doesn't let you pass it to someone else.", careful: true },
+      { text: "On **Compliance → Incidents**, tap [[Report an incident]]: when, who, what happened, what was done, and when you told the parent." },
+      { text: "A knock to the head: tick **Possible concussion**. The child can't be marked at practice until a doctor's written OK is in — tap [[Record doctor's clearance]] when it is." },
+    ],
+  },
+  {
+    id: "coach-checks",
+    title: "Make sure a coach is cleared to work with children",
+    when: "Before their first practice, then yearly",
+    keywords: "coach background check sex offender registry training cpr first aid code of conduct cleared safeguarding",
+    href: "/coaches",
+    hrefLabel: "Open Coaches",
+    steps: [
+      { text: "On **Coaches**, tap the shield on a coach. Fill in the background check (it must include the sex-offender registry), abuse-prevention training, CPR / First Aid and the code of conduct." },
+      { text: "A coach shows **Not cleared** until all four are in date. Their name says “not cleared” wherever you assign a coach.", careful: true },
+      { text: "**Compliance → Coach checks** lists who needs renewing in the next 30 days." },
+    ],
+  },
+  {
+    id: "stop-texts",
+    title: "A parent says STOP, or doesn't want photos posted",
+    when: "As soon as they tell you",
+    keywords: "stop texts unsubscribe opt out photos pictures social media consent newsletter",
+    href: "/students",
+    hrefLabel: "Open Students & Parents",
+    steps: [
+      { text: "Open the family and find **Consents**. Tap [[They said STOP]] — nothing else will be texted to them, and anything waiting in the Outbox is cleared." },
+      { text: "Children marked **Don't post photos** must not appear in anything you publish. Tap [[Parent signed a photo release]] only when you have it in writing." },
+      { text: "In **Compose**, tick **This is a promotion** for news and offers: only parents who agreed to texts get it." },
+    ],
+  },
 ];
 
 /** Things CoachOS does by itself, so she knows what not to do. */
