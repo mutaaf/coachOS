@@ -141,3 +141,19 @@ describe("public.submit_inquiry", () => {
     expect(functionFacts(sig).public_execute).toBe(false);
   });
 });
+
+describe("public.submit_registration_v2", () => {
+  const sig = "public.submit_registration_v2(uuid, jsonb, jsonb, jsonb, jsonb, uuid)";
+
+  it("runs as its owner with an empty search_path and returns jsonb", () => {
+    const f = functionFacts(sig);
+    expect(f.security_definer).toBe(true);
+    expect(f.config).toContain('search_path=""');
+    expect(f.result).toBe("jsonb");
+  });
+
+  it("is executable by anon, not by PUBLIC", () => {
+    expect(privileges(sig, "function").anon).toBe(true);
+    expect(functionFacts(sig).public_execute).toBe(false);
+  });
+});
