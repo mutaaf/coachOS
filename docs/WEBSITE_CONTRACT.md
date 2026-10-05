@@ -26,6 +26,26 @@ Changing one is a contract change: tell the website team first.
   `{ok, whatsappGroupUrl}`. A bad or expired token gets 403 and a malformed body gets 400.
   The legacy body still works until `NOTIFY_LEGACY_ENABLED=false`, after which it gets 410.
 
+### v1.1 — compliance (2026-10-06)
+
+- `submit_inquiry` also takes `p_kind = 'privacy_request'` with
+  `p_details = {request_type: access|delete|correct|opt_out|appeal, child_first_names: text[], message}`.
+  An unknown `request_type` is refused. It lands in `ops.inquiries` with a 45-day due date (60 for
+  `appeal`) and is worked on CoachOS's Compliance page, not the Marketing page.
+- `submit_inquiry` stores `p_details` verbatim in `ops.inquiries.details` (unknown keys kept,
+  16 KB cap) and `p_details.consents` (`{sms, marketing_email, policy_version, documents{…}}`) in
+  `ops.inquiries.consents` with the server's `accepted_at`. `sms` is dropped when no phone was given.
+  An opt-in also counts for a family already on file with that phone/email.
+- `submit_registration_v2` stores `p_consents` verbatim (unknown keys kept, 16 KB cap) plus
+  `accepted_at` (server time; a browser's own is kept as `client_accepted_at`). `terms` must be true.
+  When the registration is placed on the roster, `sms`/`marketing_email` go to the parent and `photo`
+  to the child, with history in `ops.consent_log`.
+- Consents are opt-ins. CoachOS texts nobody whose latest answer — on a registration, a contact form,
+  or recorded by staff (e.g. STOP) — is "no", and sends promotions (texts or email) only on a "yes".
+  This matches the website's "we'll call you" when there's no email and no SMS consent.
+- Marketing email carries `List-Unsubscribe` / `List-Unsubscribe-Post` pointing at
+  `{COACHOS_URL}/api/unsubscribe?t=<token>`.
+
 Attribution is cleaned to `first_touch`/`last_touch` (`utm_*`, `gclid`, `fbclid`, `referrer`,
 `landing_path`, `ts`) plus `ga_client_id`/`ga_session_id`, and stored on
 `ops.registrations.attribution`, `ops.inquiries.attribution` and `ops.leads.attribution`.

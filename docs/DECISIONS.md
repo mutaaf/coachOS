@@ -349,3 +349,45 @@ Two paths, both ending in the same invoices and payments tables:
 - Parsing depends on banks' email wording. Unreadable emails are kept and shown
   rather than dropped, so a format change is visible, not silent
 
+---
+
+## ADR-011: Compliance enforced in the database, worked from one page
+
+### Status
+Accepted
+
+### Context
+The owner wants to be covered by federal and Texas law for a business that holds
+children's medical notes and dates of birth, texts parents, and puts adults in
+charge of young children. See docs/COMPLIANCE.md for the law-by-law matrix.
+
+### Decision
+1. **Rules that protect a child or a parent's choice live in the database**, so
+   every path (dashboard, coach register, cron, future code) obeys them: the
+   Outbox refuses texts to a parent whose latest answer is "no" and promotions
+   without a "yes" (`message_respects_consent`); attendance refuses "present" for a
+   child on a concussion hold (`attendance_respects_holds`); the coach register
+   shows medical notes only to the assigned coach (`link_may_see_medical`).
+2. **Consents are stored verbatim** from the website (unknown keys kept), stamped
+   with the server's time, then copied onto the parent/child when placed, with an
+   append-only history (`consent_log`). The latest decision wins.
+3. **Erasure removes people, not money.** `anonymize_family` strips names, contacts,
+   DOB, medical notes and messages but keeps invoice/payment amounts and dates (IRS)
+   and incident reports (claims until the child is 20). The privacy request row is the
+   record that it happened.
+4. **An append-only audit log** (trigger refuses UPDATE/DELETE) records medical-note
+   views, exports, erasures, incident changes and retention runs — ids and counts only.
+5. **Coach clearance is computed, not stored** (`lib/coach-clearance.ts`), so one rule
+   drives the badge, the pickers and the dashboard; `getCoachClearance()` and
+   `<CoachClearanceBadge>` are the reusable surface for the program-creation flow.
+6. **Retention runs nightly, dry until switched on** (`RETENTION_ENABLED=true`).
+
+### Consequences
+- Coaches still have no accounts. "Assigned" means the coach a register link was
+  issued to is the practice's or weekly slot's coach. A practice with no coach shows
+  only that a note exists.
+- STOP/HELP are recorded by hand: there is no inbound SMS. An automated sender must
+  add a webhook using `lib/sms-keywords.ts` first.
+- A parent who registered without ticking "texts" gets no WhatsApp/SMS from the Outbox
+  at all; the owner calls or emails them.
+
