@@ -65,6 +65,8 @@ export interface ExistingSession {
   coach_id: string | null;
   slots: Slot[];
   registration_open: boolean;
+  /** The photo on its website card, if it has its own. */
+  media_id?: string | null;
   created_at: string;
 }
 
@@ -270,7 +272,17 @@ export function draftForProgram(ctx: FlowContext, catalogId: string): Draft {
   const own = ctx.sessions.filter((s) => s.catalog_id === catalogId);
   // Same weekly times as its latest session, as a starting point.
   const latest = [...own].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-  return { ...d, program: { mode: "existing", id: catalogId }, slots: latest ? sortSlots(latest.slots) : [] };
+  // And the photo its cards use, when it's still in the library.
+  const photo = own
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map((s) => s.media_id)
+    .find((m) => m && ctx.photos.some((p) => p.id === m));
+  return {
+    ...d,
+    program: { mode: "existing", id: catalogId },
+    slots: latest ? sortSlots(latest.slots) : [],
+    website: { ...d.website, mediaId: photo ?? null },
+  };
 }
 
 /**

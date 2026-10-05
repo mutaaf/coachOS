@@ -8,7 +8,7 @@ const hhmm = (t: string) => t.slice(0, 5);
 /** Everything the New program page needs to offer sensible defaults. */
 export async function getNewProgramContext(): Promise<FlowContext> {
   const db = createAdminSupabase();
-  const [catalog, schools, seasons, coaches, sessions, photos] = await Promise.all([
+  const [catalog, schools, seasons, coaches, sessions, photos, cards] = await Promise.all([
     db.from("program_catalog").select("id, name, sport, description, age_groups, default_monthly_fee, default_capacity, status").order("name"),
     db.from("schools").select("id, name, address").neq("status", "archived").order("name"),
     db.from("seasons").select("id, name, start_date, end_date, status").order("start_date", { ascending: false, nullsFirst: false }),
@@ -22,7 +22,9 @@ export async function getNewProgramContext(): Promise<FlowContext> {
       .select("id, url, srcset, alt, focal_x, focal_y, published, contains_identifiable_minors, photo_release_confirmed, status")
       .eq("status", "ready")
       .order("created_at", { ascending: false }),
+    db.from("site_media_placements").select("media_id, offering_id").eq("slot", "offering"),
   ]);
+  const cardPhoto = new Map(((cards.data ?? []) as { media_id: string; offering_id: string }[]).map((c) => [c.offering_id, c.media_id]));
 
   const existing: ExistingSession[] = ((sessions.data ?? []) as any[]).map((p) => {
     const templates = (p.schedule_templates ?? []) as { day_of_week: number; start_time: string; end_time: string; coach_id: string | null }[];
@@ -37,6 +39,7 @@ export async function getNewProgramContext(): Promise<FlowContext> {
       coach_id: templates.find((t) => t.coach_id)?.coach_id ?? null,
       slots: templates.map((t): Slot => ({ dow: t.day_of_week, start: hhmm(t.start_time), end: hhmm(t.end_time) })),
       registration_open: p.registration_open,
+      media_id: cardPhoto.get(p.id) ?? null,
       created_at: p.created_at,
     };
   });

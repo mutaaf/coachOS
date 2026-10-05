@@ -134,11 +134,16 @@ describe("follow-ups", () => {
     { id: "b", catalog_id: "c1", school_id: "s2", season_id: "fall", monthly_fee: 120, capacity: 8, location: null, coach_id: null, slots: [{ dow: 4, start: "16:00", end: "17:00" }], registration_open: true, created_at: "2026-08-02T00:00:00Z" },
   ];
 
-  it("Add to another school starts from the program and its usual times", () => {
+  it("Add to another school starts from the program, its usual times and its cards' photo", () => {
     const d = draftForProgram(ctx({ sessions }), "c1");
     expect(d.program).toEqual({ mode: "existing", id: "c1" });
     expect(d.slots).toEqual([{ dow: 4, start: "16:00", end: "17:00" }]);
     expect(d.schools).toEqual([]);
+    expect(d.website.mediaId).toBeNull();
+    const withPhoto = sessions.map((s) => ({ ...s, media_id: "m1" }));
+    expect(draftForProgram(ctx({ sessions: withPhoto }), "c1").website.mediaId).toBe("m1");
+    // A photo that has since left the library isn't offered.
+    expect(draftForProgram(ctx({ sessions: withPhoto, photos: [] }), "c1").website.mediaId).toBeNull();
   });
 
   it("Duplicate for next season copies schools, fees, places, coach and times into the next season", () => {

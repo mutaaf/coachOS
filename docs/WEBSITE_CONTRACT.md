@@ -1,4 +1,4 @@
-# Website ⇄ CoachOS contract (v1)
+# Website ⇄ CoachOS contract (v1.2)
 
 risingstars.training reads and writes this database with the anon key. CoachOS is the
 source of truth for anything operational; the website owns copy, pictures and SEO. These
@@ -10,8 +10,38 @@ Changing one is a contract change: tell the website team first.
 | Object | What it is |
 |---|---|
 | `public.site_offerings` | One row per session (`ops.programs`) that is `active`/`upcoming` and published. A linked listing (`public.programs.ops_program_id`) decides with `published`; a session with no listing is published while its registration is open. Price, places, dates, venue and weekly times come from CoachOS; title, description, picture, ages, `featured`, `sort_order` and the slug come from the listing when set. `venue_city` is null (CoachOS has no city yet). |
+| `public.site_media` | v1.2. One row per placement of a published photo: `id, slot, offering_id, sort_order, alt, caption, focal_x, focal_y, width, height, url, srcset, updated_at`. Only photos that are published, described and — when they show recognizable children — have a confirmed photo release appear; the view itself enforces it. See "Site photos" below. |
 | `public.program_availability` | Deprecated alias, unchanged. Drop once the website reads `site_offerings`. |
 | `public.programs` | The marketing overlay. New: `published`, `featured`, `sort_order`, `slug`, `seo_title`, `seo_description`. For a linked listing `price`, `slots`, `date_range`, `start_date`, `end_date` and `location` are kept equal to the session by the database; the Website page doesn't edit them. |
+
+### Site photos (v1.2)
+
+The owner manages the site's pictures on CoachOS's Website → Photos tab. Nothing is deployed:
+the website reads `public.site_media` (and `site_offerings.image_url`) at runtime, so a change is
+live as soon as the site's own cache lets it (aim for ≤ 60 s revalidation).
+
+- **Slots.** `hero` (several, ordered by `sort_order` — a slideshow), `programs_section`,
+  `levels_section`, `about`, `partnerships_section`, `contact_section`, `og_default`,
+  `offering` (one per session; `offering_id` = `site_offerings.offering_id`) and
+  `sport:<sport>` (lower-case, e.g. `sport:basketball`, `sport:flag football`). CoachOS keeps one
+  photo per non-hero slot, but read them ordered by `sort_order` and take the first. A slot with
+  no row means "use the site's built-in picture".
+- **Files.** Bucket `site-media` (public read; only CoachOS's server writes — a restrictive policy
+  blocks anon and signed-in users even if a broader storage policy exists). `url` is the original,
+  turned upright and with all metadata (EXIF/GPS) removed. `srcset` is WebP at 480, 960 and 1600
+  wide where the original is at least that wide (never upscaled), plus one at the original's own
+  width when it is under 1600 and no size is within 10% — so a 1000-wide photo has
+  `[480, 960]`, a 900-wide one `[480, 900]`, a 300-wide one `[300]`. Use `url` only as a
+  fallback; `srcset` may be `[]` if the server could not resize (then `width`/`height` may be
+  null too). File paths change when a photo is replaced, so URLs can be cached forever.
+- **Focal point.** `focal_x`/`focal_y` are 0–1 from the left/top; use
+  `object-position: {x*100}% {y*100}%` with `object-fit: cover`.
+- **`alt` is always non-empty.** Use it as the image's `alt`; `caption` is optional display text.
+
+`site_offerings.image_url` resolves, in order: the session's own `offering` photo → the listing's
+`programs.image` → the program's `program_catalog.image` (as before v1.2) → the `sport:<sport>`
+photo → null. For photo-library images it is the widest `srcset` entry (≤ 1600), else the
+original. The column list is unchanged.
 
 ## Writes (anon → SECURITY DEFINER, `search_path = ''`)
 
@@ -56,3 +86,8 @@ UPDATE ops.app_secrets
    token body. It falls back to the old path while these are missing.
 4. Once the website has shipped, set `NOTIFY_LEGACY_ENABLED=false` in CoachOS on Vercel. Later,
    drop `public.program_availability`.
+
+v1.2 (site photos, New program): apply `20261006000400`–`20261006000600` (additive; `...0500`
+replaces `site_offerings` with the same columns), then deploy CoachOS. The website can read
+`public.site_media` from then on, falling back to its built-in pictures while it is empty or
+missing (`PGRST205`/`42P01`).

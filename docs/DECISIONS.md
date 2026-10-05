@@ -349,3 +349,46 @@ Two paths, both ending in the same invoices and payments tables:
 - Parsing depends on banks' email wording. Unreadable emails are kept and shown
   rather than dropped, so a format change is visible, not silent
 
+
+---
+
+## ADR-011: One save for a program at many schools; site photos in CoachOS
+
+### Status
+Accepted
+
+### Context
+Putting a program on at two schools and on the website took about 40 taps over
+10 screens (docs/ADMIN_FLOWS.md), and every step saved on its own, so a failure
+left a program half-made. The website's pictures were AI cartoons baked into its
+code; changing one needed a deploy.
+
+### Decision
+1. A New program page builds one draft (`lib/new-program.ts`, plain and tested)
+   and saves it with one database function, `ops.create_program_sessions(jsonb)`,
+   which makes or reuses the program, season and schools, a session per school
+   with its weekly times and coach, and the website listing and card photo — in
+   one transaction. Service role only, called after the admin check.
+2. Site photos live in `ops.site_media` + `ops.site_media_placements`, exposed
+   through `public.site_media` (contract v1.2). Files go browser → signed upload
+   URL → server, which re-encodes with `sharp` (upright, metadata stripped) and
+   makes WebP sizes. The bucket is public-read; a restrictive storage policy
+   keeps anon and signed-in users from writing it.
+3. A photo marked as showing recognizable children cannot be published until a
+   photo release is confirmed — checked in the action, by a table constraint,
+   and again in the view.
+
+### Rationale
+- A PL/pgSQL function is the only way to get all-or-nothing across a dozen
+  inserts through PostgREST; the existing per-step actions stay for editing.
+- Uploading straight to storage avoids Vercel's 4.5 MB request limit for phone
+  photos; re-encoding on the server removes GPS from photos of children.
+- Three layers for the release rule, because a photo of a child published by
+  mistake can't be taken back from people who saw it.
+
+### Consequences
+- `site_offerings.image_url` prefers a card's own photo, then the listing's and
+  program's pictures, then the sport's photo — so assigning a card photo replaces
+  an old cartoon without editing the listing.
+- `sharp` is a dependency of `web`. If it fails to load, photos are stored as
+  uploaded with no sizes and the page says so.
