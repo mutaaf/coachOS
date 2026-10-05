@@ -362,3 +362,54 @@ export async function ensureOutsider() {
   if (error) throw error;
   return data.user!.id;
 }
+
+/**
+ * An assistant with the compliance role: Audit & Compliance only (policy
+ * facts and the checklist), never families' data, never publishing.
+ */
+export const COMPLIANCE_USER = { email: "compliance-helper@example.test", password: "compliance-password-1234" };
+
+export async function ensureComplianceUser() {
+  const authAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const app_metadata = { role: "compliance" };
+  const user_metadata = { tour_completed_at: "2026-01-01T00:00:00Z", name: "Sara Helper" };
+  const { data: existing } = await authAdmin.auth.admin.listUsers();
+  const already = existing?.users?.find((u) => u.email === COMPLIANCE_USER.email);
+  if (already) {
+    await authAdmin.auth.admin.updateUserById(already.id, { app_metadata, user_metadata, password: COMPLIANCE_USER.password });
+    return already.id;
+  }
+  const { data, error } = await authAdmin.auth.admin.createUser({
+    email: COMPLIANCE_USER.email,
+    password: COMPLIANCE_USER.password,
+    email_confirm: true,
+    app_metadata,
+    user_metadata,
+  });
+  if (error) throw error;
+  return data.user!.id;
+}
+
+/** A client signed in as `user`, going through the API like the browser does. */
+export async function signedInClient(user: { email: string; password: string }, schema: "ops" | "public" = "ops") {
+  const client = createClient(local.url, local.anonKey, { db: { schema }, auth: { persistSession: false } });
+  const { error } = await client.auth.signInWithPassword(user);
+  if (error) throw error;
+  return client;
+}
+
+/**
+ * Put policy facts, document versions and the checklist back to what the
+ * migrations seed (20261007000410, 20261007000430). The audit log is
+ * append-only and is left alone.
+ */
+export function resetAuditCompliance() {
+  const root = repoRoot();
+  const run = (args: string, input?: string) =>
+    execSync(`psql "${local.dbUrl}" -X -q -v ON_ERROR_STOP=1 ${args}`, { input, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  run("", "DELETE FROM ops.legal_fact_versions; DELETE FROM ops.legal_document_versions; DELETE FROM ops.compliance_tasks;");
+  run(`-f "${join(root, "supabase/migrations/20261007000410_legal_facts_seed.sql")}"`);
+  run(`-f "${join(root, "supabase/migrations/20261007000430_compliance_checklist.sql")}"`);
+}
