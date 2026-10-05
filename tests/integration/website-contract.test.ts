@@ -126,6 +126,45 @@ describe("public.site_offerings", () => {
   });
 });
 
+describe("public.site_media (v1.2)", () => {
+  it("has exactly the agreed columns, in order", () => {
+    expect(columnsOf("site_media")).toEqual([
+      { column_name: "id", type: "uuid" },
+      { column_name: "slot", type: "text" },
+      { column_name: "offering_id", type: "uuid" },
+      { column_name: "sort_order", type: "integer" },
+      { column_name: "alt", type: "text" },
+      { column_name: "caption", type: "text" },
+      { column_name: "focal_x", type: "numeric" },
+      { column_name: "focal_y", type: "numeric" },
+      { column_name: "width", type: "integer" },
+      { column_name: "height", type: "integer" },
+      { column_name: "url", type: "text" },
+      { column_name: "srcset", type: "jsonb" },
+      { column_name: "updated_at", type: "timestamp with time zone" },
+    ]);
+  });
+
+  it("is readable by anon, runs with its owner's rights, and never shows who uploaded or the release answers", () => {
+    expect(privileges("public.site_media", "table").anon).toBe(true);
+    const [{ invoker }] = sql<{ invoker: boolean }>(`
+      SELECT coalesce('security_invoker=true' = ANY (reloptions), false) AS invoker
+        FROM pg_class WHERE oid = 'public.site_media'::regclass`);
+    expect(invoker).toBe(false);
+    for (const c of columnsOf("site_media")) {
+      expect(c.column_name).not.toMatch(PII);
+      expect(c.column_name).not.toMatch(/upload|release|minor|note|published|path|filename/i);
+    }
+  });
+
+  it("filters on the publish rule in the view itself", () => {
+    const [{ def }] = sql<{ def: string }>(`SELECT pg_get_viewdef('public.site_media'::regclass) AS def`);
+    expect(def).toMatch(/published/);
+    expect(def).toMatch(/contains_identifiable_minors/);
+    expect(def).toMatch(/photo_release_confirmed/);
+  });
+});
+
 describe("public.submit_inquiry", () => {
   const sig = "public.submit_inquiry(text, jsonb, jsonb, jsonb)";
 
