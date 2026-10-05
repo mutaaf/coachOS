@@ -19,6 +19,7 @@ const PROTECTED = [
   "/messaging",
   "/marketing",
   "/settings",
+  "/compliance",
 ];
 
 for (const path of PROTECTED) {

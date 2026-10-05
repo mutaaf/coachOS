@@ -461,7 +461,8 @@ async function saveRegister(
 
     if (error) {
       console.error("Error recording attendance:", error);
-      errors.push(`Failed for student ${record.studentId}`);
+      // A child sitting out after a suspected concussion: say so, plainly.
+      errors.push(error.hint === "return_to_play_hold" ? error.message : `Failed for student ${record.studentId}`);
     }
   }
 

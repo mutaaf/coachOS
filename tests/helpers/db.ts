@@ -204,6 +204,9 @@ export async function truncateAll() {
   if (sendersError) throw new Error(`Failed clearing zelle_senders: ${sendersError.message}`);
 
   for (const table of [
+    // Never cascades from a child (kept while a claim could be brought), so it goes first.
+    "incidents",
+    "email_suppressions",
     "family_credits",
     "attendance",
     "message_queue",

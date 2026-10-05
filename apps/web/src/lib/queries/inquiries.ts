@@ -11,6 +11,8 @@ export async function getInquiries() {
   const { data, error } = await supabase
     .from("inquiries")
     .select("*, offering:programs(id, name, school:schools(name))")
+    // Privacy requests have their own queue, with a legal deadline (Compliance page).
+    .neq("kind", "privacy_request")
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw error;

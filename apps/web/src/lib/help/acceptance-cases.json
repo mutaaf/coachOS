@@ -2937,5 +2937,65 @@
   ],
   "evidence": "Screenshots of the refused number, the search, and each WhatsApp chat that opened.",
   "phone": true
+ },
+ {
+  "id": "CMP-01",
+  "area": "Compliance",
+  "title": "A concussion keeps a child out until a doctor clears them",
+  "risk": "A child with a suspected concussion plays again before being cleared.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "A test child is enrolled in a session with a practice today."
+  ],
+  "steps": [
+   "On Compliance → Incidents, tap Report an incident, pick the test child, describe a head knock and tick Possible concussion. Save.",
+   "Open today's practice on Schedule and try to mark the child Present, then Save.",
+   "Back on Incidents, tap Record doctor's clearance, enter a doctor's name, Save. Mark the child Present again."
+  ],
+  "expected": [
+   "The child shows Sitting out on the register.",
+   "Saving them as Present is refused with a message about the concussion.",
+   "After the clearance, Present saves."
+  ]
+ },
+ {
+  "id": "CMP-02",
+  "area": "Compliance",
+  "title": "A parent's STOP is honoured",
+  "risk": "A parent who asked not to be texted is texted again.",
+  "severity": "critical",
+  "preconditions": [
+   "A test family with a phone number."
+  ],
+  "steps": [
+   "Open the family, find Consents and tap They said STOP.",
+   "In Messaging → Compose, send a message to all parents."
+  ],
+  "expected": [
+   "The family shows Said STOP.",
+   "No message for that parent waits in the Outbox; Compose says some were not queued."
+  ]
+ },
+ {
+  "id": "CMP-03",
+  "area": "Compliance",
+  "title": "Erase a family on a verified request",
+  "risk": "A family's data is kept after they asked for it to be deleted, or the books lose a payment.",
+  "severity": "high",
+  "preconditions": [
+   "A test family with a paid invoice and no active enrollment.",
+   "A privacy request (delete) from the website for that family's phone."
+  ],
+  "steps": [
+   "On Compliance → Privacy requests, tap Start checking it's them and describe how you checked.",
+   "Tap Download their data and open the file.",
+   "Tap Erase family and type ERASE."
+  ],
+  "expected": [
+   "The file lists the family, children, invoices, payments and messages.",
+   "The family now shows as Deleted; the invoice amount and date are still on Payments.",
+   "The request shows Done."
+  ]
  }
 ]

@@ -1,5 +1,6 @@
 import { createAdminSupabase, createAdminPublicSupabase } from "@/lib/supabase/server";
 import type { ProgramAvailability, Registration } from "@/types/database";
+import { logMedicalView } from "@/lib/audit";
 
 export type RegistrationWithProgram = Registration & {
   program: { id: string; name: string; school: { id: string; name: string } | null } | null;
@@ -18,6 +19,7 @@ export async function getRegistrations() {
 
   if (error) throw error;
   const rows = data ?? [];
+  await logMedicalView(supabase, "registrations_page", rows as Registration[], "registrations");
 
   // Paid means an invoice with the money behind it, never a label set by hand.
   const studentIds = Array.from(new Set(rows.map((r) => r.student_id).filter(Boolean)));

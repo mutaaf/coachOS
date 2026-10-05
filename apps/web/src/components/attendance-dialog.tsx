@@ -15,6 +15,8 @@ import { businessToday, formatBusinessTime, formatDateOnly, sessionDayPhrase } f
 import { toast } from "sonner";
 import { Link2, Copy, ExternalLink } from "lucide-react";
 import { Check, X, Clock, AlertCircle, Users } from "lucide-react";
+import { CoachClearanceBadge } from "@/components/coach-clearance-badge";
+import type { CoachClearance } from "@/lib/coach-clearance";
 
 type AttendanceStatus = "present" | "absent" | "late" | "excused";
 
@@ -23,7 +25,7 @@ interface AttendanceDialogProps {
   onOpenChange: (open: boolean) => void;
   session: any;
   /** Active coaches, for naming who runs this practice. */
-  coaches?: { id: string; first_name: string; last_name: string }[];
+  coaches?: { id: string; first_name: string; last_name: string; cleared?: boolean; clearance?: CoachClearance }[];
   /** Called once a new coach is saved, so the calendar keeps it. */
   onCoachChange?: (coachId: string | null) => void;
 }
@@ -42,6 +44,8 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
   // The roster arrives after the dialog opens; without this the list flashes
   // from empty to full and it looks like nobody is enrolled.
   const [rosterLoading, setRosterLoading] = useState(true);
+  // Children sitting out after a suspected concussion, until a doctor clears them.
+  const [sittingOut, setSittingOut] = useState<Set<string>>(new Set());
   const [cancelReason, setCancelReason] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const { run, pending } = useAction();
@@ -72,6 +76,17 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
           setStudents(enrolled);
           setRosterLoading(false);
         });
+      supabase
+        .from("incidents")
+        .select("student_id, occurred_at")
+        .eq("concussion_suspected", true)
+        .is("cleared_to_return_at", null)
+        .then(({ data }) => {
+          const onDay = (data || []).filter(
+            (i: any) => i.student_id && new Date(i.occurred_at).toLocaleDateString("en-CA", { timeZone: "America/Chicago" }) <= session.date
+          );
+          setSittingOut(new Set(onDay.map((i: any) => i.student_id as string)));
+        });
       // Get existing attendance. Children on it who have since left still
       // belong on a finished practice's register.
       supabase
@@ -98,7 +113,7 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
   // On a finished practice a child nobody marked is shown as such, not
   // assumed present — that would invent attendance after the fact.
   function statusOf(studentId: string): AttendanceStatus | null {
-    return records[studentId] || (completed ? null : "present");
+    return records[studentId] || (completed ? null : sittingOut.has(studentId) ? "excused" : "present");
   }
 
   function toggleStatus(studentId: string) {
@@ -168,7 +183,10 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
   // A coach since made inactive is still who ran it, so keep them in the list.
   const coachOptions = [
     { value: "", label: "Not assigned" },
-    ...coaches.map((c) => ({ value: c.id, label: `${c.first_name} ${c.last_name}` })),
+    ...coaches.map((c) => ({
+      value: c.id,
+      label: `${c.first_name} ${c.last_name}${c.cleared === false ? " — not cleared" : ""}`,
+    })),
     ...(session?.coach_id && !coaches.some((c) => c.id === session.coach_id)
       ? [{ value: session.coach_id as string, label: "A coach no longer active" }]
       : []),
@@ -234,6 +252,7 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
               </div>
             </div>
           )}
+          <CoachClearanceBadge warning clearance={coaches.find((c) => c.id === session.coach_id)?.clearance} />
 
           {/* Attendance List — kept on a completed practice so it can be checked and corrected */}
           {session.status !== "cancelled" && (
@@ -289,7 +308,14 @@ export function AttendanceDialog({ open, onOpenChange, session, coaches = [], on
                         className="w-full min-h-[48px] flex items-center justify-between gap-3 p-3 rounded-xl border text-left hover:bg-muted/30 active:bg-muted/50 transition-colors"
                         onClick={() => toggleStatus(student.id)}
                       >
-                        <span className="min-w-0 truncate font-medium text-sm">{student.first_name} {student.last_name}</span>
+                        <span className="min-w-0 truncate font-medium text-sm">
+                          {student.first_name} {student.last_name}
+                          {sittingOut.has(student.id) && (
+                            <span className="block text-xs font-normal text-red-700">
+                              Sitting out: suspected concussion, no doctor&apos;s clearance yet
+                            </span>
+                          )}
+                        </span>
                         {style && Icon ? (
                           <span className={`shrink-0 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
                             <Icon className="h-3.5 w-3.5" /> {status}

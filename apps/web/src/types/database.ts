@@ -41,6 +41,11 @@ export type Student = {
   medical_notes: string | null;
   notes: string | null;
   status: "active" | "inactive";
+  /** Photo/video release. Only `true` means the child may appear in published photos. */
+  photo_release?: boolean | null;
+  photo_release_at?: string | null;
+  /** Set when the family's data was erased on request; the record stays only for the books. */
+  anonymized_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -67,6 +72,14 @@ export type Parent = {
   autopay_mode: "test" | "live" | null;
   stripe_customer_mode: "test" | "live" | null;
   notes: string | null;
+  /** Express written consent to program texts, and a later STOP (which wins). */
+  sms_consent_at?: string | null;
+  sms_opt_out_at?: string | null;
+  /** Opt-in to newsletters and promotions, and a later unsubscribe (which wins). */
+  marketing_email_consent_at?: string | null;
+  marketing_email_opt_out_at?: string | null;
+  unsubscribe_token?: string;
+  anonymized_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -274,7 +287,20 @@ export type Attribution = {
 
 export const INQUIRY_STATUSES = ["new", "contacted", "trial_booked", "registered", "lost"] as const;
 export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
-export type InquiryKind = "general" | "trial" | "waitlist_interest" | "program_question" | "birthday_party";
+export type InquiryKind = "general" | "trial" | "waitlist_interest" | "program_question" | "birthday_party" | "privacy_request";
+
+export const PRIVACY_REQUEST_TYPES = ["access", "delete", "correct", "opt_out", "appeal"] as const;
+export type PrivacyRequestType = (typeof PRIVACY_REQUEST_TYPES)[number];
+export const PRIVACY_STATUSES = [
+  "received",
+  "verifying",
+  "completed",
+  "denied",
+  "appealed",
+  "appeal_granted",
+  "appeal_denied",
+] as const;
+export type PrivacyStatus = (typeof PRIVACY_STATUSES)[number];
 
 /** A family's question from the website (public.submit_inquiry). */
 export type Inquiry = {
@@ -295,6 +321,27 @@ export type Inquiry = {
   registration_id: string | null;
   attribution: Attribution | null;
   notes: string | null;
+  /** Privacy requests (kind = 'privacy_request') only. */
+  request_type?: PrivacyRequestType | null;
+  child_first_names?: string[];
+  privacy_status?: PrivacyStatus | null;
+  due_at?: string | null;
+  extended_at?: string | null;
+  extension_reason?: string | null;
+  verified_at?: string | null;
+  verification_method?: string | null;
+  completed_at?: string | null;
+  denial_reason?: string | null;
+  appealed_at?: string | null;
+  appeal_due_at?: string | null;
+  appeal_decision?: string | null;
+  resolution_note?: string | null;
+  parent_id?: string | null;
+  anonymized_at?: string | null;
+  /** p_details exactly as the website sent it. */
+  details?: Record<string, unknown> | null;
+  /** p_details.consents as sent, plus accepted_at (server time). Opt-ins only. */
+  consents?: { sms?: boolean; marketing_email?: boolean; policy_version?: string; documents?: Record<string, string>; accepted_at: string; [key: string]: unknown } | null;
   created_at: string;
   updated_at: string;
 };
@@ -352,8 +399,61 @@ export type Coach = {
   pay_type: "per_session" | "hourly";
   source: string | null;
   notes: string | null;
+  /** Safeguarding: see lib/coach-clearance.ts for what counts as cleared. */
+  background_check_date?: string | null;
+  background_check_provider?: string | null;
+  background_check_sex_offender_registry?: boolean;
+  background_check_fingerprint?: boolean;
+  abuse_training_date?: string | null;
+  abuse_training_expires_on?: string | null;
+  cpr_first_aid_expires_on?: string | null;
+  code_of_conduct_signed_on?: string | null;
+  safeguarding_notes?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type IncidentKind = "injury" | "illness" | "behavior" | "safeguarding" | "other";
+
+/** An injury or incident report (admins only). */
+export type Incident = {
+  id: string;
+  occurred_at: string;
+  kind: IncidentKind;
+  program_id: string | null;
+  session_id: string | null;
+  student_id: string | null;
+  coach_id: string | null;
+  description: string;
+  actions_taken: string | null;
+  parent_notified_at: string | null;
+  parent_notified_how: string | null;
+  concussion_suspected: boolean;
+  cleared_to_return_at: string | null;
+  clearance_provider: string | null;
+  clearance_note: string | null;
+  reported_to_authorities_at: string | null;
+  authority_reference: string | null;
+  status: "open" | "closed";
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * What a parent agreed to on the website, exactly as sent (contract v1.1),
+ * plus `accepted_at`, when the server received it. Unknown keys are kept.
+ */
+export type RegistrationConsents = {
+  terms: boolean;
+  medical?: boolean;
+  photo?: boolean;
+  sms?: boolean;
+  marketing_email?: boolean;
+  policy_version?: string | null;
+  documents?: Record<string, string>;
+  accepted_at: string;
+  [key: string]: unknown;
 };
 
 export type RegistrationStatus =
@@ -388,7 +488,7 @@ export type Registration = {
   /** Where the family came from, when they registered on the website. */
   attribution?: Attribution | null;
   /** What the parent agreed to on the website's form (submit_registration_v2). */
-  consents?: { terms: boolean; medical: boolean; photo: boolean; policy_version: string | null; accepted_at: string } | null;
+  consents?: RegistrationConsents | null;
   created_at: string;
   updated_at: string;
 };

@@ -30,6 +30,7 @@ import {
   MessageSquareWarning,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
 
 const navigation = [
@@ -44,6 +45,7 @@ const navigation = [
   { name: "Messaging", href: "/messaging", icon: MessageSquare },
   { name: "Marketing", href: "/marketing", icon: Target },
   { name: "Website", href: "/website", icon: Globe },
+  { name: "Compliance", href: "/compliance", icon: ShieldCheck },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Help", href: "/help", icon: LifeBuoy },
 ];

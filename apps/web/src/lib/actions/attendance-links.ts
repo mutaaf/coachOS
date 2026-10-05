@@ -42,7 +42,7 @@ export async function createAttendanceLink(sessionId: string) {
 
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
-    .select("id, date, end_time, status")
+    .select("id, date, end_time, status, coach_id")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -82,6 +82,9 @@ export async function createAttendanceLink(sessionId: string) {
     token,
     passcode_hash: hashed,
     expires_at: expiresAt,
+    // Who it is for: the register shows medical notes only to the practice's
+    // assigned coach (20261006000160_medical_access.sql).
+    coach_id: session.coach_id ?? null,
   });
 
   if (error) return { error: error.message };

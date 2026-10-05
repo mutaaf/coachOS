@@ -93,10 +93,20 @@ export async function sendMessage(formData: FormData) {
   revalidatePath("/messaging");
 }
 
+/**
+ * Queue one message per recipient in the Outbox.
+ *
+ * `purpose` decides who may get it (enforced in the database,
+ * 20261006000130_messaging_consent.sql): "operational" — about the child's
+ * program — goes to every parent who hasn't said STOP; "promotional" only to
+ * parents with SMS consent on file. Those who can't get it are filed as
+ * skipped with the reason, and counted in `skipped`.
+ */
 export async function sendBulkMessages(
   recipients: { phone: string; name: string }[],
   message: string,
-  templateId?: string
+  templateId?: string,
+  purpose: "operational" | "promotional" = "operational"
 ) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
@@ -121,12 +131,13 @@ export async function sendBulkMessages(
     status: "pending",
     attempts: 0,
     max_attempts: 3,
+    purpose: purpose === "promotional" ? "promotional" : "operational",
   }));
 
-  const { error } = await supabase.from("message_queue").insert(rows);
+  const { data: queued, error } = await supabase.from("message_queue").insert(rows).select("status");
   if (error) throw error;
   revalidatePath("/messaging");
-  return { count: rows.length };
+  return { count: rows.length, skipped: (queued ?? []).filter((r) => r.status === "skipped").length };
 }
 
 export async function fetchRecipients(

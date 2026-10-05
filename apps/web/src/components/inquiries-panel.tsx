@@ -24,6 +24,7 @@ const KIND: Record<InquiryKind, string> = {
   waitlist_interest: "Tell me when it opens",
   program_question: "About a program",
   birthday_party: "Birthday party",
+  privacy_request: "Privacy request",
 };
 
 /**

@@ -211,6 +211,9 @@ export function StudentsPageClient({ students, parents, enrollablePrograms, bala
                         {student.medical_notes && (
                           <p className="mt-0.5 text-xs text-orange-600">Medical notes on file</p>
                         )}
+                        {student.photo_release !== true && (
+                          <p className="mt-0.5 text-xs text-red-700">No photo release — don&apos;t post</p>
+                        )}
                       </div>
                       <Badge variant={student.status === "active" ? "success" : "secondary"} className="shrink-0">
                         {student.status === "inactive" ? "archived" : student.status}
@@ -288,6 +291,9 @@ export function StudentsPageClient({ students, parents, enrollablePrograms, bala
                         </div>
                         {student.medical_notes && (
                           <div className="text-xs text-orange-600 mt-0.5">Medical notes on file</div>
+                        )}
+                        {student.photo_release !== true && (
+                          <div className="text-xs text-red-700 mt-0.5">No photo release — don&apos;t post</div>
                         )}
                       </td>
                       <td className="p-4 hidden sm:table-cell">
