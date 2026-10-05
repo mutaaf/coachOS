@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { isAdmin } from "@/lib/admin";
+import { homeFor, isStaff, staffRole } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,7 @@ function Welcome() {
     if (!token_hash) return setState("bad");
     supabase.auth
       .verifyOtp({ token_hash, type })
-      .then(({ data, error }) => setState(error || !isAdmin(data.user) ? "bad" : "ready"));
+      .then(({ data, error }) => setState(error || !isStaff(data.user) ? "bad" : "ready"));
   }, [params, supabase]);
 
   async function save(e: React.FormEvent) {
@@ -47,13 +47,13 @@ function Welcome() {
     if (password !== again) return setError("Those two don't match.");
     setError(null);
     setState("saving");
-    const { error } = await supabase.auth.updateUser({ password });
+    const { data, error } = await supabase.auth.updateUser({ password });
     if (error) {
       setError(error.message);
       setState("ready");
       return;
     }
-    router.push("/dashboard");
+    router.push(homeFor(staffRole(data.user)));
     router.refresh();
   }
 
