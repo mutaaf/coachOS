@@ -209,6 +209,7 @@ export async function truncateAll() {
     "message_queue",
     "message_log",
     "emails",
+    "inquiries",
     "registrations",
     "enrollments",
     "student_parents",

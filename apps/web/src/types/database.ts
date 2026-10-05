@@ -250,6 +250,51 @@ export type Lead = {
   estimated_students: number | null;
   notes: string | null;
   next_follow_up: string | null;
+  /** 'website' when it came from the site's partnership form. */
+  source?: string | null;
+  attribution?: Attribution | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Where a family came from, as the website captured it (see lib/attribution.ts). */
+export type AttributionTouch = Partial<
+  Record<
+    | "utm_source" | "utm_medium" | "utm_campaign" | "utm_term" | "utm_content"
+    | "gclid" | "fbclid" | "referrer" | "landing_path" | "ts",
+    string
+  >
+>;
+export type Attribution = {
+  first_touch?: AttributionTouch;
+  last_touch?: AttributionTouch;
+  ga_client_id?: string;
+  ga_session_id?: string;
+};
+
+export const INQUIRY_STATUSES = ["new", "contacted", "trial_booked", "registered", "lost"] as const;
+export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
+export type InquiryKind = "general" | "trial" | "waitlist_interest" | "program_question" | "birthday_party";
+
+/** A family's question from the website (public.submit_inquiry). */
+export type Inquiry = {
+  id: string;
+  kind: InquiryKind;
+  status: InquiryStatus;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  email: string | null;
+  message: string | null;
+  child_ages: string | null;
+  offering_id: string | null;
+  sport: string | null;
+  inquiry_types: string[];
+  preferred_date: string | null;
+  organization: string | null;
+  registration_id: string | null;
+  attribution: Attribution | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 };

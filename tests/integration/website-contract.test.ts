@@ -125,3 +125,19 @@ describe("public.site_offerings", () => {
     for (const c of columnsOf("site_offerings")) expect(c.column_name).not.toMatch(PII);
   });
 });
+
+describe("public.submit_inquiry", () => {
+  const sig = "public.submit_inquiry(text, jsonb, jsonb, jsonb)";
+
+  it("runs as its owner with an empty search_path and returns only an id", () => {
+    const f = functionFacts(sig);
+    expect(f.security_definer).toBe(true);
+    expect(f.config).toContain('search_path=""');
+    expect(f.result).toBe("uuid");
+  });
+
+  it("is executable by anon, not by PUBLIC", () => {
+    expect(privileges(sig, "function").anon).toBe(true);
+    expect(functionFacts(sig).public_execute).toBe(false);
+  });
+});
