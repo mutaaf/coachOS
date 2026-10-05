@@ -33,6 +33,8 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  // A promotion (news, offers, a new program) goes only to parents who agreed to texts.
+  const [promotional, setPromotional] = useState(false);
   const [selection, dispatch] = useReducer(recipientReducer, initialSelection);
   const { mode: recipientMode, selectedId: selectedSchoolOrProgram } = selection;
   // Only the parents loaded for the group on screen; empty while a new one loads.
@@ -66,12 +68,17 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
     }
     setSending(true);
     try {
-      const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined);
+      const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined, promotional ? "promotional" : "operational");
       if ("error" in result && result.error) {
         toast.error("Not sent", { description: result.error });
         return;
       }
-      toast.success(`${(result as { count: number }).count} message(s) ready in the Outbox`);
+      const { count, skipped = 0 } = result as { count: number; skipped?: number };
+      toast.success(`${count - skipped} message(s) ready in the Outbox`, {
+        description: skipped
+          ? `${skipped} not queued: those parents said STOP${promotional ? " or haven't agreed to promotional texts" : ""}.`
+          : undefined,
+      });
       setMessage("");
       dispatch({ type: "clear" });
     } catch {
@@ -213,6 +220,22 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 onChange={(e) => setMessage(e.target.value)}
                 rows={5}
               />
+              <label className="flex min-h-11 items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-5 w-5 shrink-0"
+                  checked={promotional}
+                  onChange={(e) => setPromotional(e.target.checked)}
+                  data-testid="compose-promotional"
+                />
+                <span>
+                  This is a promotion (news, offers, a new program)
+                  <span className="block text-xs text-muted-foreground">
+                    Only parents who agreed to texts will get it. Practice and payment messages don&apos;t need this.
+                    Parents who said STOP never get either.
+                  </span>
+                </span>
+              </label>
               {/* One sideways-scrolling row on a phone; wraps where there is room. */}
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
                 {VARIABLES.map((v) => (

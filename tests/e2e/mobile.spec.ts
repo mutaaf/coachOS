@@ -269,6 +269,7 @@ const DASHBOARD_PAGES = [
   "/messaging",
   "/marketing",
   "/settings",
+  "/compliance",
 ];
 
 for (const viewport of VIEWPORTS) {

@@ -38,7 +38,7 @@ const FULL_DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", 
 interface SchedulePageClientProps {
   initialSessions: any[];
   programs: any[];
-  coaches?: { id: string; first_name: string; last_name: string }[];
+  coaches?: { id: string; first_name: string; last_name: string; cleared?: boolean; clearance?: import("@/lib/coach-clearance").CoachClearance }[];
 }
 
 function formatTime(time: string): string {

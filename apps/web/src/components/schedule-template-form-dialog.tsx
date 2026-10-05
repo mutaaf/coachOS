@@ -25,7 +25,7 @@ interface ScheduleTemplateFormDialogProps {
   onOpenChange: (open: boolean) => void;
   programs: { id: string; name: string }[];
   /** Active coaches, for naming who normally runs this slot. */
-  coaches?: { id: string; first_name: string; last_name: string }[];
+  coaches?: { id: string; first_name: string; last_name: string; cleared?: boolean }[];
   template?: ScheduleTemplate;
 }
 
@@ -199,7 +199,7 @@ export function ScheduleTemplateFormDialog({
                   { value: "", label: "Not assigned" },
                   ...coaches.map((c) => ({
                     value: c.id,
-                    label: `${c.first_name} ${c.last_name}`,
+                    label: `${c.first_name} ${c.last_name}${c.cleared === false ? " — not cleared" : ""}`,
                   })),
                   // Without this, a coach since made inactive fell back to
                   // "Not assigned" and saving cleared them.
@@ -210,6 +210,12 @@ export function ScheduleTemplateFormDialog({
                 defaultValue={template?.coach_id ?? ""}
                 disabled={isSubmitting}
               />
+              {coaches.some((c) => c.cleared === false) && (
+                <p className="text-xs text-red-700">
+                  Coaches marked &ldquo;not cleared&rdquo; are missing a background check, training, CPR or a signed
+                  code of conduct. Don&apos;t put them in charge of children until that&apos;s on file.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Who normally runs this slot. Each practice can be changed
                 individually when someone covers.
