@@ -85,3 +85,43 @@ describe("public.submit_registration (v1)", () => {
     expect(functionFacts(sig).public_execute).toBe(false);
   });
 });
+
+describe("public.site_offerings", () => {
+  it("has exactly the agreed columns, in order", () => {
+    expect(columnsOf("site_offerings")).toEqual([
+      { column_name: "offering_id", type: "uuid" },
+      { column_name: "cms_program_id", type: "uuid" },
+      { column_name: "public_slug", type: "text" },
+      { column_name: "title", type: "text" },
+      { column_name: "description", type: "text" },
+      { column_name: "image_url", type: "text" },
+      { column_name: "sport", type: "text" },
+      { column_name: "age_groups", type: "text[]" },
+      { column_name: "season_name", type: "text" },
+      { column_name: "start_date", type: "date" },
+      { column_name: "end_date", type: "date" },
+      { column_name: "monthly_fee", type: "numeric(10,2)" },
+      { column_name: "billing_period", type: "text" },
+      { column_name: "capacity", type: "integer" },
+      { column_name: "seats_remaining", type: "integer" },
+      { column_name: "waitlist_count", type: "integer" },
+      { column_name: "registration_open", type: "boolean" },
+      { column_name: "status", type: "text" },
+      { column_name: "venue_name", type: "text" },
+      { column_name: "venue_city", type: "text" },
+      { column_name: "venue_address", type: "text" },
+      { column_name: "schedule", type: "jsonb" },
+      { column_name: "featured", type: "boolean" },
+      { column_name: "sort_order", type: "integer" },
+    ]);
+  });
+
+  it("is readable by anon, runs with its owner's rights, and carries nothing about a person", () => {
+    expect(privileges("public.site_offerings", "table").anon).toBe(true);
+    const [{ invoker }] = sql<{ invoker: boolean }>(`
+      SELECT coalesce('security_invoker=true' = ANY (reloptions), false) AS invoker
+        FROM pg_class WHERE oid = 'public.site_offerings'::regclass`);
+    expect(invoker).toBe(false);
+    for (const c of columnsOf("site_offerings")) expect(c.column_name).not.toMatch(PII);
+  });
+});
