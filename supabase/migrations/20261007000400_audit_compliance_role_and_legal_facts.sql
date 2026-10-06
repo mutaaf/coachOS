@@ -176,6 +176,10 @@ DROP POLICY IF EXISTS "Compliance staff read policy and checklist history" ON op
 CREATE POLICY "Compliance staff read policy and checklist history" ON ops.audit_log FOR SELECT TO authenticated
   USING ((SELECT ops.staff_role()) = 'compliance' AND (action LIKE 'legal.%' OR action LIKE 'checklist.%'));
 
+-- A publish writes several audit rows in one transaction; now() would give
+-- them all the same time and the log could show them in any order.
+ALTER TABLE ops.audit_log ALTER COLUMN at SET DEFAULT clock_timestamp();
+
 -- --------------------------------------------------------------- functions
 
 -- Save a fact's working copy: a draft, "needs research", or sent for review.
