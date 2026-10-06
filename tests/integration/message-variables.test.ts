@@ -43,7 +43,7 @@ describe("renderTemplate", () => {
 describe("Compose", () => {
   it("fills {{ parent_name }} written with spaces", async () => {
     const result = await sendBulkMessages(lena, "Hi {{ parent_name }}, practice moves to 5pm.");
-    expect(result).toEqual({ count: 1 });
+    expect(result).toEqual({ count: 1, skipped: 0 });
     expect(await queued()).toEqual(["Hi Lena, practice moves to 5pm."]);
   });
 
