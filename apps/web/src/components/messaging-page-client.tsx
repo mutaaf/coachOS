@@ -17,8 +17,10 @@ import type { MessageTemplate } from "@/types/database";
 import { OutboxPanel } from "@/components/outbox-panel";
 import { initialSelection, recipientReducer, sendableRecipients, type RecipientMode } from "@/lib/recipient-selection";
 import { PROMO_HOURS_TEXT } from "@/lib/quiet-hours";
+import { COMPOSE_VARIABLES, composeFirstName, composeProblem, renderComposed } from "@/lib/compose-message";
 
-const VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
+// What the automatic messages can fill in, listed for her while she writes a template.
+const TEMPLATE_VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
 
 interface MessagingPageClientProps {
   templates: MessageTemplate[];
@@ -45,6 +47,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [tab, setTab] = useState(initialTab ?? (outbox.waiting.length > 0 ? "outbox" : "compose"));
+  const problem = message ? composeProblem(message) : null;
 
   async function chooseMode(mode: RecipientMode) {
     dispatch({ type: "mode", mode });
@@ -244,7 +247,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
               </label>
               {/* One sideways-scrolling row on a phone; wraps where there is room. */}
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
-                {VARIABLES.map((v) => (
+                {COMPOSE_VARIABLES.map((v) => (
                   <button
                     key={v}
                     type="button"
@@ -255,12 +258,21 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   </button>
                 ))}
               </div>
+              {message && (
+                <div data-testid="compose-preview" className="rounded-xl border bg-muted/40 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    What {recipients[0] ? composeFirstName(recipients[0].name) : "a parent"} will get
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{renderComposed(message, recipients[0]?.name)}</p>
+                  {problem && <p role="alert" className="mt-2 text-sm text-red-600">{problem}</p>}
+                </div>
+              )}
             </div>
 
             {/* Sticks to the bottom of the screen on a phone so Send is always under her thumb. */}
             <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
               <span className="text-sm tabular-nums text-muted-foreground">{recipients.length} recipient(s)</span>
-              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={handleSend} disabled={sending || recipients.length === 0 || !message}>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={handleSend} disabled={sending || recipients.length === 0 || !message || !!problem}>
                 <Send className="h-4 w-4 mr-2" />
                 {sending ? "Sending..." : `Send to ${recipients.length} recipient(s)`}
               </Button>
@@ -340,7 +352,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   <label className="text-sm font-medium">Message Body *</label>
                   <Textarea className="text-base sm:text-sm" name="body" required rows={5} placeholder="Hi {{parent_name}}, ..." defaultValue={editingTemplate?.body || ""} key={`body-${editingTemplate?.id || "new"}`} />
                   <div className="flex flex-wrap gap-1">
-                    {VARIABLES.map((v) => (
+                    {TEMPLATE_VARIABLES.map((v) => (
                       <span key={v} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground cursor-default">{`{{${v}}}`}</span>
                     ))}
                   </div>

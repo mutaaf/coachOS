@@ -101,6 +101,17 @@ export function dayOfMonthLabel(day: number): string {
   return `${day}${suffix}`;
 }
 
+/** A stored time as a parent reads it: "15:30:00" is "3:30 PM". */
+export function formatClockTime(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** An invoice month as a parent reads it: "2026-09" is "September". */
+export function formatMonthName(month: string): string {
+  return formatDateOnly(`${month.slice(0, 7)}-01`, { month: "long" });
+}
+
 /** Day of the week for a YYYY-MM-DD, 0 = Sunday. */
 export function dayOfWeek(iso: string): number {
   const [y, m, d] = parts(iso);

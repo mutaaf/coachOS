@@ -1819,7 +1819,7 @@
   ],
   "expected": [
    "Exactly one email with the subject 'Payment reminder: $X.XX — <Business Name>' and the heading 'A friendly payment reminder'. It lists both children with their month and amount still owed (net of any partial payments), has a 'Pay now' button, and the line 'If you've already sent it, thank you — please ignore this.'",
-   "Exactly one Outbox reminder message for the family, covering both children.",
+   "Exactly one Outbox reminder message for the family, covering both children. It names the month in words (e.g. 'the September payment'), never as '2026-09'.",
    "No further reminder email or Outbox message on the following days for the same invoices.",
    "A family whose invoice is processing (bank debit under way) or paid is not reminded."
   ],
@@ -2007,7 +2007,9 @@
   "steps": [
    "Go to Messaging > Compose. Click By Session and select the test session (sessions are listed as 'School — Session').",
    "Compare the recipient chips and the 'N recipient(s)' count with your expected list.",
-   "From 'Use a template...' choose any template that contains {{parent_name}}, or type 'Hi {{parent_name}}, practice moves to 5pm.' using the variable buttons.",
+   "Note which variable buttons show under the message box.",
+   "Type 'Hi {{parent_name}, practice moves to 5pm.' (one closing brace missing) and note the preview and the Send button. Then type 'Hi {{ student_name }}, practice moves to 5pm.' and note them again.",
+   "Type 'Hi {{ parent_name }}, practice moves to 5pm.' (with spaces inside the braces) and read the preview under the message box.",
    "Click 'Send to N recipient(s)'.",
    "Open Outbox and read each new card's text in full.",
    "Repeat using By School for the test school, and note whether each parent of a child at that school appears once.",
@@ -2016,7 +2018,10 @@
   "expected": [
    "Recipients are exactly the parents of active children in the session: both parents of the two-parent child, the siblings' shared parent once, and nobody for the withdrawn child.",
    "The count on the button equals the number of cards created in the Outbox.",
-   "Each message greets the parent by their own first name. Compose fills in {{parent_name}} only; a message with any other placeholder (e.g. {{student_name}}) is refused with 'A message to a group can only fill in {{parent_name}}…' and nothing goes to the Outbox. No card ever shows a raw {{…}}.",
+   "Only the {{parent_name}} button shows, because it is the only one Compose fills in.",
+   "With a brace missing, a red line says 'Part of the message is still in {{ }} braces…' and Send is greyed out. With {{ student_name }}, it says 'A message to a group can only fill in {{parent_name}}…' and Send is greyed out.",
+   "The preview, headed 'What <first recipient's first name> will get', shows 'Hi <their first name>, practice moves to 5pm.' — spaces or capitals inside the braces make no difference.",
+   "Each message greets the parent by their own first name. No card ever shows a raw {{…}}.",
    "By School lists each parent once, even if they have children in several sessions at that school.",
    "Every switch between All Parents, By School and By Session clears the recipients: the list shows 'Select a school' or 'Select a session', no chips show, and Send is greyed out until you pick one. The chips never belong to a different school or session from the one shown."
   ],
