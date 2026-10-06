@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import { execSync } from "node:child_process";
 
-const PORT = 3051;
+// E2E_PORT lets a second checkout run its suite while another one's server is up.
+const PORT = Number(process.env.E2E_PORT) || 3051;
 
 /**
  * Point the app under test at the local Supabase stack.

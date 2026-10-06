@@ -7,18 +7,26 @@ import { sameName } from "@/lib/roster";
  * The website (risingstars.training) registers families straight into the
  * database from the parent's browser, so nothing on a server sees it happen.
  * After a registration succeeds, the site pings this to send the family's
- * "you're in" email.
+ * "you're in" email, and gets back the program's WhatsApp group link to show.
  *
- * It takes no secret — the site runs in the parent's browser and could not
- * keep one — so it is built to be harmless: it only emails registrations made
- * in the last hour, matched on the details the parent just typed, and each
- * registration's email goes at most once (the emails log's dedupe key). The
- * daily run sends any it missed.
+ * Two ways in:
  *
- * It answers with the program's WhatsApp group link when — and only when —
- * the details match a place secured in the last hour: the family who just
- * signed up is exactly who the group is for, and the link stays off public
- * pages. Otherwise it answers the same as for nothing found.
+ *   { registration_ids, token }  — from public.submit_registration_v2, whose
+ *     notify_token is an HMAC over exactly those ids with a one-hour expiry.
+ *     The database checks it (ops.verify_notify_token: the secret never leaves
+ *     the database), so only the browser that made the registrations can ask
+ *     about them. Anything else is a 403.
+ *
+ *   { program_id, parent_phone, child_first_name }  — the old way, for the
+ *     website until it moves to v2. It takes no secret, so it is built to be
+ *     harmless: it only emails registrations made in the last hour, matched on
+ *     the details the parent just typed. Switched off by setting
+ *     NOTIFY_LEGACY_ENABLED=false once the website ships v2.
+ *
+ * Either way each registration's email goes at most once (the emails log's
+ * dedupe key), the daily run sends any it missed, and the group link comes
+ * back only when one of the registrations has a place — never for the
+ * waitlist, and never on a public page.
  */
 
 const ORIGINS = ["https://risingstars.training", "https://www.risingstars.training"];
@@ -37,8 +45,47 @@ export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, { status: 204, headers: cors(request) });
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Off only when explicitly set to false: the live website still sends the old body. */
+function legacyNotifyEnabled() {
+  return !/^(false|0|off|no)$/i.test(process.env.NOTIFY_LEGACY_ENABLED ?? "");
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
+  const headers = cors(request);
+
+  if (body && (Array.isArray(body.registration_ids) || "token" in body)) {
+    const ids: unknown[] = Array.isArray(body.registration_ids) ? body.registration_ids : [];
+    const token = typeof body.token === "string" ? body.token : "";
+    if (!ids.length || ids.length > 20 || !ids.every((id) => typeof id === "string" && UUID.test(id)) || !token || token.length > 200) {
+      return NextResponse.json({ error: "registration_ids and token are required" }, { status: 400, headers });
+    }
+    const supabase = createAdminSupabase();
+    const { data: valid, error } = await supabase.rpc("verify_notify_token", {
+      p_registration_ids: ids,
+      p_token: token,
+    });
+    if (error) return NextResponse.json({ error: "Could not check the token" }, { status: 500, headers });
+    if (valid !== true) return NextResponse.json({ error: "Invalid or expired token" }, { status: 403, headers });
+
+    const { data } = await supabase
+      .from("registrations")
+      .select("id, status, programs(whatsapp_group_url)")
+      .in("id", ids as string[]);
+    let whatsappGroupUrl: string | null = null;
+    for (const r of data || []) {
+      await emailRegistration(supabase, r.id);
+      if (r.status === "confirmed") whatsappGroupUrl = (r as any).programs?.whatsapp_group_url ?? whatsappGroupUrl;
+    }
+    return NextResponse.json({ ok: true, whatsappGroupUrl }, { headers });
+  }
+
+  if (!legacyNotifyEnabled()) {
+    return NextResponse.json({ error: "Send registration_ids and token" }, { status: 410, headers });
+  }
+
   const programId = String(body?.program_id ?? "");
   const phone = String(body?.parent_phone ?? "");
   const child = String(body?.child_first_name ?? "").trim();
@@ -61,5 +108,5 @@ export async function POST(request: NextRequest) {
       if (r.status !== "waitlisted") whatsappGroupUrl = (r as any).programs?.whatsapp_group_url ?? null;
     }
   }
-  return NextResponse.json({ ok: true, whatsappGroupUrl }, { headers: cors(request) });
+  return NextResponse.json({ ok: true, whatsappGroupUrl }, { headers });
 }

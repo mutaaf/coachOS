@@ -16,6 +16,7 @@ import { MessageSquare, Send, Users, Plus, Pencil, Trash2, Eye } from "lucide-re
 import type { MessageTemplate } from "@/types/database";
 import { OutboxPanel } from "@/components/outbox-panel";
 import { initialSelection, recipientReducer, sendableRecipients, type RecipientMode } from "@/lib/recipient-selection";
+import { PROMO_HOURS_TEXT } from "@/lib/quiet-hours";
 import { COMPOSE_VARIABLES, composeFirstName, composeProblem, renderComposed } from "@/lib/compose-message";
 
 // What the automatic messages can fill in, listed for her while she writes a template.
@@ -35,6 +36,9 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  // A promotion (news, offers, a new program) goes only to parents who agreed
+  // to promotional texts — agreeing to program texts isn't enough.
+  const [promotional, setPromotional] = useState(false);
   const [selection, dispatch] = useReducer(recipientReducer, initialSelection);
   const { mode: recipientMode, selectedId: selectedSchoolOrProgram } = selection;
   // Only the parents loaded for the group on screen; empty while a new one loads.
@@ -69,12 +73,19 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
     }
     setSending(true);
     try {
-      const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined);
+      const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined, promotional ? "promotional" : "operational");
       if ("error" in result && result.error) {
         toast.error("Not sent", { description: result.error });
         return;
       }
-      toast.success(`${(result as { count: number }).count} message(s) ready in the Outbox`);
+      const { count, skipped = 0 } = result as { count: number; skipped?: number };
+      toast.success(`${count - skipped} message(s) ready in the Outbox`, {
+        description: skipped
+          ? promotional
+            ? `${skipped} not queued: those parents haven't agreed to promotional texts (agreeing to program texts doesn't count), or said STOP.`
+            : `${skipped} not queued: those parents said STOP.`
+          : undefined,
+      });
       setMessage("");
       dispatch({ type: "clear" });
     } catch {
@@ -216,6 +227,24 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 onChange={(e) => setMessage(e.target.value)}
                 rows={5}
               />
+              <label className="flex min-h-11 items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-5 w-5 shrink-0"
+                  checked={promotional}
+                  onChange={(e) => setPromotional(e.target.checked)}
+                  data-testid="compose-promotional"
+                />
+                <span>
+                  This is a promotion (news, offers, a new program)
+                  <span className="block text-xs text-muted-foreground" data-testid="compose-promotional-help">
+                    Only parents who agreed to <strong>promotional</strong> texts get it — agreeing to program texts
+                    isn&apos;t enough, so anyone who hasn&apos;t agreed to promotional texts is left out (Texas law,
+                    as we aren&apos;t registered as a telephone solicitor). Promotions can only be sent {PROMO_HOURS_TEXT}.
+                    Practice and payment messages don&apos;t need this. Parents who said STOP never get either.
+                  </span>
+                </span>
+              </label>
               {/* One sideways-scrolling row on a phone; wraps where there is room. */}
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
                 {COMPOSE_VARIABLES.map((v) => (

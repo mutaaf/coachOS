@@ -21,6 +21,7 @@
     "react-dom": "^18.3.1",
     "resend": "^6.32.0",
     "shared": "*",
+    "sharp": "^0.34.5",
     "sonner": "^1.7.1",
     "stripe": "^20.3.1",
     "tailwind-merge": "^2.6.0",

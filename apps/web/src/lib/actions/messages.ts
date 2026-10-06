@@ -4,6 +4,7 @@ import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { templateVariables } from "shared";
+import { quietHoursMessage } from "@/lib/quiet-hours";
 import { composeProblem, renderComposed } from "@/lib/compose-message";
 
 /**
@@ -94,13 +95,31 @@ export async function sendMessage(formData: FormData) {
   revalidatePath("/messaging");
 }
 
+/**
+ * Queue one message per recipient in the Outbox.
+ *
+ * `purpose` decides who may get it (enforced in the database,
+ * 20261006000130_messaging_consent.sql and 20261007000100_promotional_texts.sql):
+ * "operational" — about the child's program — goes to every parent who hasn't
+ * said STOP; "promotional" only to parents who agreed to promotional texts
+ * (sms_promotional — agreeing to program texts isn't enough). Those who can't
+ * get it are filed as skipped with the reason, and counted in `skipped`.
+ *
+ * A promotion is refused outright outside Texas quiet hours (§301.051).
+ */
 export async function sendBulkMessages(
   recipients: { phone: string; name: string }[],
   message: string,
-  templateId?: string
+  templateId?: string,
+  purpose: "operational" | "promotional" = "operational"
 ) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
+
+  if (purpose === "promotional") {
+    const quiet = quietHoursMessage();
+    if (quiet) return { error: quiet };
+  }
 
   const problem = composeProblem(message);
   if (problem) return { error: problem };
@@ -113,12 +132,13 @@ export async function sendBulkMessages(
     status: "pending",
     attempts: 0,
     max_attempts: 3,
+    purpose: purpose === "promotional" ? "promotional" : "operational",
   }));
 
-  const { error } = await supabase.from("message_queue").insert(rows);
+  const { data: queued, error } = await supabase.from("message_queue").insert(rows).select("status");
   if (error) throw error;
   revalidatePath("/messaging");
-  return { count: rows.length };
+  return { count: rows.length, skipped: (queued ?? []).filter((r) => r.status === "skipped").length };
 }
 
 export async function fetchRecipients(

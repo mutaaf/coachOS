@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { markOutboxMessage, skipAllPending } from "@/lib/actions/outbox";
 import { smsLink, whatsappLink } from "@/lib/outbox";
+import { nextPromotionalWindow, promotionalTextAllowed, PROMO_HOURS_TEXT } from "@/lib/quiet-hours";
 import { formatPhone } from "@/lib/utils";
 import { Check, Inbox, MessageCircle, MessageSquareText, PenLine, Undo2 } from "lucide-react";
 
@@ -15,6 +16,8 @@ interface Waiting {
   recipient_phone: string;
   message: string;
   created_at: string;
+  /** "promotional" waits for Texas quiet hours to end. */
+  purpose?: "operational" | "promotional" | null;
 }
 
 interface Done {
@@ -47,6 +50,14 @@ export function OutboxPanel({
   const [queue, setQueue] = useState(waiting);
   const [handled, setHandled] = useState<Done[]>(done);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // Re-checked every minute: promotions can only go within Texas quiet hours.
+  const [promoOpen, setPromoOpen] = useState(true);
+  useEffect(() => {
+    const tick = () => setPromoOpen(promotionalTextAllowed());
+    tick();
+    const timer = setInterval(tick, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => setQueue(waiting), [waiting]);
   useEffect(() => setHandled(done), [done]);
@@ -117,11 +128,18 @@ export function OutboxPanel({
             const wa = whatsappLink(msg.recipient_phone, msg.message);
             const sms = smsLink(msg.recipient_phone, msg.message);
             const open = expanded === msg.id;
+            const promo = msg.purpose === "promotional";
+            const held = promo && !promoOpen;
             return (
               <li key={msg.id} data-testid="outbox-message" className="rounded-2xl border bg-card p-4 shadow-sm">
                 <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                   <p className="min-w-0 font-semibold leading-snug [overflow-wrap:anywhere]">
                     {msg.recipient_name || "Parent"}
+                    {promo && (
+                      <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 align-middle text-[11px] font-semibold text-violet-800">
+                        Promotion
+                      </span>
+                    )}
                   </p>
                   <p className="shrink-0 text-sm tabular-nums text-muted-foreground sm:text-xs">
                     {formatPhone(msg.recipient_phone)}
@@ -136,7 +154,11 @@ export function OutboxPanel({
                   {msg.message}
                 </button>
                 <div className="mt-3 flex items-center gap-2">
-                  {wa ? (
+                  {held ? (
+                    <p className="flex-1 text-sm text-amber-800" data-testid="promo-quiet-hours">
+                      Texas quiet hours — promotions can go {PROMO_HOURS_TEXT}. Send after {nextPromotionalWindow()}.
+                    </p>
+                  ) : wa ? (
                     <>
                       <a
                         href={wa}

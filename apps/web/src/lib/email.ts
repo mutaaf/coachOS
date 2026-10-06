@@ -14,7 +14,14 @@ import type { OpsClient } from "@/lib/supabase/types";
  * turn a payment that went through into an error.
  */
 
-export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder" | "registration" | "welcome";
+/**
+ * Every kind but "marketing" is transactional: about the family's own place,
+ * bill or payment, sent whether or not they opted in to news (CAN-SPAM's
+ * "transactional or relationship" messages). Marketing goes only through
+ * sendMarketingEmail (lib/marketing-email.ts), which checks the opt-in, the
+ * suppression list and the postal address, and adds the unsubscribe headers.
+ */
+export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder" | "registration" | "welcome" | "marketing";
 
 export interface OutgoingEmail {
   kind: EmailKind;
@@ -24,6 +31,8 @@ export interface OutgoingEmail {
   subject: string;
   text: string;
   html: string;
+  /** Extra headers, e.g. List-Unsubscribe on marketing email. */
+  headers?: Record<string, string>;
 }
 
 type Sender = Pick<Resend, "emails">;
@@ -49,7 +58,7 @@ export function isSender(value: string): boolean {
   return domain === SENDING_DOMAIN || domain.endsWith(`.${SENDING_DOMAIN}`);
 }
 
-export type SendOutcome = "sent" | "failed" | "skipped" | "duplicate" | "no_address" | "disabled";
+export type SendOutcome = "sent" | "failed" | "skipped" | "duplicate" | "no_address" | "disabled" | "suppressed";
 
 export async function sendEmail(
   supabase: OpsClient,
@@ -66,6 +75,15 @@ export async function sendEmail(
       .in("key", ["emails_enabled", "email_from", "email_reply_to"]);
     const c = Object.fromEntries((config || []).map((r) => [r.key, r.value]));
     if (c.emails_enabled !== "true") return "disabled";
+
+    // The suppression list: a hard bounce or spam complaint stops everything;
+    // an unsubscribe stops marketing only.
+    const { data: suppressed } = await supabase
+      .from("email_suppressions")
+      .select("scope")
+      .eq("email", to.toLowerCase())
+      .maybeSingle();
+    if (suppressed && (suppressed.scope === "all" || email.kind === "marketing")) return "suppressed";
 
     const { data: row } = await supabase
       .from("emails")
@@ -100,6 +118,7 @@ export async function sendEmail(
         subject: email.subject,
         text: email.text,
         html: email.html,
+        ...(email.headers ? { headers: email.headers } : {}),
       },
       { idempotencyKey: email.dedupeKey.slice(0, 256) }
     );

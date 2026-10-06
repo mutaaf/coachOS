@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { staffRole, type StaffRole } from "@/lib/admin";
 import {
   LayoutDashboard,
   School,
@@ -30,6 +31,7 @@ import {
   MessageSquareWarning,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
 
 const navigation = [
@@ -44,6 +46,7 @@ const navigation = [
   { name: "Messaging", href: "/messaging", icon: MessageSquare },
   { name: "Marketing", href: "/marketing", icon: Target },
   { name: "Website", href: "/website", icon: Globe },
+  { name: "Audit & Compliance", href: "/compliance", icon: ShieldCheck },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Help", href: "/help", icon: LifeBuoy },
 ];
@@ -60,6 +63,11 @@ export default function DashboardLayout({
   const [tourContext, setTourContext] = useState<TourContext | null>(null);
   const [releases, setReleases] = useState<ReleaseState | null>(null);
   const [reporting, setReporting] = useState(false);
+  // The compliance role sees only Audit & Compliance (middleware enforces it;
+  // this just keeps the menu honest). Admin until the account is read.
+  const [role, setRole] = useState<StaffRole | null>(null);
+  const complianceOnly = role === "compliance";
+  const menu = complianceOnly ? navigation.filter((item) => item.href === "/compliance") : navigation;
 
   // The tour starts by itself until she has finished or skipped it once, on
   // any device — it is recorded on her account.
@@ -67,7 +75,10 @@ export default function DashboardLayout({
     createClient()
       .auth.getUser()
       .then(({ data }) => {
-        if (data.user && !data.user.user_metadata?.tour_completed_at) setFirstVisit(true);
+        const r = staffRole(data.user);
+        setRole(r);
+        // The tour walks through every page; it isn't for the compliance role.
+        if (data.user && r === "admin" && !data.user.user_metadata?.tour_completed_at) setFirstVisit(true);
       });
     getTourContext().then(setTourContext);
     getReleaseState().then(setReleases);
@@ -96,7 +107,7 @@ export default function DashboardLayout({
     setSidebarOpen(false);
   }, [pathname]);
 
-  const current = navigation.find(
+  const current = menu.find(
     (item) => pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
   );
 
@@ -123,7 +134,7 @@ export default function DashboardLayout({
           aria-label="Main"
           className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3 lg:py-4"
         >
-          {navigation.map((item) => {
+          {menu.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -150,6 +161,7 @@ export default function DashboardLayout({
 
         {/* Tour + Sign Out */}
         <div className="flex-shrink-0 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pb-3">
+          {!complianceOnly && (
           <button
             onClick={() => {
               setSidebarOpen(false);
@@ -160,6 +172,8 @@ export default function DashboardLayout({
             <PlayCircle className="h-5 w-5 flex-shrink-0" />
             Take the tour
           </button>
+          )}
+          {!complianceOnly && (
           <button
             onClick={() => {
               setSidebarOpen(false);
@@ -170,6 +184,7 @@ export default function DashboardLayout({
             <MessageSquareWarning className="h-5 w-5 flex-shrink-0" />
             Report a problem
           </button>
+          )}
           <button
             onClick={handleSignOut}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:min-h-0 lg:text-sm"

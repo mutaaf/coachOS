@@ -38,7 +38,7 @@ const FULL_DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", 
 interface SchedulePageClientProps {
   initialSessions: any[];
   programs: any[];
-  coaches?: { id: string; first_name: string; last_name: string }[];
+  coaches?: { id: string; first_name: string; last_name: string; cleared?: boolean; clearance?: import("@/lib/coach-clearance").CoachClearance }[];
 }
 
 function formatTime(time: string): string {
@@ -418,7 +418,14 @@ export function SchedulePageClient({ initialSessions, programs, coaches = [] }: 
         coaches={coaches}
         open={templateFormOpen}
         onOpenChange={handleTemplateFormClose}
-        programs={programs.map((p: any) => ({ id: p.id, name: `${p.school?.name} — ${p.name}` }))}
+        programs={programs.map((p: any) => ({
+          id: p.id,
+          name: `${p.school?.name} — ${p.name}`,
+          start_date: p.start_date,
+          end_date: p.end_date,
+          youth_camp_license_number: p.youth_camp_license_number,
+        }))}
+        templates={templates}
         template={editingTemplate}
       />
     </div>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +10,11 @@ import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAction } from "@/lib/use-action";
-import { offerSession, saveCatalogProgram, saveSeason, setCatalogProgramArchived } from "@/lib/actions/catalog";
+import { saveCatalogProgram, saveSeason, setCatalogProgramArchived } from "@/lib/actions/catalog";
+import { setRegistrationOpen } from "@/lib/actions/new-program";
 import type { CatalogProgram, Season } from "@/lib/queries/catalog";
 import { formatCurrency } from "@/lib/utils";
-import { CalendarRange, ChevronRight, Pencil, Plus, Users } from "lucide-react";
+import { CalendarRange, ChevronRight, Copy, Lock, LockOpen, Pencil, Plus, Users } from "lucide-react";
 
 /**
  * Programs: what she offers, made once — and where each is on. A program put
@@ -34,14 +34,14 @@ function when(start: string | null, end: string | null) {
 export function ProgramsPageClient({
   programs,
   seasons,
-  schools,
 }: {
   programs: CatalogProgram[];
   seasons: Season[];
   schools: { id: string; name: string }[];
 }) {
   const [editing, setEditing] = useState<CatalogProgram | "new" | null>(null);
-  const [offering, setOffering] = useState<CatalogProgram | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const bulk = useAction();
   const [seasonEditing, setSeasonEditing] = useState<Season | "new" | null>(null);
   const [seasonFilter, setSeasonFilter] = useState<string>("current");
   const [showArchived, setShowArchived] = useState(false);
@@ -50,6 +50,20 @@ export function ProgramsPageClient({
   const inFilter = (seasonId: string | null) =>
     seasonFilter === "all" ? true : seasonFilter === "current" ? !seasonId || current.some((s) => s.id === seasonId) : seasonId === seasonFilter;
   const shown = programs.filter((p) => showArchived || p.status === "active");
+  /** The most recent season this program ran in — what "Duplicate for next season" copies. */
+  const latestSeason = (p: CatalogProgram) => {
+    const ids = new Set(p.sessions.map((s) => s.season_id).filter(Boolean));
+    return seasons.find((s) => ids.has(s.id)) ?? null;
+  };
+  const visibleIds = new Set(shown.flatMap((p) => p.sessions.filter((s) => inFilter(s.season_id)).map((s) => s.id)));
+  const selected = [...picked].filter((id) => visibleIds.has(id));
+  async function bulkSignups(open: boolean) {
+    const ok = await bulk.run(() => setRegistrationOpen(selected, open), {
+      success: `Sign-ups ${open ? "opened" : "closed"} for ${selected.length} ${selected.length === 1 ? "session" : "sessions"}`,
+      error: "Not changed",
+    });
+    if (ok) setPicked(new Set());
+  }
 
   return (
     <div>
@@ -58,9 +72,13 @@ export function ProgramsPageClient({
           <h1 className="text-2xl font-bold">Programs</h1>
           <p className="text-sm text-muted-foreground sm:text-base">What you offer, and where each one is on.</p>
         </div>
-        <Button onClick={() => setEditing("new")} data-testid="new-program" className="h-11 w-full sm:h-10 sm:w-auto">
+        <Link
+          href="/programs/new"
+          data-testid="new-program"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:h-10 sm:w-auto"
+        >
           <Plus className="mr-1 h-4 w-4" /> New program
-        </Button>
+        </Link>
       </div>
 
       <Tabs defaultValue="programs">
@@ -96,8 +114,28 @@ export function ProgramsPageClient({
             <div className="rounded-2xl border border-dashed p-6 text-center sm:p-8">
               <p className="font-medium">No programs yet</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Make one — like “Lil Dribblers (K–1)” — then put it on at your schools.
+                Tap New program — pick the schools, the season and the times, and put it on the website in one go.
               </p>
+            </div>
+          )}
+
+          {selected.length > 0 && (
+            <div
+              className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-sm backdrop-blur"
+              data-testid="bulk-signups"
+              role="region"
+              aria-label="Selected sessions"
+            >
+              <span className="px-2 text-sm font-medium tabular-nums">{selected.length} selected</span>
+              <Button className="h-11 sm:h-9" disabled={bulk.pending} onClick={() => bulkSignups(true)}>
+                <LockOpen className="mr-1 h-4 w-4" /> Open sign-ups
+              </Button>
+              <Button variant="outline" className="h-11 sm:h-9" disabled={bulk.pending} onClick={() => bulkSignups(false)}>
+                <Lock className="mr-1 h-4 w-4" /> Close sign-ups
+              </Button>
+              <Button variant="ghost" className="h-11 sm:h-9" onClick={() => setPicked(new Set())}>
+                Clear
+              </Button>
             </div>
           )}
 
@@ -119,16 +157,36 @@ export function ProgramsPageClient({
                   </div>
                   <ul className="divide-y border-t" aria-label={`Sessions of ${p.name}`}>
                     {sessions.map((s) => (
-                      <li key={s.id}>
+                      <li key={s.id} className="flex items-stretch">
+                        <label className="flex w-12 shrink-0 cursor-pointer items-center justify-center hover:bg-muted/50" title="Select for sign-ups">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4"
+                            aria-label={`Select ${s.school_name}`}
+                            checked={picked.has(s.id)}
+                            onChange={(e) =>
+                              setPicked((cur) => {
+                                const next = new Set(cur);
+                                if (e.target.checked) next.add(s.id);
+                                else next.delete(s.id);
+                                return next;
+                              })
+                            }
+                          />
+                        </label>
                         <Link
                           href={`/schools/${s.school_id}`}
                           data-testid="session"
-                          className="grid min-h-[56px] grid-cols-[1fr_auto_auto] items-center gap-2 px-4 py-2.5 hover:bg-muted/50 sm:gap-3"
+                          className="grid min-h-[56px] min-w-0 flex-1 grid-cols-[1fr_auto_auto] items-center gap-2 py-2.5 pr-4 hover:bg-muted/50 sm:gap-3"
                         >
                           <span className="min-w-0">
                             <span className="block truncate font-medium">{s.school_name}</span>
                             <span className="block text-sm text-muted-foreground sm:truncate">
                               {[s.times.join(", ") || "No weekly time yet", s.season_name, when(s.start_date, s.end_date)].filter(Boolean).join(" · ")}
+                            </span>
+                            <span className={`mt-0.5 inline-flex items-center gap-1 text-xs font-medium ${s.registration_open ? "text-emerald-700" : "text-muted-foreground"}`}>
+                              {s.registration_open ? <LockOpen className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                              {s.registration_open ? "Sign-ups open" : "Sign-ups closed"}
                             </span>
                           </span>
                           <span
@@ -147,10 +205,21 @@ export function ProgramsPageClient({
                     )}
                   </ul>
                   {p.status === "active" && (
-                    <div className="border-t p-3">
-                      <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto" onClick={() => setOffering(p)}>
-                        <Plus className="mr-1 h-4 w-4" /> Put it on at a school
-                      </Button>
+                    <div className="flex flex-col gap-2 border-t p-3 sm:flex-row sm:flex-wrap">
+                      <Link
+                        href={`/programs/new?program=${p.id}`}
+                        className="inline-flex h-11 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium hover:bg-muted sm:h-10"
+                      >
+                        <Plus className="mr-1 h-4 w-4" /> Add to another school
+                      </Link>
+                      {latestSeason(p) && (
+                        <Link
+                          href={`/programs/new?program=${p.id}&from=${latestSeason(p)!.id}`}
+                          className="inline-flex h-11 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium hover:bg-muted sm:h-10"
+                        >
+                          <Copy className="mr-1 h-4 w-4" /> Duplicate {latestSeason(p)!.name} for next season
+                        </Link>
+                      )}
                     </div>
                   )}
                 </article>
@@ -204,7 +273,6 @@ export function ProgramsPageClient({
       </Tabs>
 
       {editing && <ProgramDialog program={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
-      {offering && <SessionDialog program={offering} seasons={seasons} schools={schools} onClose={() => setOffering(null)} />}
       {seasonEditing && <SeasonDialog season={seasonEditing === "new" ? null : seasonEditing} onClose={() => setSeasonEditing(null)} />}
     </div>
   );
@@ -219,7 +287,7 @@ function ProgramDialog({ program, onClose }: { program: CatalogProgram | null; o
     const fd = new FormData(e.currentTarget);
     if (program) fd.set("id", program.id);
     ages.forEach((a) => fd.append("age_groups", a));
-    const ok = await run(() => saveCatalogProgram(fd), { success: program ? "Saved" : "Program made — now put it on at a school", error: "Not saved" });
+    const ok = await run(() => saveCatalogProgram(fd), { success: program ? "Saved" : "Program made — now add it to a school", error: "Not saved" });
     if (ok) onClose();
   }
 
@@ -295,153 +363,6 @@ function ProgramDialog({ program, onClose }: { program: CatalogProgram | null; o
                 {pending ? "Saving…" : program ? "Save" : "Make program"}
               </Button>
             </div>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-const NEW = "__new__";
-
-function SessionDialog({
-  program,
-  seasons,
-  schools,
-  onClose,
-}: {
-  program: CatalogProgram;
-  seasons: Season[];
-  schools: { id: string; name: string }[];
-  onClose: () => void;
-}) {
-  const { run, pending } = useAction();
-  const open = seasons.filter((s) => s.status !== "closed");
-  const [schoolId, setSchoolId] = useState(schools.length ? "" : NEW);
-  const [seasonId, setSeasonId] = useState(open[0]?.id ?? (seasons.length ? "" : NEW));
-  const season = seasons.find((s) => s.id === seasonId);
-
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    fd.set("catalog_id", program.id);
-    if (schoolId === NEW) fd.delete("school_id");
-    if (seasonId === NEW) fd.delete("season_id");
-    let made: { schoolId?: string } = {};
-    const ok = await run(
-      async () => {
-        const res = await offerSession(fd);
-        made = res as { schoolId?: string };
-        return res as { error?: string };
-      },
-      { success: `${program.name} is on — its roster starts empty`, error: "Not added" }
-    );
-    if (ok) {
-      onClose();
-      if (made.schoolId) toast.message("Add children by importing the roster, or share the sign-up link from the school's page.");
-    }
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-testid="session-dialog" onClose={onClose}>
-        <DialogHeader className="mb-4 pr-8 text-left">
-          <DialogTitle className="leading-snug">Put {program.name} on at a school</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="session-school">School</Label>
-            <Select
-              id="session-school"
-              name="school_id"
-              value={schoolId}
-              onChange={(e) => setSchoolId(e.target.value)}
-              options={[{ value: "", label: "Pick a school" }, ...schools.map((s) => ({ value: s.id, label: s.name })), { value: NEW, label: "+ A new school" }]}
-            />
-          </div>
-          {schoolId === NEW && (
-            <div className="space-y-1.5">
-              <Label htmlFor="session-new-school">New school’s name</Label>
-              <Input id="session-new-school" name="new_school_name" required />
-            </div>
-          )}
-          <div className="space-y-1.5">
-            <Label htmlFor="session-season">Season</Label>
-            <Select
-              id="session-season"
-              name="season_id"
-              value={seasonId}
-              onChange={(e) => setSeasonId(e.target.value)}
-              options={[
-                ...(seasons.length ? [{ value: "", label: "No season" }] : []),
-                ...seasons.filter((s) => s.status !== "closed").map((s) => ({ value: s.id, label: s.name })),
-                { value: NEW, label: "+ A new season" },
-              ]}
-            />
-          </div>
-          {seasonId === NEW && (
-            <div className="space-y-1.5">
-              <Label htmlFor="session-new-season">New season’s name</Label>
-              <Input id="session-new-season" name="new_season_name" placeholder="Fall 2026" required />
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="session-start">Starts</Label>
-              <Input id="session-start" name="start_date" type="date" key={`s-${seasonId}`} defaultValue={season?.start_date ?? ""} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="session-end">Ends</Label>
-              <Input id="session-end" name="end_date" type="date" key={`e-${seasonId}`} defaultValue={season?.end_date ?? ""} />
-            </div>
-          </div>
-          <fieldset className="space-y-2 rounded-xl bg-muted/50 p-3">
-            <legend className="text-sm font-medium">Weekly practice (optional — add more later)</legend>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_auto_auto]">
-              <div className="col-span-2 sm:col-span-1">
-                <Label htmlFor="session-day" className="sr-only">Day</Label>
-                <Select
-                  id="session-day"
-                  name="day_of_week"
-                  defaultValue=""
-                  options={[{ value: "", label: "Day" }, ...DAYS.map((d, i) => ({ value: String(i), label: d }))]}
-                />
-              </div>
-              <div>
-                <Label htmlFor="session-from" className="sr-only">Starts at</Label>
-                <Input id="session-from" name="start_time" type="time" defaultValue="15:30" className="w-full sm:w-[7.5rem]" />
-              </div>
-              <div>
-                <Label htmlFor="session-to" className="sr-only">Ends at</Label>
-                <Input id="session-to" name="end_time" type="time" defaultValue="16:30" className="w-full sm:w-[7.5rem]" />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="session-location" className="sr-only">Where at the school</Label>
-              <Input id="session-location" name="location" placeholder="Where at the school — Gym, Court 2…" />
-            </div>
-          </fieldset>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="session-fee">Monthly fee</Label>
-              <Input id="session-fee" name="monthly_fee" inputMode="decimal" defaultValue={program.default_monthly_fee} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="session-capacity">Places</Label>
-              <Input id="session-capacity" name="capacity" inputMode="numeric" defaultValue={program.default_capacity} />
-            </div>
-          </div>
-          <label className="flex min-h-[44px] items-center gap-2 text-sm">
-            <input type="checkbox" name="registration_open" value="true" defaultChecked className="h-4 w-4" />
-            Open for sign-ups now
-          </label>
-          <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
-            <Button type="button" variant="ghost" className="h-11 sm:h-10" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={pending} className="h-11 sm:h-10">
-              {pending ? "Adding…" : "Add session"}
-            </Button>
           </div>
         </form>
       </DialogContent>

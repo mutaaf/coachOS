@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CoachFormDialog } from "@/components/coach-form-dialog";
+import { CoachSafeguardingDialog } from "@/components/coach-safeguarding-dialog";
+import { CoachClearanceBadge } from "@/components/coach-clearance-badge";
 import { deleteCoach } from "@/lib/actions/coaches";
 import { useAction } from "@/lib/use-action";
 import { formatCurrency } from "@/lib/utils";
-import { UserCheck, Mail, Plus, Pencil, Trash2, CalendarClock } from "lucide-react";
+import { UserCheck, Mail, Plus, Pencil, Trash2, CalendarClock, ShieldCheck } from "lucide-react";
 import { PhoneLink } from "@/components/phone-link";
 import type { Coach } from "@/types/database";
 import type { CoachWithWorkload } from "@/lib/queries/coaches";
@@ -22,6 +24,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
   const { run, pending } = useAction();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Coach | undefined>();
+  const [safeguarding, setSafeguarding] = useState<CoachWithWorkload | undefined>();
 
   const totals = useMemo(() => {
     const active = coaches.filter((c) => c.status === "active");
@@ -31,6 +34,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
       // Only per-session coaches can be totalled; hourly ones return null.
       owed: coaches.reduce((sum, c) => sum + (c.owed ?? 0), 0),
       unpriced: coaches.filter((c) => c.status === "active" && c.owed === null).length,
+      notCleared: active.filter((c) => c.clearance.status === "not_cleared").length,
     };
   }, [coaches]);
 
@@ -60,6 +64,16 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
           <Plus className="h-4 w-4 mr-1" /> Add Coach
         </Button>
       </div>
+
+      {totals.notCleared > 0 && (
+        <div role="alert" data-testid="coaches-not-cleared" className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+          <strong>
+            {totals.notCleared} active coach{totals.notCleared === 1 ? " isn't" : "es aren't"} cleared to work with children.
+          </strong>{" "}
+          A background check (with the sex-offender registry), abuse-prevention training, CPR / First Aid and a
+          signed code of conduct must be on file before they run a practice. Open Safeguarding on each to fill it in.
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -121,6 +135,7 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
                   >
                     {coach.status}
                   </span>
+                  <CoachClearanceBadge clearance={coach.clearance} />
                   {coach.weekly_slots > 0 && (
                     <Badge variant="secondary">
                       <CalendarClock className="mr-1 h-3 w-3" />
@@ -158,10 +173,26 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
                 {coach.notes && (
                   <p className="mt-1 break-words text-sm text-muted-foreground">{coach.notes}</p>
                 )}
+
+                {coach.status === "active" && coach.clearance.status === "not_cleared" && (coach.weekly_slots > 0 || coach.sessions_upcoming > 0) && (
+                  <p className="mt-1 text-sm font-medium text-red-700">
+                    Scheduled to coach but not cleared — missing or expired: {coach.clearance.problems.join(", ")}.
+                  </p>
+                )}
               </div>
 
               {/* Real, labelled buttons on phones; compact icons from sm up. */}
-              <div className="grid grid-cols-2 gap-2 border-t pt-3 sm:flex sm:items-center sm:gap-1 sm:border-t-0 sm:pt-0">
+              <div className="grid grid-cols-3 gap-2 border-t pt-3 sm:flex sm:items-center sm:gap-1 sm:border-t-0 sm:pt-0">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-11 border sm:h-9 sm:border-0"
+                  aria-label={`Safeguarding for ${coach.first_name} ${coach.last_name}`}
+                  onClick={() => setSafeguarding(coach)}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span className="ml-2 sm:hidden">Checks</span>
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -195,6 +226,12 @@ export function CoachesPageClient({ coaches }: { coaches: CoachWithWorkload[] })
       )}
 
       <CoachFormDialog open={dialogOpen} onOpenChange={setDialogOpen} coach={editing} />
+      <CoachSafeguardingDialog
+        open={!!safeguarding}
+        onOpenChange={(o) => !o && setSafeguarding(undefined)}
+        coach={safeguarding}
+        clearance={safeguarding?.clearance}
+      />
     </div>
   );
 }

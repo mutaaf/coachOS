@@ -1,5 +1,5 @@
 import { createServerSupabase } from "@/lib/supabase/server";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin, staffRole, type StaffRole } from "@/lib/admin";
 
 /**
  * Whether the request comes from someone signed in to the dashboard.
@@ -16,6 +16,19 @@ export async function signedIn(): Promise<boolean> {
 export async function currentUser(): Promise<{ id: string; email: string | null } | null> {
   const { data } = await createServerSupabase().auth.getUser();
   return isAdmin(data.user) ? { id: data.user!.id, email: data.user!.email ?? null } : null;
+}
+
+/**
+ * Who is signed in with either staff role (admin or compliance), or null.
+ *
+ * Only Audit & Compliance actions use this; every other action keeps using
+ * currentUser(), which is admin-only, so the compliance role can't reach
+ * families, payments or messages through them.
+ */
+export async function currentStaff(): Promise<{ id: string; email: string | null; role: StaffRole } | null> {
+  const { data } = await createServerSupabase().auth.getUser();
+  const role = staffRole(data.user);
+  return role ? { id: data.user!.id, email: data.user!.email ?? null, role } : null;
 }
 
 export const NOT_SIGNED_IN = { error: "Your session has ended. Sign in again and retry." };

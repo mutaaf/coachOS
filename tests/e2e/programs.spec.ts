@@ -1,7 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
-import { admin, truncateAll, TEST_USER } from "../helpers/db";
+import { admin, ensureTestUser, truncateAll, TEST_USER } from "../helpers/db";
 
 /** Make a program once, put it on at a school; its roster starts empty. On a phone. */
+
+test.beforeAll(ensureTestUser);
 
 test.beforeEach(async () => {
   await truncateAll();
@@ -24,28 +26,28 @@ test("make a program, put it on at a new school in a new season", async ({ page 
   await expect(page.getByText("No programs yet")).toBeVisible();
 
   await page.getByTestId("new-program").click();
-  const p = page.getByTestId("program-dialog");
-  await p.getByLabel("Name").fill("Lil Dribblers (K–1)");
-  await p.getByLabel("Description for parents").fill("Ball-handling and fun.");
-  await p.getByRole("button", { name: "4-6 years" }).click();
-  await p.getByLabel("Usual monthly fee").fill("100");
-  await p.getByRole("button", { name: "Make program" }).click();
-  await expect(page.getByText("Program made")).toBeVisible();
+  await page.getByLabel("Program name").fill("Lil Dribblers (K–1)");
+  await page.getByLabel("Description for parents").fill("Ball-handling and fun.");
+  await page.getByRole("button", { name: "4-6 years" }).click();
+  await page.getByLabel("Usual monthly fee").fill("100");
+  await page.getByTestId("wizard-next").click();
+
+  await page.getByRole("button", { name: "New school" }).click();
+  await page.getByLabel("New school’s name").fill("Lakehill Elementary");
+  await page.getByRole("button", { name: "Add school", exact: true }).click();
+  await page.getByLabel("Season", { exact: true }).selectOption({ label: "+ A new season" });
+  await page.getByLabel("New season’s name").fill("Fall 2026");
+  await page.getByLabel("Season starts").fill("2026-09-08");
+  await page.getByLabel("Season ends").fill("2026-12-11");
+  await page.getByRole("button", { name: "Add a weekly practice" }).click();
+  await page.getByTestId("wizard-next").click();
+  await page.getByRole("switch", { name: "Show on the website" }).click();
+  await page.getByRole("button", { name: "Save — 1 school" }).click();
+  await expect(page.getByTestId("new-program-done")).toContainText("Lil Dribblers (K–1) is on at 1 school");
+  await page.getByRole("link", { name: "Back to Programs" }).click();
 
   const card = page.getByTestId("program").filter({ hasText: "Lil Dribblers (K–1)" });
   await expect(card).toContainText("$100.00/mo");
-  await card.getByRole("button", { name: "Put it on at a school" }).click();
-  const s = page.getByTestId("session-dialog");
-  await s.getByLabel("School", { exact: true }).selectOption({ label: "+ A new school" });
-  await s.getByLabel("New school’s name").fill("Lakehill Elementary");
-  await s.getByLabel("Season", { exact: true }).selectOption({ label: "+ A new season" });
-  await s.getByLabel("New season’s name").fill("Fall 2026");
-  await s.getByLabel("Starts", { exact: true }).fill("2026-09-08");
-  await s.getByLabel("Ends", { exact: true }).fill("2026-12-11");
-  await s.getByLabel("Day", { exact: true }).selectOption({ label: "Tuesday" });
-  await s.getByRole("button", { name: "Add session" }).click();
-  await expect(page.getByText(/is on — its roster starts empty/)).toBeVisible();
-
   const session = card.getByTestId("session");
   await expect(session).toContainText("Lakehill Elementary");
   await expect(session).toContainText("Tue 3:30–4:30 PM");
@@ -61,4 +63,15 @@ test("make a program, put it on at a new school in a new season", async ({ page 
   await session.click();
   await expect(page).toHaveURL(/\/schools\//);
   await expect(page.getByText("Lil Dribblers (K–1)").first()).toBeVisible();
+});
+
+test("edit a program's usual fee from its card", async ({ page }) => {
+  await admin.from("program_catalog").insert({ name: "Soccer Stars", default_monthly_fee: 90 });
+  await signIn(page);
+  await page.goto("/programs");
+  await page.getByRole("button", { name: "Edit Soccer Stars" }).click();
+  const p = page.getByTestId("program-dialog");
+  await p.getByLabel("Usual monthly fee").fill("95");
+  await p.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByTestId("program").filter({ hasText: "Soccer Stars" })).toContainText("$95.00/mo");
 });

@@ -2848,6 +2848,76 @@
   "phone": false
  },
  {
+  "id": "PRG-01",
+  "area": "Programs",
+  "title": "A new program goes on at two schools, open for sign-ups and on the website, in one save",
+  "risk": "A program is half-made (on at one school, or not on the website), or the website shows the wrong fee, places, times or address.",
+  "severity": "critical",
+  "preconditions": [
+   "One test school on file with an address. A published photo in Website → Photos."
+  ],
+  "steps": [
+   "Programs → New program. Make a test program: name, an age, a description, usual fee 110. Next.",
+   "Find the test school and add it. Tap New school, type a second test school with an address, Add school. Pick or make a season with dates. Add a weekly practice, then Another practice.",
+   "Under Per school, set the second school's fee to 125 and places to 8. Next.",
+   "Leave Open for sign-ups and Show on the website on. Pick the photo. Check the card preview, then Save.",
+   "Open risingstars.training's programs page."
+  ],
+  "expected": [
+   "The done screen says the program is on at 2 schools, with a sign-up link for each.",
+   "Programs shows both sessions with both weekly times and 'Sign-ups open'.",
+   "Within a minute the website shows two cards with the photo, each school's address, $110 and $125, 12 and 8 places, and both practice days."
+  ],
+  "evidence": "Screenshots of the preview, the done screen and both website cards.",
+  "phone": true
+ },
+ {
+  "id": "PRG-02",
+  "area": "Programs",
+  "title": "Duplicate for next season, Add to another school, and closing sign-ups in bulk",
+  "risk": "Next season is set up with the wrong fees or coaches, or sign-ups stay open on sessions that are full or over.",
+  "severity": "high",
+  "preconditions": [
+   "A test program on at two schools from PRG-01."
+  ],
+  "steps": [
+   "On Programs, tick both test sessions and tap Close sign-ups.",
+   "Tap Duplicate … for next season on the test program. Check the schools, fees, coaches and times; pick or name the next season; Save.",
+   "Tap Add to another school on the test program, add a third test school, Save."
+  ],
+  "expected": [
+   "Both sessions say 'Sign-ups closed' and disappear from the website's registration (cards show closed).",
+   "The duplicate has the same schools, fees, places, coach and times in the new season.",
+   "The third school is added without changing the first two."
+  ],
+  "evidence": "Screenshot of Programs after each step.",
+  "phone": true
+ },
+ {
+  "id": "WEB-03",
+  "area": "Website",
+  "title": "Photos replace the website's pictures without a deploy, and children need a photo release",
+  "risk": "The website keeps creepy or wrong pictures, a photo of a recognizable child goes up without a release, or a phone photo leaks where it was taken.",
+  "severity": "critical",
+  "preconditions": [
+   "Two test photos on a phone: one with no people, one with a recognizable child (use your own family with permission)."
+  ],
+  "steps": [
+   "Website → Photos → Choose photos, pick both.",
+   "Open the photo with no people: write a description, tap the most important part, switch on 'On the website', Save. Under Where photos show, Add it to the Home page slideshow and Choose it for About.",
+   "Open the photo with the child: describe it, tick 'shows children who could be recognized', switch on 'On the website', Save.",
+   "Tick the photo release box, Save. Put it in the slideshow and use the arrows to put it first.",
+   "Open risingstars.training after a minute."
+  ],
+  "expected": [
+   "Both upload with 'Making it phone-sized…' and appear in the Library.",
+   "The child photo stays 'Needs a photo release' until the release box is ticked.",
+   "The website's slideshow shows both, child photo first, cropped around the tapped point; About shows the first photo. No deploy happened."
+  ],
+  "evidence": "Screenshots of the Library badges and the website's slideshow.",
+  "phone": true
+ },
+ {
   "id": "MSG-07",
   "area": "Messaging",
   "title": "Phone numbers are saved as one number, so WhatsApp reaches the family",
@@ -2872,5 +2942,65 @@
   ],
   "evidence": "Screenshots of the refused number, the search, and each WhatsApp chat that opened.",
   "phone": true
+ },
+ {
+  "id": "CMP-01",
+  "area": "Compliance",
+  "title": "A concussion keeps a child out until a doctor clears them",
+  "risk": "A child with a suspected concussion plays again before being cleared.",
+  "severity": "critical",
+  "preconditions": [
+   "You are signed in as the Boss.",
+   "A test child is enrolled in a session with a practice today."
+  ],
+  "steps": [
+   "On Compliance → Incidents, tap Report an incident, pick the test child, describe a head knock and tick Possible concussion. Save.",
+   "Open today's practice on Schedule and try to mark the child Present, then Save.",
+   "Back on Incidents, tap Record doctor's clearance, enter a doctor's name, Save. Mark the child Present again."
+  ],
+  "expected": [
+   "The child shows Sitting out on the register.",
+   "Saving them as Present is refused with a message about the concussion.",
+   "After the clearance, Present saves."
+  ]
+ },
+ {
+  "id": "CMP-02",
+  "area": "Compliance",
+  "title": "A parent's STOP is honoured",
+  "risk": "A parent who asked not to be texted is texted again.",
+  "severity": "critical",
+  "preconditions": [
+   "A test family with a phone number."
+  ],
+  "steps": [
+   "Open the family, find Consents and tap They said STOP.",
+   "In Messaging → Compose, send a message to all parents."
+  ],
+  "expected": [
+   "The family shows Said STOP.",
+   "No message for that parent waits in the Outbox; Compose says some were not queued."
+  ]
+ },
+ {
+  "id": "CMP-03",
+  "area": "Compliance",
+  "title": "Erase a family on a verified request",
+  "risk": "A family's data is kept after they asked for it to be deleted, or the books lose a payment.",
+  "severity": "high",
+  "preconditions": [
+   "A test family with a paid invoice and no active enrollment.",
+   "A privacy request (delete) from the website for that family's phone."
+  ],
+  "steps": [
+   "On Compliance → Privacy requests, tap Start checking it's them and describe how you checked.",
+   "Tap Download their data and open the file.",
+   "Tap Erase family and type ERASE."
+  ],
+  "expected": [
+   "The file lists the family, children, invoices, payments and messages.",
+   "The family now shows as Deleted; the invoice amount and date are still on Payments.",
+   "The request shows Done."
+  ]
  }
 ]

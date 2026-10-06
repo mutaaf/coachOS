@@ -6,6 +6,13 @@
  * A listing can be linked to a CoachOS program (`ops_program_id`). Then the
  * site shows live open places and registers families straight into CoachOS;
  * unlinked listings fall back to their typed "spots" text and an old form.
+ *
+ * A linked listing is a marketing overlay: its words, picture, ages, order and
+ * SEO are edited here, but its price, places, dates and location belong to
+ * the CoachOS session (OPS_OWNED). The Website page shows those read-only and
+ * never writes them; the database keeps the listing's copies equal to the
+ * session's (migration 20261005000500), and the website reads them from
+ * public.site_offerings.
  */
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://risingstars.training").replace(/\/$/, "");
@@ -28,6 +35,30 @@ export interface Listing {
   age_groups: string[];
   registration_date: string | null;
   ops_program_id: string | null;
+  /** Overlay settings (public.site_offerings). */
+  published: boolean;
+  featured: boolean;
+  sort_order: number;
+  slug: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+}
+
+/** A linked listing's fields that come from its CoachOS session, never from this form. */
+export const OPS_OWNED = ["price", "slots", "date_range", "start_date", "end_date", "location"] as const;
+
+/** "$120/month", as the site shows a monthly fee. */
+export function priceText(monthlyFee: number): string {
+  return `$${Number(monthlyFee).toLocaleString("en-US", { maximumFractionDigits: 2 })}/month`;
+}
+
+/** A slug is lower-case words joined by hyphens. */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export const AGE_GROUPS = ["4-6 years", "7-9 years", "10-12 years", "13+ years"];
@@ -77,7 +108,9 @@ export interface ProgramForListing {
 }
 
 /** A listing's fields as they'd be filled from a CoachOS program. */
-export function listingFromProgram(p: ProgramForListing): Omit<Listing, "id" | "image" | "age_groups" | "registration_date"> {
+export function listingFromProgram(
+  p: ProgramForListing
+): Omit<Listing, "id" | "image" | "age_groups" | "registration_date" | "published" | "featured" | "sort_order" | "slug" | "seo_title" | "seo_description"> {
   return {
     title: p.name,
     description: p.public_description ?? "",
@@ -86,7 +119,7 @@ export function listingFromProgram(p: ProgramForListing): Omit<Listing, "id" | "
     end_date: p.end_date,
     date_range: dateRangeText(p.start_date, p.end_date),
     location: p.location || p.school_name || "",
-    price: `$${Number(p.monthly_fee).toLocaleString("en-US", { maximumFractionDigits: 2 })}/month`,
+    price: priceText(p.monthly_fee),
     slots: `${p.capacity} spots`,
     ops_program_id: p.id,
   };

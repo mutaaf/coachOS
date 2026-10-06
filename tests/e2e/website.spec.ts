@@ -28,10 +28,12 @@ test("add a listing from a CoachOS program, edit it, and take it down", async ({
   await page.getByTestId("add-listing").click();
   const d = page.getByTestId("listing-dialog");
   await d.getByLabel("CoachOS program").selectOption(programId);
-  // Filled in from the program.
+  // Filled in from the program; its price and dates are CoachOS's, shown, not typed.
   await expect(d.getByLabel("Title")).toHaveValue(title);
-  await expect(d.getByLabel("Price")).toHaveValue("$110/month");
-  await expect(d.getByLabel("Dates as parents see them")).toHaveValue("September 8 – December 11, 2026");
+  const fromCoachOS = d.getByTestId("listing-from-coachos");
+  await expect(fromCoachOS).toContainText("$110/month");
+  await expect(fromCoachOS).toContainText("September 8 – December 11, 2026");
+  await expect(d.getByLabel("Price")).toHaveCount(0);
   await d.getByLabel("Description").fill("Fun soccer for little ones.");
   await d.getByRole("button", { name: "4-6 years" }).click();
   await d.getByRole("button", { name: "Add to website" }).click();
@@ -40,8 +42,8 @@ test("add a listing from a CoachOS program, edit it, and take it down", async ({
   const card = page.getByTestId("listing").filter({ hasText: title });
   await expect(card).toContainText("10 of 10 places left (live)");
   await expect(card).toContainText("sign-ups go straight into CoachOS");
-  const { data: row } = await adminPublic.from("programs").select("ops_program_id, age_groups, description").like("title", "%E2E%").single();
-  expect(row).toEqual({ ops_program_id: programId, age_groups: ["4-6 years"], description: "Fun soccer for little ones." });
+  const { data: row } = await adminPublic.from("programs").select("ops_program_id, age_groups, description, price").like("title", "%E2E%").single();
+  expect(row).toEqual({ ops_program_id: programId, age_groups: ["4-6 years"], description: "Fun soccer for little ones.", price: "$110/month" });
 
   await card.getByRole("button", { name: "Edit" }).click();
   await d.getByLabel("Title").fill(`${title} — Fall`);
