@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { isAdmin } from "@/lib/admin";
+import { homeFor, staffRole } from "@/lib/admin";
 import { requestPasswordLink } from "@/lib/actions/access";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,14 +54,15 @@ export default function LoginPage() {
         return;
       }
       // An account isn't access: the dashboard would turn it away anyway.
-      if (!isAdmin(data.user)) {
+      const role = staffRole(data.user);
+      if (!role) {
         await supabase.auth.signOut();
         toast.error("This account doesn't have access to CoachOS. Ask Mutaaf to give it access.");
         return;
       }
 
       toast.success("Signed in successfully");
-      router.push("/dashboard");
+      router.push(homeFor(role));
       router.refresh();
     } catch {
       toast.error("An unexpected error occurred");

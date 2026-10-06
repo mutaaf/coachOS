@@ -72,7 +72,7 @@ test("a privacy request shows its legal deadline", async ({ page }) => {
     p_attribution: null,
   });
   await signIn(page);
-  await page.goto("/compliance");
+  await page.goto("/compliance?tab=privacy");
   await expect(page.getByTestId("privacy-request")).toContainText("See their data");
   await expect(page.getByTestId("privacy-deadline")).toContainText(/4[45] days left/);
 });

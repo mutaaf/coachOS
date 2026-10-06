@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { isAdmin } from "@/lib/admin";
+import { homeFor, staffRole } from "@/lib/admin";
 
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string;
@@ -22,12 +22,13 @@ export async function signIn(formData: FormData) {
   if (error) {
     return { error: error.message };
   }
-  if (!isAdmin(data.user)) {
+  const role = staffRole(data.user);
+  if (!role) {
     await supabase.auth.signOut();
     return { error: "This account doesn't have access to CoachOS. Ask Mutaaf to give it access." };
   }
 
-  redirect("/dashboard");
+  redirect(homeFor(role));
 }
 
 export async function signOut() {

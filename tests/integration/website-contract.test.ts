@@ -196,3 +196,55 @@ describe("public.submit_registration_v2", () => {
     expect(functionFacts(sig).public_execute).toBe(false);
   });
 });
+
+describe("public.site_legal_facts (v1.4)", () => {
+  it("has exactly the agreed columns, in order", () => {
+    expect(columnsOf("site_legal_facts")).toEqual([
+      { column_name: "key", type: "text" },
+      { column_name: "value", type: "text" },
+      { column_name: "published_at", type: "timestamp with time zone" },
+    ]);
+  });
+
+  it("is readable by anon, runs with its owner's rights, and never shows notes, sources, drafts or who edited", () => {
+    expect(privileges("public.site_legal_facts", "table").anon).toBe(true);
+    const [{ invoker }] = sql<{ invoker: boolean }>(`
+      SELECT coalesce('security_invoker=true' = ANY (reloptions), false) AS invoker
+        FROM pg_class WHERE oid = 'public.site_legal_facts'::regclass`);
+    expect(invoker).toBe(false);
+    for (const c of columnsOf("site_legal_facts")) {
+      expect(c.column_name).not.toMatch(PII);
+      expect(c.column_name).not.toMatch(/note|source|status|edit|review|draft|by$/i);
+    }
+  });
+
+  it("filters to published, website-managed values in the view itself", () => {
+    const [{ def }] = sql<{ def: string }>(`SELECT pg_get_viewdef('public.site_legal_facts'::regclass) AS def`);
+    expect(def).toMatch(/'published'/);
+    expect(def).toMatch(/editable/);
+    expect(def).toMatch(/CONFIRM/);
+  });
+});
+
+describe("public.site_legal_documents (v1.4)", () => {
+  it("has exactly the agreed columns, in order", () => {
+    expect(columnsOf("site_legal_documents")).toEqual([
+      { column_name: "document", type: "text" },
+      { column_name: "version", type: "text" },
+      { column_name: "effective_date", type: "date" },
+    ]);
+  });
+
+  it("is readable by anon and runs with its owner's rights", () => {
+    expect(privileges("public.site_legal_documents", "table").anon).toBe(true);
+    const [{ invoker }] = sql<{ invoker: boolean }>(`
+      SELECT coalesce('security_invoker=true' = ANY (reloptions), false) AS invoker
+        FROM pg_class WHERE oid = 'public.site_legal_documents'::regclass`);
+    expect(invoker).toBe(false);
+  });
+
+  it("names only the six agreed documents", () => {
+    const docs = sql<{ document: string }>(`SELECT document FROM public.site_legal_documents ORDER BY document`).map((r) => r.document);
+    expect(docs).toEqual(["accessibility", "child_safety", "privacy", "privacy_choices", "registration_terms", "terms"]);
+  });
+});

@@ -29,6 +29,13 @@ import { familyHref } from "@/lib/family-link";
 import type { CoachClearanceRow, IncidentRow, PrivacyRequestRow } from "@/lib/queries/compliance";
 import type { PrivacyStatus } from "@/types/database";
 import type { RetentionResult } from "@/lib/retention";
+import type { StaffRole } from "@/lib/admin";
+import type { PolicyFactsData } from "@/lib/queries/audit-compliance";
+import type { AuditEntry, AuditFilters } from "@/lib/audit-kinds";
+import type { ChecklistTask } from "@/lib/compliance-checklist";
+import { PolicyFactsPanel } from "@/components/policy-facts-panel";
+import { ComplianceChecklistPanel } from "@/components/compliance-checklist-panel";
+import { AuditLogPanel } from "@/components/audit-log-panel";
 
 type Pickers = {
   students: { id: string; first_name: string; last_name: string }[];
@@ -551,35 +558,66 @@ function DataKeeping({ retention }: { retention: Record<string, number> }) {
   );
 }
 
-export function CompliancePageClient({
-  requests,
-  incidents,
-  coaches,
-  pickers,
-  retention,
-  initialTab,
-}: {
+type AdminData = {
   requests: PrivacyRequestRow[];
   incidents: IncidentRow[];
   coaches: CoachClearanceRow[];
   pickers: Pickers;
   retention: Record<string, number>;
+};
+
+const ADMIN_TABS = ["privacy", "coaches", "incidents", "data"];
+
+export function CompliancePageClient({
+  role,
+  today,
+  facts,
+  checklist,
+  audit,
+  auditFilters,
+  admin,
+  initialTab,
+}: {
+  role: StaffRole;
+  today: string;
+  facts: PolicyFactsData;
+  checklist: ChecklistTask[];
+  audit: AuditEntry[];
+  auditFilters: AuditFilters;
+  /** Families' data: only ever fetched for an admin. */
+  admin: AdminData | null;
   initialTab?: string;
 }) {
+  const requests = admin?.requests ?? [];
+  const incidents = admin?.incidents ?? [];
+  const coaches = admin?.coaches ?? [];
   const overdue = requests.filter(
     (r) => deadline({ privacy_status: r.privacy_status!, due_at: r.due_at ?? null, appeal_due_at: r.appeal_due_at }).state === "overdue"
   ).length;
+  const openRequests = requests.filter(
+    (r) => deadline({ privacy_status: r.privacy_status!, due_at: r.due_at ?? null, appeal_due_at: r.appeal_due_at }).state !== "closed"
+  ).length;
   const holds = incidents.filter((i) => i.concussion_suspected && !i.cleared_to_return_at).length;
   const notCleared = coaches.filter((c) => c.clearance.status === "not_cleared" && c.status === "active").length;
+  const tab = initialTab && (admin || !ADMIN_TABS.includes(initialTab)) ? initialTab : "facts";
+  const factLabels = Object.fromEntries(facts.facts.map((f) => [f.key, f.label]));
+  const hints: Record<string, string> = admin
+    ? {
+        "privacy-requests-due": `${openRequests} open privacy request${openRequests === 1 ? "" : "s"}${overdue ? `, ${overdue} past the deadline` : ""}.`,
+        "coach-clearance-review": `${notCleared} active coach${notCleared === 1 ? "" : "es"} not cleared.`,
+      }
+    : {};
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4">
       <div className="flex min-w-0 items-start gap-3">
         <ShieldCheck className="mt-1.5 hidden h-6 w-6 shrink-0 text-muted-foreground sm:block" />
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">Compliance</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Audit &amp; Compliance</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Families&apos; privacy requests, incident reports, and whether every coach is cleared to work with children.
+            {admin
+              ? "The facts behind the website's policies, the recurring compliance checklist, families' privacy requests, incident reports, coach clearance, and a record of every change."
+              : "The facts behind the website's policies, the recurring compliance checklist, and a record of every change."}
           </p>
         </div>
       </div>
@@ -592,17 +630,23 @@ export function CompliancePageClient({
         </div>
       )}
 
-      <Tabs defaultValue={initialTab ?? "privacy"}>
+      <Tabs defaultValue={tab}>
         <TabsList>
-          <TabsTrigger value="privacy">Privacy requests</TabsTrigger>
-          <TabsTrigger value="incidents">Incidents</TabsTrigger>
-          <TabsTrigger value="coaches">Coach checks</TabsTrigger>
-          <TabsTrigger value="data">Data kept</TabsTrigger>
+          <TabsTrigger value="facts">Policy facts</TabsTrigger>
+          <TabsTrigger value="checklist">Checklist</TabsTrigger>
+          {admin && <TabsTrigger value="privacy">Privacy requests</TabsTrigger>}
+          {admin && <TabsTrigger value="coaches">Coach clearance</TabsTrigger>}
+          {admin && <TabsTrigger value="incidents">Incidents</TabsTrigger>}
+          {admin && <TabsTrigger value="data">Data kept</TabsTrigger>}
+          <TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
-        <TabsContent value="privacy"><PrivacyRequests requests={requests} parents={pickers.parents} /></TabsContent>
-        <TabsContent value="incidents"><Incidents incidents={incidents} pickers={pickers} /></TabsContent>
-        <TabsContent value="coaches"><StaffClearance coaches={coaches} /></TabsContent>
-        <TabsContent value="data"><DataKeeping retention={retention} /></TabsContent>
+        <TabsContent value="facts"><PolicyFactsPanel data={facts} role={role} today={today} /></TabsContent>
+        <TabsContent value="checklist"><ComplianceChecklistPanel tasks={checklist} today={today} hints={hints} /></TabsContent>
+        {admin && <TabsContent value="privacy"><PrivacyRequests requests={admin.requests} parents={admin.pickers.parents} /></TabsContent>}
+        {admin && <TabsContent value="coaches"><StaffClearance coaches={admin.coaches} /></TabsContent>}
+        {admin && <TabsContent value="incidents"><Incidents incidents={admin.incidents} pickers={admin.pickers} /></TabsContent>}
+        {admin && <TabsContent value="data"><DataKeeping retention={admin.retention} /></TabsContent>}
+        <TabsContent value="audit"><AuditLogPanel entries={audit} filters={auditFilters} role={role} factLabels={factLabels} /></TabsContent>
       </Tabs>
 
       <p className="flex items-center gap-1 text-xs text-muted-foreground">

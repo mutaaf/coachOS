@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CopyButton } from "@/components/ui/copy-button";
+import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
+import type { StaffRole } from "@/lib/admin";
 import { useAction } from "@/lib/use-action";
 import { inviteToCoachOS, removeAccess, type Person } from "@/lib/actions/access";
 
@@ -14,13 +17,14 @@ export function AccessCard({ people }: { people: Person[] }) {
   const { run, pending } = useAction();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [role, setRole] = useState<StaffRole>("admin");
   const [link, setLink] = useState<{ email: string; url: string; emailed: boolean } | null>(null);
   const [sending, setSending] = useState(false);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
     setSending(true);
-    const res = await inviteToCoachOS(email, name);
+    const res = await inviteToCoachOS(email, name, role);
     setSending(false);
     if ("error" in res && res.error) return toast.error("Not invited", { description: res.error });
     const ok = res as { link: string; emailed: boolean };
@@ -28,6 +32,7 @@ export function AccessCard({ people }: { people: Person[] }) {
     toast.success(ok.emailed ? `Invite emailed to ${email}` : "Invite ready — copy the link below");
     setEmail("");
     setName("");
+    setRole("admin");
   }
 
   return (
@@ -35,7 +40,9 @@ export function AccessCard({ people }: { people: Person[] }) {
       <div>
         <h2 className="text-lg font-semibold">Who can sign in</h2>
         <p className="text-sm text-muted-foreground">
-          Everyone here can see and change everything. Nobody can make their own account.
+          Admins can see and change everything. Compliance helpers only see Audit &amp; Compliance — policy facts and the
+          checklist — never families, children, payments or messages, and can&apos;t publish to the website. Nobody can
+          make their own account.
         </p>
       </div>
       <ul className="divide-y rounded-xl border">
@@ -46,6 +53,9 @@ export function AccessCard({ people }: { people: Person[] }) {
                 {p.name ? `${p.name} · ` : ""}
                 <span className="break-all">{p.email}</span> {p.you && <span className="text-xs text-muted-foreground">(you)</span>}
               </p>
+              <Badge variant={p.role === "admin" ? "secondary" : "outline"} className="mt-1" data-testid="access-role">
+                {p.role === "admin" ? "Admin" : "Compliance only"}
+              </Badge>
               <p className="text-xs text-muted-foreground">
                 {p.lastSignIn
                   ? `Last signed in ${new Date(p.lastSignIn).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
@@ -70,7 +80,7 @@ export function AccessCard({ people }: { people: Person[] }) {
         ))}
       </ul>
 
-      <form onSubmit={invite} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <form onSubmit={invite} className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
         <div className="space-y-1.5">
           <Label htmlFor="invite-email">Invite by email</Label>
           <Input id="invite-email" type="email" inputMode="email" autoComplete="off" className="h-11" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
@@ -78,6 +88,19 @@ export function AccessCard({ people }: { people: Person[] }) {
         <div className="space-y-1.5">
           <Label htmlFor="invite-name">Name (optional)</Label>
           <Input id="invite-name" className="h-11" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="invite-role">They can see</Label>
+          <Select
+            id="invite-role"
+            className="h-11"
+            value={role}
+            onChange={(e) => setRole(e.target.value as StaffRole)}
+            options={[
+              { value: "admin", label: "Everything (admin)" },
+              { value: "compliance", label: "Audit & Compliance only" },
+            ]}
+          />
         </div>
         <Button type="submit" className="h-11 w-full sm:w-auto" disabled={sending || !email}>
           {sending ? "Inviting…" : "Invite"}
