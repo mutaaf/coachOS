@@ -47,7 +47,7 @@ original. The column list is unchanged.
 
 Implemented by migrations `20261007000400`–`20261007000430`; pinned by `tests/integration/website-contract.test.ts`.
 
-### Reads (anon, `public`, no PII)
+#### The two views
 
 | Object | Columns | Notes |
 |---|---|---|
