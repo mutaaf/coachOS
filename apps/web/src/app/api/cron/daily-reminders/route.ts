@@ -6,7 +6,8 @@ import { createMonthlyInvoices } from "@/lib/invoices";
 import { chargeDueAutopay } from "@/lib/autopay";
 import { payLink } from "@/lib/app-url";
 import { toCents } from "@/lib/invoice-status";
-import { emailReminder, emailRegistration } from "@/lib/parent-emails";
+import { emailReminder } from "@/lib/parent-emails";
+import { welcomeRegistration } from "@/lib/family-messages";
 import { getStripeClient, getStripeSettings } from "@/lib/stripe-client";
 
 export async function GET(request: NextRequest) {
@@ -196,15 +197,15 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Registration emails the website's ping didn't send (a closed tab, a network
-  // blip). Each goes at most once, so asking again for sent ones is harmless.
+  // Registration emails and Outbox messages the website's ping didn't send (a
+  // closed tab, a network blip). Each goes at most once, so asking again for
+  // sent ones is harmless.
   const { data: recentRegistrations } = await supabase
     .from("registrations")
     .select("id")
-    .not("parent_email", "is", null)
     .in("status", ["pending", "confirmed", "waitlisted"])
     .gte("created_at", new Date(Date.now() - 3 * 86_400_000).toISOString());
-  for (const r of recentRegistrations || []) await emailRegistration(supabase, r.id);
+  for (const r of recentRegistrations || []) await welcomeRegistration(supabase, r.id);
 
   // For the nightly health check: a cron that stopped looks just like a quiet day otherwise.
   await supabase.from("config").update({ value: new Date().toISOString() }).eq("key", "cron_last_run");

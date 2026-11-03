@@ -6,22 +6,7 @@ import { revalidatePath } from "next/cache";
 import { templateVariables } from "shared";
 import { quietHoursMessage } from "@/lib/quiet-hours";
 import { composeProblem, renderComposed } from "@/lib/compose-message";
-
-/**
- * Templates the app sends on its own, found by name. Renaming or deleting one
- * would silently stop that message going out, so their names are fixed and
- * they can be reworded but not removed.
- */
-const SYSTEM_TEMPLATES = new Set([
-  "practice_reminder_day_before",
-  "practice_reminder_morning",
-  "payment_reminder",
-  "welcome_message",
-  "session_cancelled",
-  "payment_received",
-  "autopay_invite",
-  "autopay_failed",
-]);
+import { SYSTEM_TEMPLATES } from "@/lib/family-messages";
 
 export async function createMessageTemplate(formData: FormData) {
   await requireSignedIn();

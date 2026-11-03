@@ -128,7 +128,6 @@ describe("settings nothing used", () => {
       "coach_phone",
       "day_before_reminder_time",
       "morning_reminder_time",
-      "welcome_message_enabled",
       "message_rate_limit_seconds",
       "default_session_duration_minutes",
       "auto_generate_sessions_weeks",
@@ -137,5 +136,7 @@ describe("settings nothing used", () => {
     }
     expect(keys).toContain("payment_due_day");
     expect(keys).toContain("default_monthly_fee");
+    // Adding a child to the roster reads it (lib/family-messages.ts).
+    expect(keys).toContain("welcome_message_enabled");
   });
 });

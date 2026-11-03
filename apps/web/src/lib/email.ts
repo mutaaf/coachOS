@@ -21,7 +21,7 @@ import type { OpsClient } from "@/lib/supabase/types";
  * sendMarketingEmail (lib/marketing-email.ts), which checks the opt-in, the
  * suppression list and the postal address, and adds the unsubscribe headers.
  */
-export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder" | "registration" | "welcome" | "marketing";
+export type EmailKind = "receipt" | "payment_failed" | "invite" | "reminder" | "registration" | "welcome" | "seat" | "marketing";
 
 export interface OutgoingEmail {
   kind: EmailKind;
