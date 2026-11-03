@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { createAdminPublicSupabase } from "@/lib/supabase/server";
-import { IMAGE_BUCKET } from "@/lib/website";
+import { IMAGE_BUCKET, OPS_OWNED } from "@/lib/website";
 
 /**
  * Editing risingstars.training from CoachOS. Each writes the site's own tables
@@ -17,12 +17,19 @@ function refresh() {
   revalidatePath("/website");
 }
 
-/** Create (no id) or update a program listing. */
+/**
+ * Create (no id) or update a program listing.
+ *
+ * A linked listing's price, places, dates and location are CoachOS's
+ * (OPS_OWNED): whatever the form sends for them is ignored, and the database
+ * fills them from the session.
+ */
 export async function saveListing(form: FormData) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const id = s(form, "id");
   const type = s(form, "type");
-  const row = {
+  const sortOrder = Number(s(form, "sort_order") || "0");
+  const row: Record<string, unknown> = {
     title: s(form, "title"),
     description: s(form, "description"),
     type: type === "upcoming" ? "upcoming" : "current",
@@ -37,22 +44,45 @@ export async function saveListing(form: FormData) {
     registration_date: s(form, "registration_date") || null,
     ops_program_id: s(form, "ops_program_id") || null,
   };
+  // Overlay settings: only touched when the form carries them, so an older
+  // form (or a test) that doesn't know them leaves them as they are.
+  if (form.has("published")) row.published = s(form, "published") !== "false";
+  if (form.has("featured")) row.featured = s(form, "featured") === "true";
+  if (form.has("sort_order")) row.sort_order = Number.isFinite(sortOrder) ? Math.round(sortOrder) : 0;
+  if (form.has("slug")) row.slug = s(form, "slug") || null;
+  if (form.has("seo_title")) row.seo_title = s(form, "seo_title") || null;
+  if (form.has("seo_description")) row.seo_description = s(form, "seo_description") || null;
+
   if (!row.title) return { error: "Give the listing a title." };
   if (!row.description) return { error: "Add a short description — it's what parents read first." };
-  if (row.start_date && row.end_date && row.end_date < row.start_date) {
+  if (row.slug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(row.slug as string)) {
+    return { error: "The web address can only have lower-case letters, numbers and single hyphens, like lil-dribblers-wylie." };
+  }
+  const linked = !!row.ops_program_id;
+  if (linked) {
+    // CoachOS's to set; on a new listing the columns still need a value, which
+    // the database replaces with the session's.
+    for (const k of OPS_OWNED) {
+      if (id) delete row[k];
+      else row[k] = k === "start_date" || k === "end_date" ? null : "";
+    }
+  } else if (row.start_date && row.end_date && (row.end_date as string) < (row.start_date as string)) {
     return { error: "The end date is before the start date." };
   }
   const site = createAdminPublicSupabase();
   // One listing per CoachOS program: linking this one unlinks any other.
   if (row.ops_program_id) {
-    let q = site.from("programs").update({ ops_program_id: null }).eq("ops_program_id", row.ops_program_id);
+    let q = site.from("programs").update({ ops_program_id: null }).eq("ops_program_id", row.ops_program_id as string);
     if (id) q = q.neq("id", id);
     await q;
   }
   const { data, error } = id
     ? await site.from("programs").update({ ...row, updated_at: new Date().toISOString() }).eq("id", id).select("id").single()
     : await site.from("programs").insert(row).select("id").single();
-  if (error) return { error: error.message };
+  if (error) {
+    if (/programs_slug_key/.test(error.message)) return { error: "Another listing already uses that web address." };
+    return { error: error.message };
+  }
   refresh();
   return { success: true as const, id: data.id as string };
 }

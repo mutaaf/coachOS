@@ -3,14 +3,16 @@
 import { signedIn, NOT_SIGNED_IN, requireSignedIn } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { renderTemplate } from "shared";
+import { templateVariables } from "shared";
+import { quietHoursMessage } from "@/lib/quiet-hours";
+import { composeProblem, renderComposed } from "@/lib/compose-message";
 import { SYSTEM_TEMPLATES } from "@/lib/family-messages";
 
 export async function createMessageTemplate(formData: FormData) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
   const body = formData.get("body") as string;
-  const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
+  const variables = templateVariables(body);
 
   const { error } = await supabase.from("message_templates").insert({
     name: formData.get("name") as string,
@@ -27,7 +29,7 @@ export async function updateMessageTemplate(id: string, formData: FormData) {
   await requireSignedIn();
   const supabase = createAdminSupabase();
   const body = formData.get("body") as string;
-  const variables = [...body.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
+  const variables = templateVariables(body);
 
   const { data: current } = await supabase.from("message_templates").select("name").eq("id", id).maybeSingle();
   const name = SYSTEM_TEMPLATES.has(current?.name ?? "") ? current!.name : (formData.get("name") as string);
@@ -78,40 +80,50 @@ export async function sendMessage(formData: FormData) {
   revalidatePath("/messaging");
 }
 
+/**
+ * Queue one message per recipient in the Outbox.
+ *
+ * `purpose` decides who may get it (enforced in the database,
+ * 20261006000130_messaging_consent.sql and 20261007000100_promotional_texts.sql):
+ * "operational" — about the child's program — goes to every parent who hasn't
+ * said STOP; "promotional" only to parents who agreed to promotional texts
+ * (sms_promotional — agreeing to program texts isn't enough). Those who can't
+ * get it are filed as skipped with the reason, and counted in `skipped`.
+ *
+ * A promotion is refused outright outside Texas quiet hours (§301.051).
+ */
 export async function sendBulkMessages(
   recipients: { phone: string; name: string }[],
   message: string,
-  templateId?: string
+  templateId?: string,
+  purpose: "operational" | "promotional" = "operational"
 ) {
   if (!(await signedIn())) return NOT_SIGNED_IN;
   const supabase = createAdminSupabase();
 
-  // Compose knows each recipient's name and nothing else, so {{parent_name}}
-  // is filled in and anything else is refused — a parent must never receive a
-  // raw "{{student_name}}".
-  const unknown = [...new Set([...message.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]))].filter(
-    (v) => v !== "parent_name"
-  );
-  if (unknown.length) {
-    return {
-      error: `A message to a group can only fill in {{parent_name}}. Remove ${unknown.map((v) => `{{${v}}}`).join(", ")} or write it out.`,
-    };
+  if (purpose === "promotional") {
+    const quiet = quietHoursMessage();
+    if (quiet) return { error: quiet };
   }
+
+  const problem = composeProblem(message);
+  if (problem) return { error: problem };
 
   const rows = recipients.map((r) => ({
     recipient_phone: r.phone,
     recipient_name: r.name,
-    message: renderTemplate(message, { parent_name: (r.name || "").trim().split(/\s+/)[0] || "there" }),
+    message: renderComposed(message, r.name),
     template_id: templateId || null,
     status: "pending",
     attempts: 0,
     max_attempts: 3,
+    purpose: purpose === "promotional" ? "promotional" : "operational",
   }));
 
-  const { error } = await supabase.from("message_queue").insert(rows);
+  const { data: queued, error } = await supabase.from("message_queue").insert(rows).select("status");
   if (error) throw error;
   revalidatePath("/messaging");
-  return { count: rows.length };
+  return { count: rows.length, skipped: (queued ?? []).filter((r) => r.status === "skipped").length };
 }
 
 export async function fetchRecipients(

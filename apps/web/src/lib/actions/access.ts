@@ -5,11 +5,12 @@ import { currentUser, NOT_SIGNED_IN } from "@/lib/auth-guard";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
 import { sendStaffEmail } from "@/lib/staff-email";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin, isStaff, staffRole, type StaffRole } from "@/lib/admin";
 
 /**
- * Who can sign in to CoachOS — managed from Settings, no deploy. Everyone
- * here has the admin role (lib/admin.ts); there are no lesser roles yet.
+ * Who can sign in to CoachOS — managed from Settings, no deploy. Admins see
+ * and change everything; the compliance role reaches Audit & Compliance only
+ * (lib/admin.ts). Only an admin can invite or remove anyone.
  */
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,6 +26,7 @@ export interface Person {
   name: string | null;
   lastSignIn: string | null;
   invitedAt: string | null;
+  role: StaffRole;
   you: boolean;
 }
 
@@ -32,13 +34,14 @@ export async function listAccess(): Promise<Person[] | null> {
   const me = await currentUser();
   if (!me) return null;
   return (await everyone())
-    .filter((u) => isAdmin(u))
+    .filter((u) => isStaff(u))
     .map((u) => ({
       id: u.id,
       email: u.email ?? "",
       name: (u.user_metadata?.name as string) ?? null,
       lastSignIn: u.last_sign_in_at ?? null,
       invitedAt: u.invited_at ?? null,
+      role: staffRole(u)!,
       you: u.id === me.id,
     }))
     .sort((a, b) => a.email.localeCompare(b.email));
@@ -50,21 +53,29 @@ function welcomeLink(tokenHash: string, type: "invite" | "recovery") {
 }
 
 /**
- * Give someone access: a new account with the admin role and an invite to set
- * a password, or the role for an account that already exists. Returns the
- * link too, so it can be sent another way if email is slow.
+ * Give someone access: a new account with the role and an invite to set a
+ * password, or the role for an account that already exists. Returns the link
+ * too, so it can be sent another way if email is slow.
+ *
+ * `role` is "admin" (everything) or "compliance" (Audit & Compliance only:
+ * policy facts and the checklist, no families, no publishing).
  */
-export async function inviteToCoachOS(email: string, name?: string) {
+export async function inviteToCoachOS(email: string, name?: string, role: StaffRole = "admin") {
   const me = await currentUser();
   if (!me) return NOT_SIGNED_IN;
   const address = String(email ?? "").trim().toLowerCase();
   if (!EMAIL.test(address)) return { error: "That doesn't look like an email address." };
+  if (role !== "admin" && role !== "compliance") return { error: "Choose what they can see." };
 
   const supabase = createAdminSupabase();
   const existing = (await everyone()).find((u) => u.email?.toLowerCase() === address);
   let link: string;
   if (existing) {
-    await supabase.auth.admin.updateUserById(existing.id, { app_metadata: { ...existing.app_metadata, role: "admin" } });
+    if (existing.id === me.id && role !== "admin") return { error: "You can't change your own access." };
+    if (isAdmin(existing) && role !== "admin" && (await everyone()).filter((u) => isAdmin(u)).length <= 1) {
+      return { error: "Someone has to keep admin access." };
+    }
+    await supabase.auth.admin.updateUserById(existing.id, { app_metadata: { ...existing.app_metadata, role } });
     const { data, error } = await supabase.auth.admin.generateLink({ type: "recovery", email: address });
     if (error) return { error: error.message };
     link = welcomeLink(data.properties.hashed_token, "recovery");
@@ -75,22 +86,34 @@ export async function inviteToCoachOS(email: string, name?: string) {
       options: { data: { name: String(name ?? "").trim() || null } },
     });
     if (error) return { error: error.message };
-    await supabase.auth.admin.updateUserById(data.user.id, { app_metadata: { role: "admin" } });
+    await supabase.auth.admin.updateUserById(data.user.id, { app_metadata: { role } });
     link = welcomeLink(data.properties.hashed_token, "invite");
   }
 
   const inviter = me.email ?? "the team";
-  const emailed = await sendStaffEmail(supabase, {
-    to: address,
-    subject: "You're on the team — welcome to CoachOS 🎉",
-    heading: "You're on the team! 🎉",
-    body: `${inviter} gave you access to CoachOS, where the schools, kids, payments and messages all live. Choose a password and you're in.`,
-    button: { href: link, label: "Choose my password" },
-    text: `${inviter} gave you access to CoachOS. Choose a password here (works once, for 24 hours): ${link}`,
-  });
+  const emailed = await sendStaffEmail(
+    supabase,
+    role === "compliance"
+      ? {
+          to: address,
+          subject: "You're invited to CoachOS — Audit & Compliance",
+          heading: "Welcome to Audit & Compliance",
+          body: `${inviter} gave you access to the Audit & Compliance section of CoachOS, where Rising Stars' policy facts and compliance checklist live. Choose a password and you're in.`,
+          button: { href: link, label: "Choose my password" },
+          text: `${inviter} gave you access to Audit & Compliance in CoachOS. Choose a password here (works once, for 24 hours): ${link}`,
+        }
+      : {
+          to: address,
+          subject: "You're on the team — welcome to CoachOS 🎉",
+          heading: "You're on the team! 🎉",
+          body: `${inviter} gave you access to CoachOS, where the schools, kids, payments and messages all live. Choose a password and you're in.`,
+          button: { href: link, label: "Choose my password" },
+          text: `${inviter} gave you access to CoachOS. Choose a password here (works once, for 24 hours): ${link}`,
+        }
+  );
 
   revalidatePath("/settings");
-  return { success: true as const, emailed, link, existed: !!existing };
+  return { success: true as const, emailed, link, existed: !!existing, role };
 }
 
 /** Take someone's access away. Never your own, never the last person's. */
@@ -98,13 +121,13 @@ export async function removeAccess(userId: string) {
   const me = await currentUser();
   if (!me) return NOT_SIGNED_IN;
   if (userId === me.id) return { error: "You can't remove your own access — ask someone else with access." };
-  const admins = (await everyone()).filter((u) => isAdmin(u));
-  const target = admins.find((u) => u.id === userId);
+  const people = await everyone();
+  const target = people.filter((u) => isStaff(u)).find((u) => u.id === userId);
   if (!target) return { error: "That person doesn't have access." };
-  if (admins.length <= 1) return { error: "Someone has to keep access." };
+  if (isAdmin(target) && people.filter((u) => isAdmin(u)).length <= 1) return { error: "Someone has to keep access." };
   const supabase = createAdminSupabase();
   // Takes effect at once: the app and the database both read the role live
-  // (ops.is_admin()), so a session they already hold stops working now.
+  // (ops.is_admin(), ops.staff_role()), so a session they already hold stops working now.
   await supabase.auth.admin.updateUserById(userId, { app_metadata: { ...target.app_metadata, role: null } });
   revalidatePath("/settings");
   return { success: true as const };
@@ -119,7 +142,7 @@ export async function requestPasswordLink(email: string) {
   if (!EMAIL.test(address)) return { error: "Enter your email address." };
   const supabase = createAdminSupabase();
   const user = (await everyone()).find((u) => u.email?.toLowerCase() === address);
-  if (user && isAdmin(user)) {
+  if (user && isStaff(user)) {
     const { data } = await supabase.auth.admin.generateLink({ type: "recovery", email: address });
     if (data?.properties?.hashed_token) {
       const link = welcomeLink(data.properties.hashed_token, "recovery");

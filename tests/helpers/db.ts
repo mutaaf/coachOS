@@ -43,6 +43,7 @@ function readLocalStatus() {
     url: status.API_URL as string,
     anonKey: status.ANON_KEY as string,
     serviceKey: status.SERVICE_ROLE_KEY as string,
+    dbUrl: status.DB_URL as string,
   };
 }
 
@@ -56,7 +57,27 @@ if (!/^https?:\/\/(127\.0\.0\.1|localhost)/.test(local.url)) {
   );
 }
 
+if (local.dbUrl && !/@(127\.0\.0\.1|localhost):/.test(local.dbUrl)) {
+  throw new Error("Refusing to run tests against a non-local database.");
+}
+
 export const LOCAL = local;
+
+/**
+ * Run a read-only catalog query as the database owner and return its rows.
+ *
+ * For what the REST API can't tell a test: which columns a view really has,
+ * and who may execute a function. Goes through psql against the local stack
+ * only (guarded above).
+ */
+export function sql<T = Record<string, unknown>>(query: string): T[] {
+  const out = execSync(`psql "${local.dbUrl}" -X -q -A -t -v ON_ERROR_STOP=1`, {
+    input: `SELECT coalesce(json_agg(t), '[]'::json) FROM (${query}) t;`,
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  return JSON.parse(out.trim() || "[]") as T[];
+}
 
 /** Service-role client, scoped to the operational schema. */
 export const admin: SupabaseClient = createClient(local.url, local.serviceKey, {
@@ -183,11 +204,15 @@ export async function truncateAll() {
   if (sendersError) throw new Error(`Failed clearing zelle_senders: ${sendersError.message}`);
 
   for (const table of [
+    // Never cascades from a child (kept while a claim could be brought), so it goes first.
+    "incidents",
+    "email_suppressions",
     "family_credits",
     "attendance",
     "message_queue",
     "message_log",
     "emails",
+    "inquiries",
     "registrations",
     "enrollments",
     "student_parents",
@@ -336,4 +361,55 @@ export async function ensureOutsider() {
   });
   if (error) throw error;
   return data.user!.id;
+}
+
+/**
+ * An assistant with the compliance role: Audit & Compliance only (policy
+ * facts and the checklist), never families' data, never publishing.
+ */
+export const COMPLIANCE_USER = { email: "compliance-helper@example.test", password: "compliance-password-1234" };
+
+export async function ensureComplianceUser() {
+  const authAdmin = createClient(local.url, local.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const app_metadata = { role: "compliance" };
+  const user_metadata = { tour_completed_at: "2026-01-01T00:00:00Z", name: "Sara Helper" };
+  const { data: existing } = await authAdmin.auth.admin.listUsers();
+  const already = existing?.users?.find((u) => u.email === COMPLIANCE_USER.email);
+  if (already) {
+    await authAdmin.auth.admin.updateUserById(already.id, { app_metadata, user_metadata, password: COMPLIANCE_USER.password });
+    return already.id;
+  }
+  const { data, error } = await authAdmin.auth.admin.createUser({
+    email: COMPLIANCE_USER.email,
+    password: COMPLIANCE_USER.password,
+    email_confirm: true,
+    app_metadata,
+    user_metadata,
+  });
+  if (error) throw error;
+  return data.user!.id;
+}
+
+/** A client signed in as `user`, going through the API like the browser does. */
+export async function signedInClient(user: { email: string; password: string }, schema: "ops" | "public" = "ops") {
+  const client = createClient(local.url, local.anonKey, { db: { schema }, auth: { persistSession: false } });
+  const { error } = await client.auth.signInWithPassword(user);
+  if (error) throw error;
+  return client;
+}
+
+/**
+ * Put policy facts, document versions and the checklist back to what the
+ * migrations seed (20261007000410, 20261007000430). The audit log is
+ * append-only and is left alone.
+ */
+export function resetAuditCompliance() {
+  const root = repoRoot();
+  const run = (args: string, input?: string) =>
+    execSync(`psql "${local.dbUrl}" -X -q -v ON_ERROR_STOP=1 ${args}`, { input, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  run("", "DELETE FROM ops.legal_fact_versions; DELETE FROM ops.legal_document_versions; DELETE FROM ops.compliance_tasks;");
+  run(`-f "${join(root, "supabase/migrations/20261007000410_legal_facts_seed.sql")}"`);
+  run(`-f "${join(root, "supabase/migrations/20261007000430_compliance_checklist.sql")}"`);
 }

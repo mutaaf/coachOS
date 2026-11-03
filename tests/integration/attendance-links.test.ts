@@ -75,6 +75,13 @@ describe("opening a sheet", () => {
       { first: "Amina" },
       { first: "Bilal", notes: "Peanut allergy" },
     ]);
+    // Medical notes go only to the practice's assigned coach (medical-access.test.ts).
+    const { data: coach } = await admin
+      .from("coaches")
+      .insert({ first_name: "Cora", last_name: "Coach", phone: "+12145550000" })
+      .select("id")
+      .single();
+    await admin.from("sessions").update({ coach_id: coach!.id }).eq("id", sessionId);
     const link = await createAttendanceLink(sessionId);
 
     const { data } = await open(link.token!, link.passcode!);
@@ -109,8 +116,11 @@ describe("opening a sheet", () => {
     }
     expect(Object.keys(data.roster[0]).sort()).toEqual([
       "first_name",
+      "has_medical_note",
       "last_name",
       "medical_notes",
+      "photo_ok",
+      "sitting_out",
       "status",
       "student_id",
     ]);

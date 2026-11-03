@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isAdmin } from "@/lib/admin";
+import { complianceMayOpen, COMPLIANCE_HOME, homeFor, staffRole } from "@/lib/admin";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -29,9 +29,10 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user: account },
   } = await supabase.auth.getUser();
-  // An account without the admin role is treated as nobody: it can't open the
+  // An account without a staff role is treated as nobody: it can't open the
   // dashboard, which renders every family's details. See lib/admin.ts.
-  const user = isAdmin(account) ? account : null;
+  const role = staffRole(account);
+  const user = role ? account : null;
 
   if (
     !user &&
@@ -57,7 +58,26 @@ export async function updateSession(request: NextRequest) {
 
   if (user && request.nextUrl.pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = homeFor(role);
+    return NextResponse.redirect(url);
+  }
+
+  // The compliance role sees Audit & Compliance and nothing else: every other
+  // dashboard page shows families, children, payments or messages. (Server
+  // actions check the role themselves; the database's policies check it again.)
+  if (
+    role === "compliance" &&
+    !complianceMayOpen(request.nextUrl.pathname) &&
+    !request.nextUrl.pathname.startsWith("/login") &&
+    !request.nextUrl.pathname.startsWith("/welcome") &&
+    !request.nextUrl.pathname.startsWith("/api") &&
+    !request.nextUrl.pathname.startsWith("/join") &&
+    !request.nextUrl.pathname.startsWith("/s/") &&
+    !request.nextUrl.pathname.startsWith("/pay/")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = COMPLIANCE_HOME;
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

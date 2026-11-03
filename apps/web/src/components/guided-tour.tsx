@@ -71,7 +71,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/programs",
     target: '[data-tour="programs-tabs"]',
     title: "Programs, sessions and seasons",
-    body: "Make each program once — its name, ages and usual fee — then put it on at a school as a session. Practices are a session's dates, and a season groups everything running that term.",
+    body: "New program puts a program on at all its schools in one go — season, weekly times, fees, coaches, sign-ups and the website card. Practices are a session's dates, and a season groups everything running that term.",
   },
   {
     id: "schools-import",
@@ -217,7 +217,7 @@ function buildSteps(ctx: TourContext | null): Step[] {
     path: "/messaging",
     target: '[data-tour="messaging-tabs"]',
     title: "Compose, templates and history",
-    body: "Compose writes one message to a whole school or session (it lands in the Outbox to send) — pick the school or session, then check the names shown before you send. Templates are the wording of every automatic message — change them freely. History shows what went out.",
+    body: "Compose writes one message to a whole school or session (it lands in the Outbox to send) — pick the school or session, then check the names shown and the preview of the message before you send. Templates are the wording of every automatic message — change them freely. History shows what went out.",
   },
   {
     id: "website",
@@ -226,9 +226,10 @@ function buildSteps(ctx: TourContext | null): Step[] {
     title: "Your website, from here",
     body: (
       <>
-        The programs, testimonials and partnerships on risingstars.training. Add a program straight from one in
-        CoachOS and the site shows live open places, with sign-ups landing here. Anything ended or not linked is
-        flagged under <strong>Needs a look</strong>.
+        The programs, photos, testimonials and partnerships on risingstars.training. Add a program straight from one in
+        CoachOS and the site shows live open places, with sign-ups landing here. Real photos go in under{" "}
+        <strong>Photos</strong> — live within a minute, no deploy. Anything ended or not linked is flagged under{" "}
+        <strong>Needs a look</strong>.
       </>
     ),
   },

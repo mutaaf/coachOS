@@ -1,6 +1,7 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { businessToday } from "@/lib/dates";
 import type { Coach } from "@/types/database";
+import { CLEARANCE_COLUMNS, evaluateClearance, type ClearanceFields, type CoachClearance } from "@/lib/coach-clearance";
 
 export type CoachWithWorkload = Coach & {
   /** Sessions already run — what they have earned. */
@@ -11,6 +12,8 @@ export type CoachWithWorkload = Coach & {
   weekly_slots: number;
   /** Owed for completed sessions, when a per-session rate is set. */
   owed: number | null;
+  /** Safeguarding: background check, training, CPR, code of conduct. */
+  clearance: CoachClearance;
 };
 
 /**
@@ -56,20 +59,31 @@ export async function getCoaches(): Promise<CoachWithWorkload[]> {
       // Only per-session rates can be totalled from session counts; an hourly
       // coach needs real hours, which nothing records yet.
       owed: rate !== null && coach.pay_type === "per_session" ? rate * completed : null,
+      clearance: evaluateClearance(coach as ClearanceFields, today),
     };
   }) as CoachWithWorkload[];
 }
 
-/** Active coaches only, for assignment dropdowns. */
-export async function getAssignableCoaches() {
+/**
+ * Active coaches only, for assignment dropdowns. Each says whether they are
+ * cleared to work with children, so a picker can warn before one who isn't
+ * is put in charge of a practice.
+ */
+export async function getAssignableCoaches(): Promise<
+  { id: string; first_name: string; last_name: string; cleared: boolean; clearance: CoachClearance }[]
+> {
   const supabase = createAdminSupabase();
+  const today = businessToday();
 
   const { data, error } = await supabase
     .from("coaches")
-    .select("id, first_name, last_name")
+    .select(`first_name, last_name, ${CLEARANCE_COLUMNS}`)
     .eq("status", "active")
     .order("first_name");
 
   if (error) throw error;
-  return data ?? [];
+  return ((data ?? []) as unknown as (ClearanceFields & { first_name: string; last_name: string })[]).map((c) => {
+    const clearance = evaluateClearance(c, today);
+    return { id: c.id, first_name: c.first_name, last_name: c.last_name, cleared: clearance.status !== "not_cleared", clearance };
+  });
 }

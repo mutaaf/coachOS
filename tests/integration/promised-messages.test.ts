@@ -3,6 +3,7 @@ import { admin, seedProgram, truncateAll } from "../helpers/db";
 import { cancelSession } from "@/lib/actions/schedule";
 import { submitRegistration, convertRegistration, promoteNextInLine, promoteFromWaitlist } from "@/lib/actions/registrations";
 import { deleteMessageTemplate } from "@/lib/actions/messages";
+import { SYSTEM_TEMPLATES } from "@/lib/family-messages";
 import { POST as notify } from "@/app/api/registrations/notify/route";
 import { GET as cron } from "@/app/api/cron/daily-reminders/route";
 import { addDays, businessToday } from "@/lib/dates";
@@ -240,15 +241,17 @@ describe("nothing promised that isn't sent", () => {
     const { data } = await admin
       .from("config")
       .select("key")
-      .in("key", ["day_before_reminder_time", "morning_reminder_time", "message_rate_limit_seconds"]);
+      .in("key", ["day_before_reminder_time", "morning_reminder_time", "message_rate_limit_seconds"])
+      .neq("category", "internal");
     expect(data).toEqual([]);
   });
 
-  it("the templates nothing sends are gone, and the ones the app sends can't be deleted", async () => {
+  it("the templates nothing sends can be deleted, and the ones the app sends can't", async () => {
     const { data } = await admin.from("message_templates").select("id, name");
     const names = (data ?? []).map((t) => t.name);
-    expect(names).not.toContain("practice_reminder_morning");
-    expect(names).not.toContain("payment_received");
+    // Kept by the migration (it is additive), but no longer protected.
+    expect(SYSTEM_TEMPLATES.has("practice_reminder_morning")).toBe(false);
+    expect(SYSTEM_TEMPLATES.has("payment_received")).toBe(false);
     for (const sent of ["session_cancelled", "welcome_message", "registration_received", "waitlist_joined", "waitlist_seat"]) {
       expect(names).toContain(sent);
       const id = data!.find((t) => t.name === sent)!.id;

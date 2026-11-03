@@ -16,8 +16,11 @@ import { MessageSquare, Send, Users, Plus, Pencil, Trash2, Eye } from "lucide-re
 import type { MessageTemplate } from "@/types/database";
 import { OutboxPanel } from "@/components/outbox-panel";
 import { initialSelection, recipientReducer, sendableRecipients, type RecipientMode } from "@/lib/recipient-selection";
+import { PROMO_HOURS_TEXT } from "@/lib/quiet-hours";
+import { COMPOSE_VARIABLES, composeFirstName, composeProblem, renderComposed } from "@/lib/compose-message";
 
-const VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
+// What the automatic messages can fill in, listed for her while she writes a template.
+const TEMPLATE_VARIABLES = ["parent_name", "student_name", "program_name", "school_name", "amount", "date", "time", "month", "schedule", "payment_method", "reason"];
 
 interface MessagingPageClientProps {
   templates: MessageTemplate[];
@@ -33,6 +36,9 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  // A promotion (news, offers, a new program) goes only to parents who agreed
+  // to promotional texts — agreeing to program texts isn't enough.
+  const [promotional, setPromotional] = useState(false);
   const [selection, dispatch] = useReducer(recipientReducer, initialSelection);
   const { mode: recipientMode, selectedId: selectedSchoolOrProgram } = selection;
   // Only the parents loaded for the group on screen; empty while a new one loads.
@@ -41,6 +47,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [tab, setTab] = useState(initialTab ?? (outbox.waiting.length > 0 ? "outbox" : "compose"));
+  const problem = message ? composeProblem(message) : null;
 
   async function chooseMode(mode: RecipientMode) {
     dispatch({ type: "mode", mode });
@@ -66,12 +73,19 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
     }
     setSending(true);
     try {
-      const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined);
+      const result = await sendBulkMessages(recipients, message, selectedTemplate || undefined, promotional ? "promotional" : "operational");
       if ("error" in result && result.error) {
         toast.error("Not sent", { description: result.error });
         return;
       }
-      toast.success(`${(result as { count: number }).count} message(s) ready in the Outbox`);
+      const { count, skipped = 0 } = result as { count: number; skipped?: number };
+      toast.success(`${count - skipped} message(s) ready in the Outbox`, {
+        description: skipped
+          ? promotional
+            ? `${skipped} not queued: those parents haven't agreed to promotional texts (agreeing to program texts doesn't count), or said STOP.`
+            : `${skipped} not queued: those parents said STOP.`
+          : undefined,
+      });
       setMessage("");
       dispatch({ type: "clear" });
     } catch {
@@ -213,9 +227,27 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                 onChange={(e) => setMessage(e.target.value)}
                 rows={5}
               />
+              <label className="flex min-h-11 items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-5 w-5 shrink-0"
+                  checked={promotional}
+                  onChange={(e) => setPromotional(e.target.checked)}
+                  data-testid="compose-promotional"
+                />
+                <span>
+                  This is a promotion (news, offers, a new program)
+                  <span className="block text-xs text-muted-foreground" data-testid="compose-promotional-help">
+                    Only parents who agreed to <strong>promotional</strong> texts get it — agreeing to program texts
+                    isn&apos;t enough, so anyone who hasn&apos;t agreed to promotional texts is left out (Texas law,
+                    as we aren&apos;t registered as a telephone solicitor). Promotions can only be sent {PROMO_HOURS_TEXT}.
+                    Practice and payment messages don&apos;t need this. Parents who said STOP never get either.
+                  </span>
+                </span>
+              </label>
               {/* One sideways-scrolling row on a phone; wraps where there is room. */}
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
-                {VARIABLES.map((v) => (
+                {COMPOSE_VARIABLES.map((v) => (
                   <button
                     key={v}
                     type="button"
@@ -226,12 +258,21 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   </button>
                 ))}
               </div>
+              {message && (
+                <div data-testid="compose-preview" className="rounded-xl border bg-muted/40 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    What {recipients[0] ? composeFirstName(recipients[0].name) : "a parent"} will get
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{renderComposed(message, recipients[0]?.name)}</p>
+                  {problem && <p role="alert" className="mt-2 text-sm text-red-600">{problem}</p>}
+                </div>
+              )}
             </div>
 
             {/* Sticks to the bottom of the screen on a phone so Send is always under her thumb. */}
             <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
               <span className="text-sm tabular-nums text-muted-foreground">{recipients.length} recipient(s)</span>
-              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={handleSend} disabled={sending || recipients.length === 0 || !message}>
+              <Button className="h-11 w-full sm:h-10 sm:w-auto" onClick={handleSend} disabled={sending || recipients.length === 0 || !message || !!problem}>
                 <Send className="h-4 w-4 mr-2" />
                 {sending ? "Sending..." : `Send to ${recipients.length} recipient(s)`}
               </Button>
@@ -311,7 +352,7 @@ export function MessagingPageClient({ templates, log, stats, schools, programs, 
                   <label className="text-sm font-medium">Message Body *</label>
                   <Textarea className="text-base sm:text-sm" name="body" required rows={5} placeholder="Hi {{parent_name}}, ..." defaultValue={editingTemplate?.body || ""} key={`body-${editingTemplate?.id || "new"}`} />
                   <div className="flex flex-wrap gap-1">
-                    {VARIABLES.map((v) => (
+                    {TEMPLATE_VARIABLES.map((v) => (
                       <span key={v} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground cursor-default">{`{{${v}}}`}</span>
                     ))}
                   </div>

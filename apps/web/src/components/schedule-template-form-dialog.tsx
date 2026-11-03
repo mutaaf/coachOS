@@ -19,13 +19,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
+import { youthCampCheck, youthCampWarning } from "@/lib/youth-camp";
 
 interface ScheduleTemplateFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  programs: { id: string; name: string }[];
+  programs: {
+    id: string;
+    name: string;
+    start_date?: string | null;
+    end_date?: string | null;
+    youth_camp_license_number?: string | null;
+  }[];
+  /** Every weekly time on file, to see what a new day adds up to. */
+  templates?: { id: string; program_id: string; day_of_week: number }[];
   /** Active coaches, for naming who normally runs this slot. */
-  coaches?: { id: string; first_name: string; last_name: string }[];
+  coaches?: { id: string; first_name: string; last_name: string; cleared?: boolean }[];
   template?: ScheduleTemplate;
 }
 
@@ -37,17 +47,31 @@ export function ScheduleTemplateFormDialog({
   programs,
   coaches = [],
   template,
+  templates = [],
 }: ScheduleTemplateFormDialogProps) {
   const router = useRouter();
   const isEditing = !!template;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [programId, setProgramId] = useState("");
+  const [licenseConfirmed, setLicenseConfirmed] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSelectedDays(template ? [template.day_of_week] : []);
+      setProgramId(template?.program_id ?? "");
+      setLicenseConfirmed(false);
     }
   }, [open, template]);
+
+  // Tex. Health & Safety Code ch. 141: 4+ days in a row is a youth camp.
+  const program = programs.find((p) => p.id === programId);
+  const days = [
+    ...templates.filter((t) => t.program_id === programId && t.id !== template?.id).map((t) => t.day_of_week),
+    ...selectedDays,
+  ];
+  const camp = programId ? youthCampCheck({ days, start: program?.start_date, end: program?.end_date }) : null;
+  const licensed = !!program?.youth_camp_license_number?.trim();
 
   const programOptions = programs.map((p) => ({
     value: p.id,
@@ -134,6 +158,7 @@ export function ScheduleTemplateFormDialog({
               options={programOptions}
               placeholder="Select a session"
               defaultValue={template?.program_id ?? ""}
+              onChange={(e) => setProgramId(e.target.value)}
               required
               disabled={isSubmitting}
             />
@@ -199,7 +224,7 @@ export function ScheduleTemplateFormDialog({
                   { value: "", label: "Not assigned" },
                   ...coaches.map((c) => ({
                     value: c.id,
-                    label: `${c.first_name} ${c.last_name}`,
+                    label: `${c.first_name} ${c.last_name}${c.cleared === false ? " — not cleared" : ""}`,
                   })),
                   // Without this, a coach since made inactive fell back to
                   // "Not assigned" and saving cleared them.
@@ -210,10 +235,51 @@ export function ScheduleTemplateFormDialog({
                 defaultValue={template?.coach_id ?? ""}
                 disabled={isSubmitting}
               />
+              {coaches.some((c) => c.cleared === false) && (
+                <p className="text-xs text-red-700">
+                  Coaches marked &ldquo;not cleared&rdquo; are missing a background check, training, CPR or a signed
+                  code of conduct. Don&apos;t put them in charge of children until that&apos;s on file.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Who normally runs this slot. Each practice can be changed
                 individually when someone covers.
               </p>
+            </div>
+          )}
+
+          {camp?.looksLikeCamp && (
+            <div role="alert" data-testid="youth-camp-warning" className="space-y-2 rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
+              <p className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="h-5 w-5 shrink-0" /> This would make it a youth camp
+              </p>
+              <p>{youthCampWarning(camp.stretch)}</p>
+              {licensed ? (
+                <p className="text-amber-900">License on file: {program?.youth_camp_license_number}</p>
+              ) : (
+                <>
+                  <p className="text-amber-900">
+                    If this session is on the website or open for sign-ups, this time can&apos;t be saved without a license.
+                  </p>
+                  <label className="flex min-h-11 items-start gap-2">
+                    <input
+                      type="checkbox"
+                      name="youth_camp_license_confirmed"
+                      className="mt-0.5 h-5 w-5 shrink-0"
+                      checked={licenseConfirmed}
+                      onChange={(e) => setLicenseConfirmed(e.target.checked)}
+                      disabled={isSubmitting}
+                    />
+                    <span>We hold a current DSHS youth camp license</span>
+                  </label>
+                  {licenseConfirmed && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="youth_camp_license_number">License number</Label>
+                      <Input id="youth_camp_license_number" name="youth_camp_license_number" required disabled={isSubmitting} />
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

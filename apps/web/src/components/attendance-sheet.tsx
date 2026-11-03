@@ -9,7 +9,14 @@ interface Child {
   student_id: string;
   first_name: string;
   last_name: string;
+  /** Only for the practice's assigned coach; null for anyone else. */
   medical_notes: string | null;
+  /** True when a note exists, whether or not it is shown. */
+  has_medical_note?: boolean;
+  /** No photo release on file: don't take or post photos of this child. */
+  photo_ok?: boolean;
+  /** Suspected concussion, no doctor's clearance yet: can't be marked here. */
+  sitting_out?: boolean;
   status: Status | null;
 }
 
@@ -94,7 +101,7 @@ export function AttendanceSheet({ token }: { token: string }) {
     // because on a normal day most of them are.
     setMarks(
       Object.fromEntries(
-        (data.roster as Child[]).map((c) => [c.student_id, c.status ?? "present"])
+        (data.roster as Child[]).map((c) => [c.student_id, c.status ?? (c.sitting_out ? "excused" : "present")])
       )
     );
     setUnlocked(true);
@@ -236,10 +243,24 @@ export function AttendanceSheet({ token }: { token: string }) {
                       <span className="block break-words text-base font-medium text-slate-900">
                         {child.first_name} {child.last_name}
                       </span>
-                      {child.medical_notes && (
+                      {child.medical_notes ? (
                         <span className="mt-0.5 block text-sm text-amber-700">
                           {child.medical_notes}
                         </span>
+                      ) : (
+                        child.has_medical_note && (
+                          <span className="mt-0.5 block text-sm text-amber-700">
+                            Has a medical note — ask the Boss before practice.
+                          </span>
+                        )
+                      )}
+                      {child.sitting_out && (
+                        <span className="mt-0.5 block text-sm font-semibold text-red-700">
+                          Sitting out: no doctor&apos;s clearance yet after a head knock.
+                        </span>
+                      )}
+                      {child.photo_ok === false && (
+                        <span className="mt-0.5 block text-xs text-slate-500">No photos of this child.</span>
                       )}
                     </span>
                     <span

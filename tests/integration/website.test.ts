@@ -104,3 +104,42 @@ describe("testimonials and partnerships", () => {
     await deletePartnership(p!.id);
   });
 });
+
+describe("a linked listing follows CoachOS", () => {
+  it("never takes the price, places, dates or place from the form, and keeps them equal to the session", async () => {
+    const { programId, schoolId } = await seedProgram({ monthlyFee: 120, capacity: 12 });
+    const { createAdminSupabase } = await import("@/lib/supabase/server");
+    const ops = createAdminSupabase();
+    await ops.from("programs").update({ start_date: "2026-09-08", end_date: "2026-12-11", location: null }).eq("id", programId);
+
+    const res = await listing({ ops_program_id: programId, price: "150", slots: "15 spots", date_range: "April 10, 2025- May 18, 2025", location: "Somewhere" });
+    expect(res.error).toBeUndefined();
+    const read = async () =>
+      (await adminPublic.from("programs").select("price, slots, date_range, start_date, end_date, location").eq("id", res.id).single()).data;
+    const school = (await ops.from("schools").select("name").eq("id", schoolId).single()).data!.name;
+    expect(await read()).toEqual({
+      price: "$120/month", slots: "12 spots", date_range: "September 8 – December 11, 2026",
+      start_date: "2026-09-08", end_date: "2026-12-11", location: school,
+    });
+
+    // Editing the listing can't change them...
+    expect((await saveListing(form({ id: res.id, title: "Lil Dribblers", description: "d", ops_program_id: programId, price: "$1" }))) as any).toMatchObject({ success: true });
+    expect((await read())!.price).toBe("$120/month");
+
+    // ...and a change in CoachOS reaches the listing.
+    await ops.from("programs").update({ monthly_fee: 95.5, capacity: 10, location: "Gym B" }).eq("id", programId);
+    expect(await read()).toMatchObject({ price: "$95.5/month", slots: "10 spots", location: "Gym B" });
+
+    // Unlinked, it's hers to type again.
+    expect((await saveListing(form({ id: res.id, title: "Lil Dribblers", description: "d", price: "$100/month" }))) as any).toMatchObject({ success: true });
+    expect((await read())!.price).toBe("$100/month");
+  });
+
+  it("saves the overlay settings, and refuses a bad or taken web address", async () => {
+    const res = await listing({ published: "false", featured: "true", sort_order: "3", slug: "lil-dribblers-wylie", seo_title: "Kids basketball in Wylie" });
+    const { data } = await adminPublic.from("programs").select("published, featured, sort_order, slug, seo_title").eq("id", res.id).single();
+    expect(data).toEqual({ published: false, featured: true, sort_order: 3, slug: "lil-dribblers-wylie", seo_title: "Kids basketball in Wylie" });
+    expect((await listing({ slug: "Not A Slug" })).error).toMatch(/web address/);
+    expect((await listing({ slug: "lil-dribblers-wylie" })).error).toMatch(/already uses/);
+  });
+});

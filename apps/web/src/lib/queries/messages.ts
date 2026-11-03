@@ -69,7 +69,7 @@ export async function getOutbox() {
   const [waiting, done] = await Promise.all([
     supabase
       .from("message_queue")
-      .select("id, recipient_name, recipient_phone, message, created_at")
+      .select("id, recipient_name, recipient_phone, message, created_at, purpose")
       .in("status", ["pending", "sending"])
       .order("created_at")
       .limit(200),

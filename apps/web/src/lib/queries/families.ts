@@ -1,6 +1,7 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { invoiceBalanceCents, toCents } from "@/lib/invoice-status";
-import type { Invoice, Parent, Student } from "@/types/database";
+import type { Invoice, Parent, RegistrationConsents, Student } from "@/types/database";
+import { logMedicalView } from "@/lib/audit";
 
 /**
  * A family, as a parent asks about it on WhatsApp: "what do we owe?"
@@ -13,9 +14,14 @@ import type { Invoice, Parent, Student } from "@/types/database";
  * asking for it again would chase them twice. It is shown on its own.
  */
 
-export type FamilyChild = Pick<Student, "id" | "first_name" | "last_name" | "grade" | "status" | "medical_notes"> & {
+export type FamilyChild = Pick<
+  Student,
+  "id" | "first_name" | "last_name" | "grade" | "status" | "medical_notes" | "photo_release" | "photo_release_at"
+> & {
   relationship: string;
   enrollments: { id: string; status: string; programName: string; schoolName: string }[];
+  /** What was agreed on the child's most recent website registration, as sent. */
+  consents: RegistrationConsents | null;
 };
 
 export type FamilyInvoice = Pick<Invoice, "id" | "month" | "due_date" | "status" | "amount" | "student_id" | "parent_id"> & {
@@ -54,12 +60,12 @@ export async function getFamily(parentId: string): Promise<Family | null> {
 
   const { data: childLinks } = await supabase
     .from("student_parents")
-    .select("relationship, students(id, first_name, last_name, grade, status, medical_notes)")
+    .select("relationship, students(id, first_name, last_name, grade, status, medical_notes, photo_release, photo_release_at)")
     .eq("parent_id", parentId);
   const kids = ((childLinks || []) as any[]).filter((l) => l.students);
   const studentIds = kids.map((l) => l.students.id as string);
 
-  const [guardianLinks, enrollments, invoices, credits] = await Promise.all([
+  const [guardianLinks, enrollments, invoices, credits, registrations] = await Promise.all([
     studentIds.length
       ? supabase.from("student_parents").select("parent_id, relationship, parents(*)").in("student_id", studentIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -80,7 +86,19 @@ export async function getFamily(parentId: string): Promise<Family | null> {
           .order("month", { ascending: false })
       : Promise.resolve({ data: [] as any[] }),
     supabase.from("family_credits").select("amount").eq("parent_id", parentId),
+    studentIds.length
+      ? supabase
+          .from("registrations")
+          .select("student_id, consents, created_at")
+          .in("student_id", studentIds)
+          .not("consents", "is", null)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as any[] }),
   ]);
+  const latestConsents = new Map<string, RegistrationConsents>();
+  for (const r of (registrations.data || []) as any[]) {
+    if (!latestConsents.has(r.student_id)) latestConsents.set(r.student_id, r.consents);
+  }
 
   // Each guardian once, this parent first. Their relationship is the one they
   // have to the first child that names one.
@@ -104,6 +122,7 @@ export async function getFamily(parentId: string): Promise<Family | null> {
     .map((l) => ({
       ...l.students,
       relationship: l.relationship,
+      consents: latestConsents.get(l.students.id) ?? null,
       enrollments: ((enrollments.data || []) as any[])
         .filter((e) => e.student_id === l.students.id)
         .map((e) => ({
@@ -114,6 +133,9 @@ export async function getFamily(parentId: string): Promise<Family | null> {
         })),
     }))
     .sort((a, b) => a.first_name.localeCompare(b.first_name));
+
+  // This page shows each child's medical note.
+  await logMedicalView(supabase, "family_page", children);
 
   const familyInvoices: FamilyInvoice[] = ((invoices.data || []) as any[]).map((inv) => ({
     id: inv.id,

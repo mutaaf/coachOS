@@ -14,6 +14,21 @@ All notable changes to CoachOS.
   parent sign-up and payment pages feel finished. Tabs have proper tab roles
 
 ### Added
+- **New program, in one go.** Programs → New program: pick or make the
+  program, pick one or more schools (or add one with its address), the season
+  and the weekly practices, change the fee, places, coach or times for any
+  school, open sign-ups and put it on the website with a photo — one save,
+  all or nothing. The program card has **Add to another school** and
+  **Duplicate … for next season**; tick sessions to open or close sign-ups
+  together
+- **Website → Photos.** Drop in real photos: location data is removed and
+  phone-sized copies are made. Describe each one, tap its focus point, and
+  put it in the home page slideshow (drag to reorder), a section, the link
+  preview, a sport or a program's card. Live on the website within a minute,
+  no deploy. A photo showing recognizable children can't go up until a photo
+  release is confirmed for every one of them
+
+### Added
 - **Programs, sessions and seasons.** A **Programs** page: make a program
   once (name, description, ages, usual fee and places), then put it on at a
   school in a season — a **session**, which can start with an empty roster.

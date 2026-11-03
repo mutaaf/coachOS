@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { attributionSummary } from "@/lib/attribution";
 import { Select } from "@/components/ui/select";
 import {
   ClipboardList,
@@ -392,6 +393,12 @@ export function RegistrationsPageClient({
                     </a>
                   )}
                 </p>
+
+                {(attributionSummary(r.attribution) || r.how_heard) && (
+                  <p className="mt-1 break-words text-xs text-muted-foreground" data-testid="registration-source">
+                    Came from {[attributionSummary(r.attribution), r.how_heard ? `“${r.how_heard}”` : null].filter(Boolean).join(" · ")}
+                  </p>
+                )}
 
                 {r.medical_notes && (
                   <p className="mt-1 text-sm text-amber-700">Note: {r.medical_notes}</p>

@@ -1,4 +1,5 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { logMedicalView } from "@/lib/audit";
 import type {
   Student,
   Parent,
@@ -97,6 +98,9 @@ export async function getStudents(): Promise<StudentWithParentsAndEnrollments[]>
     enrollmentsByStudent.set(enrollment.student_id, existing);
   }
 
+  // The Students page shows each child's medical note.
+  await logMedicalView(supabase, "students_page", students as Student[]);
+
   return students.map((student: Student) => ({
     ...student,
     parents: parentsByStudent.get(student.id) || [],
@@ -119,6 +123,7 @@ export async function getStudent(
     console.error("Error fetching student:", studentError);
     return null;
   }
+  await logMedicalView(supabase, "student_detail", [student as Student]);
 
   // Fetch parents
   const { data: parentLinks } = await supabase

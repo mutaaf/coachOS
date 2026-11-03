@@ -100,6 +100,49 @@ export async function deleteCoach(id: string) {
   return { success: true };
 }
 
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * A coach's safeguarding record: background check, abuse-prevention training,
+ * CPR / First Aid and the code of conduct. Kept apart from the contact form so
+ * saving one never clears the other. Blank dates clear the item.
+ */
+export async function updateCoachSafeguarding(id: string, formData: FormData) {
+  if (!(await signedIn())) return NOT_SIGNED_IN;
+
+  const date = (name: string) => {
+    const v = ((formData.get(name) as string) || "").trim();
+    return v === "" ? null : v;
+  };
+  const fields = {
+    background_check_date: date("background_check_date"),
+    background_check_provider: ((formData.get("background_check_provider") as string) || "").trim() || null,
+    background_check_sex_offender_registry: formData.get("background_check_sex_offender_registry") === "on",
+    background_check_fingerprint: formData.get("background_check_fingerprint") === "on",
+    abuse_training_date: date("abuse_training_date"),
+    abuse_training_expires_on: date("abuse_training_expires_on"),
+    cpr_first_aid_expires_on: date("cpr_first_aid_expires_on"),
+    code_of_conduct_signed_on: date("code_of_conduct_signed_on"),
+    safeguarding_notes: ((formData.get("safeguarding_notes") as string) || "").trim() || null,
+  };
+  for (const [k, v] of Object.entries(fields)) {
+    if (k.endsWith("_date") || k.endsWith("_on")) {
+      if (v !== null && !DATE.test(String(v))) return { error: "Please enter dates as YYYY-MM-DD." };
+    }
+  }
+  if (fields.background_check_date && !fields.background_check_provider) {
+    return { error: "Say who ran the background check." };
+  }
+
+  const { error } = await createAdminSupabase().from("coaches").update(fields).eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/coaches");
+  revalidatePath("/compliance");
+  revalidatePath("/schedule");
+  return { success: true };
+}
+
 /** Who is scheduled for this weekly slot from now on. */
 export async function assignCoachToTemplate(templateId: string, coachId: string | null) {
   if (!(await signedIn())) return NOT_SIGNED_IN;

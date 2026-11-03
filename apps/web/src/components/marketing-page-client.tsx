@@ -15,6 +15,10 @@ import { Target, Plus, Phone, Mail, MapPin, Users, ArrowRight, MessageSquare, Ch
 import type { Lead } from "@/types/database";
 import { formatDateOnly, isPastDue } from "@/lib/dates";
 import { useAction } from "@/lib/use-action";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InquiriesPanel } from "@/components/inquiries-panel";
+import type { InquiryWithOffering } from "@/lib/queries/inquiries";
+import { attributionSummary } from "@/lib/attribution";
 
 const STAGES = [
   { value: "identified", label: "Identified", color: "bg-gray-100 text-gray-700" },
@@ -27,9 +31,12 @@ const STAGES = [
 
 interface MarketingPageClientProps {
   leads: Lead[];
+  inquiries?: InquiryWithOffering[];
+  initialTab?: string;
 }
 
-export function MarketingPageClient({ leads }: MarketingPageClientProps) {
+export function MarketingPageClient({ leads, inquiries = [], initialTab }: MarketingPageClientProps) {
+  const newInquiries = inquiries.filter((i) => i.status === "new").length;
   const router = useRouter();
   const [showAddLead, setShowAddLead] = useState(false);
   const [showEditLead, setShowEditLead] = useState(false);
@@ -129,6 +136,19 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
         </Button>
       </div>
 
+      <Tabs defaultValue={initialTab === "inquiries" ? "inquiries" : "pipeline"}>
+        <div className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+          <TabsList className="h-12 w-max justify-start">
+            <TabsTrigger value="pipeline" className="h-10 tabular-nums">Schools pipeline ({leads.length})</TabsTrigger>
+            <TabsTrigger value="inquiries" className="h-10 tabular-nums" data-testid="inquiries-tab">
+              Inquiries{newInquiries ? ` (${newInquiries} new)` : ` (${inquiries.length})`}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="inquiries">
+          <InquiriesPanel inquiries={inquiries} />
+        </TabsContent>
+        <TabsContent value="pipeline">
       {/* Stage picker (phones): one row that scrolls sideways */}
       <div
         className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
@@ -188,6 +208,11 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                   {lead.contact_name && (
                     <div className="text-xs text-muted-foreground mt-1 truncate">{lead.contact_name}</div>
                   )}
+                  {lead.source === "website" && (
+                    <div className="text-xs text-muted-foreground mt-1 break-words">
+                      From the website{attributionSummary(lead.attribution) ? ` · ${attributionSummary(lead.attribution)}` : ""}
+                    </div>
+                  )}
                   {lead.estimated_students && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                       <Users className="h-3 w-3" /> ~{lead.estimated_students} students
@@ -214,6 +239,9 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
           </div>
         ))}
       </div>
+
+        </TabsContent>
+      </Tabs>
 
       {/* Add Lead Dialog */}
       <Dialog open={showAddLead} onOpenChange={setShowAddLead}>
@@ -312,6 +340,10 @@ export function MarketingPageClient({ leads }: MarketingPageClientProps) {
                     </div>
                   )}
                 </div>
+
+                {selectedLead.notes && (
+                  <p className="whitespace-pre-line break-words rounded-lg bg-muted/50 p-3 text-sm">{selectedLead.notes}</p>
+                )}
 
                 {/* Stage Selector */}
                 <div className="space-y-2">

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { useAction } from "@/lib/use-action";
 import {
   deleteListing,
@@ -25,12 +26,16 @@ import {
   dateRangeText,
   imageUrl,
   listingFromProgram,
+  OPS_OWNED,
+  priceText,
+  slugify,
   staleness,
   type Listing,
   type ProgramForListing,
 } from "@/lib/website";
 import type { Partnership, Testimonial } from "@/lib/queries/website";
-import { AlertTriangle, ExternalLink, ImagePlus, Link2, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import { SitePhotos, type PhotoLibraryProps } from "@/components/site-photos";
+import { AlertTriangle, EyeOff, ExternalLink, ImagePlus, Link2, Lock, Pencil, Plus, Star, Trash2 } from "lucide-react";
 
 /**
  * Website: what parents see at risingstars.training, edited here. Saves are
@@ -41,8 +46,11 @@ export function WebsitePageClient(props: {
   testimonials: Testimonial[];
   partnerships: Partnership[];
   programs: ProgramForListing[];
+  library: PhotoLibraryProps;
+  tab?: string;
   today: string;
 }) {
+  const tabs = ["programs", "photos", "testimonials", "partnerships"];
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -61,16 +69,20 @@ export function WebsitePageClient(props: {
           Open the website <ExternalLink className="h-4 w-4" />
         </a>
       </div>
-      <Tabs defaultValue="programs">
+      <Tabs defaultValue={props.tab && tabs.includes(props.tab) ? props.tab : "programs"}>
         <div className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
           <TabsList className="h-12 w-max justify-start" data-tour="website-tabs">
             <TabsTrigger value="programs" className="h-10 tabular-nums">Programs ({props.listings.length})</TabsTrigger>
+            <TabsTrigger value="photos" className="h-10 tabular-nums">Photos ({props.library.photos.length})</TabsTrigger>
             <TabsTrigger value="testimonials" className="h-10 tabular-nums">Testimonials ({props.testimonials.length})</TabsTrigger>
             <TabsTrigger value="partnerships" className="h-10 tabular-nums">Partnerships ({props.partnerships.length})</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="programs">
           <Listings listings={props.listings} programs={props.programs} today={props.today} />
+        </TabsContent>
+        <TabsContent value="photos">
+          <SitePhotos {...props.library} />
         </TabsContent>
         <TabsContent value="testimonials">
           <Testimonials items={props.testimonials} />
@@ -152,16 +164,26 @@ function Listings({ listings, programs, today }: { listings: Listing[]; programs
               <div className="flex flex-1 flex-col gap-2 p-4">
                 <h3 className="break-words font-semibold leading-snug">{l.title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {[l.date_range || dateRangeText(l.start_date, l.end_date), l.location].filter(Boolean).join(" · ") || "No dates or place yet"}
+                  {(linked
+                    ? [dateRangeText(linked.start_date, linked.end_date), linked.location || linked.school_name]
+                    : [l.date_range || dateRangeText(l.start_date, l.end_date), l.location]
+                  )
+                    .filter(Boolean)
+                    .join(" · ") || "No dates or place yet"}
                 </p>
                 <p className="text-sm tabular-nums">
-                  {l.price || "No price shown"}
+                  {linked ? priceText(linked.monthly_fee) : l.price || "No price shown"}
                   {linked && linked.seats_remaining != null
                     ? ` · ${linked.seats_remaining} of ${linked.capacity} places left (live)`
                     : l.slots
                       ? ` · ${l.slots}`
                       : ""}
                 </p>
+                {linked && !l.published && (
+                  <p className="flex items-start gap-1.5 rounded-lg bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                    <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Hidden from the website
+                  </p>
+                )}
                 {stale && (
                   <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {stale}
@@ -227,6 +249,7 @@ function ListingDialog({ listing, programs, onClose }: { listing: Listing | null
   const blank: Omit<Listing, "id"> = {
     title: "", description: "", type: "current", date_range: "", start_date: null, end_date: null, location: "",
     image: "", price: "", slots: "", age_groups: [], registration_date: null, ops_program_id: null,
+    published: true, featured: false, sort_order: 0, slug: null, seo_title: null, seo_description: null,
   };
   const [v, setV] = useState<Omit<Listing, "id">>(listing ?? blank);
   const [uploading, setUploading] = useState(false);
@@ -254,6 +277,8 @@ function ListingDialog({ listing, programs, onClose }: { listing: Listing | null
     const fd = new FormData();
     if (listing) fd.set("id", listing.id);
     for (const [k, val] of Object.entries(v)) {
+      // CoachOS's values for a linked listing; the server ignores them anyway.
+      if (v.ops_program_id && (OPS_OWNED as readonly string[]).includes(k)) continue;
       if (k === "age_groups") (val as string[]).forEach((a) => fd.append("age_groups", a));
       else fd.set(k, val == null ? "" : String(val));
     }
@@ -327,6 +352,30 @@ function ListingDialog({ listing, programs, onClose }: { listing: Listing | null
             <Textarea id="listing-description" rows={3} value={v.description} onChange={(e) => set("description", e.target.value)} />
           </div>
 
+          {program ? (
+            <div className="rounded-xl border bg-muted/30 p-3" data-testid="listing-from-coachos">
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                <Lock className="h-3.5 w-3.5" /> From CoachOS
+              </p>
+              <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                <dt className="text-muted-foreground">Price</dt>
+                <dd className="tabular-nums">{priceText(program.monthly_fee)}</dd>
+                <dt className="text-muted-foreground">Places</dt>
+                <dd className="tabular-nums">
+                  {program.capacity}
+                  {program.seats_remaining != null ? ` (${program.seats_remaining} open now)` : ""}
+                </dd>
+                <dt className="text-muted-foreground">Dates</dt>
+                <dd>{dateRangeText(program.start_date, program.end_date) || "Not set"}</dd>
+                <dt className="text-muted-foreground">Where</dt>
+                <dd className="break-words">{program.location || program.school_name || "Not set"}</dd>
+              </dl>
+              <p className="mt-2 text-xs text-muted-foreground">
+                These come from the program in CoachOS, so the website always matches what families are charged. Change them on the
+                Programs page.
+              </p>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 gap-4">
             <div className="min-w-0 space-y-1.5">
               <Label htmlFor="listing-start">Starts</Label>
@@ -359,13 +408,15 @@ function ListingDialog({ listing, programs, onClose }: { listing: Listing | null
               <Input id="listing-price" value={v.price} onChange={(e) => set("price", e.target.value)} placeholder="$120/month" />
             </div>
             <div className="col-span-2 space-y-1.5 sm:col-span-1">
-              <Label htmlFor="listing-slots">Spots {program ? "(the site shows live places instead)" : ""}</Label>
+              <Label htmlFor="listing-slots">Spots</Label>
               <Input id="listing-slots" value={v.slots} onChange={(e) => set("slots", e.target.value)} placeholder="12 spots" />
             </div>
-            <div className="col-span-2 space-y-1.5 sm:col-span-1">
-              <Label htmlFor="listing-registration">Registration note (optional)</Label>
-              <Input id="listing-registration" value={v.registration_date ?? ""} onChange={(e) => set("registration_date", e.target.value || null)} placeholder="Registration opens May 15" />
-            </div>
+          </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="listing-registration">Registration note (optional)</Label>
+            <Input id="listing-registration" value={v.registration_date ?? ""} onChange={(e) => set("registration_date", e.target.value || null)} placeholder="Registration opens May 15" />
           </div>
 
           <fieldset>
@@ -410,6 +461,52 @@ function ListingDialog({ listing, programs, onClose }: { listing: Listing | null
               </label>
             </div>
           </div>
+
+          <fieldset className="space-y-3 rounded-xl border p-3">
+            <legend className="px-1 text-sm font-medium">On the website</legend>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="listing-published" className="font-normal">Show on the website</Label>
+                {!program && (
+                  <p id="listing-published-hint" className="text-xs text-muted-foreground">Applies once it’s linked to a program in CoachOS.</p>
+                )}
+              </div>
+              <Switch
+                id="listing-published"
+                checked={v.published}
+                onCheckedChange={(c) => set("published", c)}
+                aria-describedby={program ? undefined : "listing-published-hint"}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="listing-featured" className="font-normal">Feature it</Label>
+              <Switch id="listing-featured" checked={v.featured} onCheckedChange={(c) => set("featured", c)} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+              <div className="space-y-1.5">
+                <Label htmlFor="listing-order">Order</Label>
+                <Input id="listing-order" type="number" inputMode="numeric" value={v.sort_order} onChange={(e) => set("sort_order", Number(e.target.value) || 0)} />
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                <Label htmlFor="listing-slug">Web address (optional)</Label>
+                <Input
+                  id="listing-slug"
+                  value={v.slug ?? ""}
+                  onChange={(e) => set("slug", e.target.value || null)}
+                  onBlur={(e) => set("slug", slugify(e.target.value) || null)}
+                  placeholder={slugify(v.title) || "lil-dribblers-wylie"}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="listing-seo-title">Search engine heading (optional)</Label>
+              <Input id="listing-seo-title" value={v.seo_title ?? ""} onChange={(e) => set("seo_title", e.target.value || null)} placeholder={v.title} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="listing-seo-description">Search engine blurb (optional)</Label>
+              <Textarea id="listing-seo-description" rows={2} value={v.seo_description ?? ""} onChange={(e) => set("seo_description", e.target.value || null)} />
+            </div>
+          </fieldset>
 
           {/* Stays at the bottom of the dialog while the form scrolls, so Save is always in reach. */}
           <div className="sticky bottom-0 -mx-5 flex gap-2 border-t bg-background px-5 sm:-mx-6 sm:px-6 py-4 sm:flex-row sm:justify-end">

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { signedIn, NOT_SIGNED_IN } from "@/lib/auth-guard";
+import { quietHoursMessage } from "@/lib/quiet-hours";
 
 /**
  * The owner has opened a message in WhatsApp or Messages, or decided not to
@@ -17,10 +18,17 @@ export async function markOutboxMessage(id: string, how: "whatsapp" | "sms" | "s
 
   const { data: msg } = await supabase
     .from("message_queue")
-    .select("id, recipient_phone, recipient_name, message, status")
+    .select("id, recipient_phone, recipient_name, message, status, purpose")
     .eq("id", id)
     .maybeSingle();
   if (!msg) return { error: "That message is no longer in the outbox." };
+
+  // Texas quiet hours (§301.051): a promotion waits until it may go. The
+  // database refuses it too (ops.promotion_keeps_quiet_hours).
+  if ((how === "whatsapp" || how === "sms") && msg.purpose === "promotional" && msg.status !== "sent") {
+    const quiet = quietHoursMessage();
+    if (quiet) return { error: quiet };
+  }
 
   if (how === "undo") {
     await supabase.from("message_log").delete().eq("queue_id", id);

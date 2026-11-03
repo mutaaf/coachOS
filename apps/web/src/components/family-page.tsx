@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, GraduationCap, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft, CameraOff, GraduationCap, Mail, MessageCircle } from "lucide-react";
+import { FamilyConsents } from "@/components/family-consents";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/ui/copy-button";
 import { PhoneLink } from "@/components/phone-link";
@@ -120,6 +121,11 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
                       </span>
                     )}
                     {c.status === "inactive" && <Badge variant="secondary">archived</Badge>}
+                    {c.photo_release !== true && (
+                      <span className="inline-flex items-center gap-1 text-xs font-normal text-red-700" title="No photo release on file">
+                        <CameraOff className="h-3.5 w-3.5" /> no photos
+                      </span>
+                    )}
                   </div>
                   {c.medical_notes && <p className="text-xs text-orange-600">Medical: {c.medical_notes}</p>}
                   {c.enrollments.length === 0 ? (
@@ -168,6 +174,8 @@ export function FamilyPage({ family, payLink }: { family: Family; payLink: strin
           </ul>
         </section>
       </div>
+
+      <FamilyConsents parentId={parent.id} guardians={guardians} childrenOnFile={children} />
 
       <section className="rounded-2xl border bg-card p-5">
         <h2 className="mb-3 font-semibold">Invoices</h2>

@@ -167,6 +167,17 @@ Deliberately one long test. Each step runs on the state the previous one left,
 which is the property that breaks in production and that isolated tests cannot
 see. If you only run one thing, run this.
 
+### Compliance — `tests/integration/compliance-consents.test.ts`, `messaging-compliance.test.ts`, `privacy-requests.test.ts`, `retention.test.ts`, `child-safety.test.ts`
+
+What the law and the families' choices require, tested at the database where it is
+enforced: consents stored verbatim and a later STOP winning over an older yes; no
+texts to a parent who said no on the website or by STOP, promotions only on a yes;
+one-click unsubscribe that a link scanner can't trigger; the suppression list; the
+privacy workflow's deadlines and the steps staff can't skip; an erasure that keeps
+the books balanced; the retention job's dry run; medical notes reaching only the
+assigned coach (and a non-admin account getting nothing through the API); and a child
+with a suspected concussion refused as "present" from every path until cleared.
+
 ## Continuously
 
 `.github/workflows/tests.yml` runs everything on push, on pull requests, and

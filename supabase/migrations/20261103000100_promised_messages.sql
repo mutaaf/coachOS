@@ -4,8 +4,10 @@
 -- Cancelling a practice told nobody, and /join said "we'll message you" when a
 -- place opened while nothing did. Those now put a message in the Outbox (and,
 -- for a seat, an email). Settings offered reminder times the once-a-day cron
--- never read, and two templates were protected as "sent automatically" that
--- nothing sent; they go.
+-- never read (already moved to 'internal' by 20261003000800), and two
+-- templates were protected as "sent automatically" that nothing sent. Those
+-- two are kept, so this stays additive; they are no longer protected, so the
+-- Boss can delete them, and a later release can drop them.
 --
 -- A queued message can carry a key naming the event it is about
 -- ("cancelled:<session>:<parent>"), so the same event asked twice — a double
@@ -19,12 +21,9 @@ ALTER TABLE message_queue ADD COLUMN dedupe_key text UNIQUE;
 COMMENT ON COLUMN message_queue.dedupe_key IS
   'The event this message is about, e.g. cancelled:<session id>:<parent id>. Queued at most once per key.';
 
-ALTER TABLE emails DROP CONSTRAINT emails_kind_check;
+ALTER TABLE emails DROP CONSTRAINT IF EXISTS emails_kind_check;
 ALTER TABLE emails ADD CONSTRAINT emails_kind_check
-    CHECK (kind IN ('receipt', 'payment_failed', 'invite', 'reminder', 'registration', 'welcome', 'seat'));
-
-DELETE FROM config
- WHERE key IN ('day_before_reminder_time', 'morning_reminder_time', 'message_rate_limit_seconds');
+    CHECK (kind IN ('receipt', 'payment_failed', 'invite', 'reminder', 'registration', 'welcome', 'marketing', 'seat'));
 
 -- Welcome Messages was hidden because nothing read it; adding a child to the
 -- roster now reads it, so it is back on the Settings page.
@@ -36,8 +35,6 @@ UPDATE config
 UPDATE config
    SET description = 'Once a day, around 1 pm, put a reminder in the Outbox for every family with practice the next day'
  WHERE key = 'practice_reminders_enabled';
-
-DELETE FROM message_templates WHERE name IN ('practice_reminder_morning', 'payment_received');
 
 -- Reworded templates are kept: only added where missing.
 INSERT INTO message_templates (name, category, body, variables)
